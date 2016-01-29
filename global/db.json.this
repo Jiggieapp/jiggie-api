@@ -1,0 +1,6 @@
+{
+	"mongoUri" : "mongodb://heroku_9s55tf1n:b4249rnmfnrvi67q1vo9g36tsr@ds047824-a0.mongolab.com:47824,ds047824-a1.mongolab.com:47824/heroku_9s55tf1n?replicaSet=rs-ds047824",
+	"local"	: "mongodb://localhost:27017/local",
+	"live" : "mongodb://heroku_2r193ckp:41mfu21bpd68ed1ccg913g271n@ds057994-a0.mongolab.com:57994,ds057994-a1.mongolab.com:57994/heroku_2r193ckp?replicaSet=rs-ds057994",
+	"dev"  : "mongodb://heroku_9s55tf1n:b4249rnmfnrvi67q1vo9g36tsr@ds047824-a0.mongolab.com:47824,ds047824-a1.mongolab.com:47824/heroku_9s55tf1n?replicaSet=rs-ds047824"
+}
