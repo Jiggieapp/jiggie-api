@@ -1,0 +1,157 @@
+require('./../models/emit');
+var debug = require('./../config/debug');
+var async = require('async');
+var ObjectId = require('mongodb').ObjectID;
+var request = require('request');
+
+var moment = require('moment');
+var crypto = require('crypto');
+var HashidsNPM = require("hashids");
+var Hashids = new HashidsNPM("bfdlkKjlKBKJBjkbk08y23h9hek",6,"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+
+exports.invitelink = function(req, res){
+	req.app.get("helpers").logging("request","get","",req);
+	
+	var basedomain = 'http://jigg.io';
+	var trackdomain = 'http://app.appflyer.com';
+	var json_data = new Object();
+	var type = req.param('type');
+	var from_fb_id = req.param('from_fb_id');
+	
+	if(type == 'general'){
+		json_data.message = 'Get Jiggie to discover cool events and meet fun new people!';
+		
+		var cond = {
+			from_fb_id:from_fb_id,
+			type:type
+		}
+		invitelinks_coll.findOne(cond,function(err,rows){
+			if(rows != null){
+				json_data.url = basedomain + "/s/" + rows.hash;
+				res.json(json_data);
+			}else{
+				createLink(from_fb_id,type,function(item){
+					addInviteLink(item,function(err,result){
+						json_data.url = basedomain + "/s/" + item.hash;
+						res.json(json_data);
+					})
+				})
+			}
+		})
+	}else{
+		var event_id = req.param('event_id');
+		var venue_name = req.param('venue_name');
+		
+		events_detail_coll.findOne({_id:new ObjectId(event_id)},function(err,rows){
+			if(rows != null){
+				json_data.message = "Let's get Jiggie at "  + rows.title +  ". ";
+				
+				var cond = {
+					from_fb_id:from_fb_id,
+					type:type,
+					event_id:event_id
+				}
+				invitelinks_coll.findOne(cond,function(err,dt){
+					if(dt != null){
+						json_data.url = basedomain + "/s/" + dt.hash;
+						res.json(json_data);
+					}else{
+						var dataobj = new Object();
+						dataobj.from_fb_id = from_fb_id;
+						dataobj.type = type;
+						dataobj.hosting_id = req.param('hosting_id');
+						dataobj.event_id = event_id;
+						dataobj.venue_name = venue_name;
+						createHostingLink(dataobj,function(item){
+							addInviteLink(item,function(err,result){
+								json_data.url = basedomain + "/s/" + item.hash;
+								res.json(json_data);
+							})
+						})
+					}
+				})
+			}else{
+				res.json({success:false,code:'Event ID Invalid'});
+			}
+		})
+	}
+	
+	
+}
+
+function createHash(callback)
+{
+	getInviteLinkCount(function(sum)
+	{
+		callback(Hashids.encrypt(Number(sum + 100000)));
+	})
+}
+
+
+function createLink(from_fb_id,type,callback)
+{
+	var data = new Object();
+	data.created_at = new Date();
+	data.last_updated = new Date();
+	data.from_fb_id = from_fb_id;
+	data.type = type;
+	createHash(function(hash)
+	{
+		data.hash = hash;
+		callback(data);
+	});
+}
+
+
+function createHostingLink(obj,callback)
+{
+	var data = new Object();
+	data.created_at = new Date();
+	data.last_updated = new Date();
+	data.from_fb_id = obj.from_fb_id;
+	data.type = obj.type;
+	data.hosting_id = obj.hosting_id;
+	data.event_id = obj.event_id;
+	//data.host_fb_id = obj.host_fb_id;
+	//data.host_date = obj.host_date;
+	//data.host_name = obj.host_name;
+	data.venue_name = obj.venue_name;
+	createHash(function(hash)
+	{
+		data.hash = hash;
+		callback(data);
+	});
+}
+
+function addInviteLink(data,callback)
+{
+	invitelinks_coll.insert(data,
+	{
+		safe: true
+	}, callback);
+}
+
+function findInviteLinkByFBIDAndType(from_fb_id,type,callback)
+{
+	invitelinks_coll.findOne({from_fb_id:from_fb_id,type:type},callback);
+}
+
+
+function findInviteLinkByFBIDAndTypeAndEventId(from_fb_id,type,event_id,callback)
+{
+	invitelinks_coll.findOne({from_fb_id:from_fb_id,type:type,event_id:event_id},callback);
+}
+
+function findInviteLinkByHash(hash,callback)
+{
+	invitelinks_coll.findOne({hash:hash},callback);
+}
+
+function getInviteLinkCount(callback)
+{
+	invitelinks_coll.count(function(err,result)
+	{
+		callback(result);
+	})
+}
+
