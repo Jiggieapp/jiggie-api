@@ -1,0 +1,8 @@
+4300 BOOT
+1234 Login
+11223 Event
+31213 Social
+65400 logging
+10110 Chat
+53412 Share
+16523 Notfications
