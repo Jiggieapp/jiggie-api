@@ -4,6 +4,7 @@ var async = require('async');
 var NodeCache = require("node-cache");
 var cache = new NodeCache({ stdTTL: 100, checkperiod: 120 });
 var eventEmitter = mongo.eventEmitter;
+var ObjectId = require('mongodb').ObjectID;
 
 eventEmitter.on('database_connected',function(){
 	mongo.getCollection('customers',function(collection)
@@ -80,7 +81,13 @@ exports.index = function(req, res){
 							dtmem.updated_at = new Date();
 							dtmem.account_type = 'host';
 							dtmem.experiences = [];
-							dtmem.gender_interest = 'both';
+							if(post.gender == 'male'){
+								dtmem.gender_interest = 'female';
+							}else if(post.gender == 'female'){
+								dtmem.gender_interest = 'male';
+							}else{
+								dtmem.gender_interest = 'both';
+							}
 							
 							
 							membersettings_coll.insert(dtmem,function(err,ins){
@@ -128,11 +135,7 @@ exports.index = function(req, res){
 					set_customers.device_type = post.device_type;
 					// set_customers.twilio_token = 0;
 					// set_customers.tmp_phone = 0;
-					if(post.gender == "male"){
-						set_customers.gender_interest = "female";
-					}else{
-						set_customers.gender_interest = "male";
-					}
+					
 					set_customers.matchme = true;
 					set_customers.phone = "";
 					
@@ -165,7 +168,14 @@ exports.index = function(req, res){
 							dtmem.updated_at = new Date();
 							dtmem.account_type = 'host';
 							dtmem.experiences = [];
-							dtmem.gender_interest = 'both';
+							if(post.gender == 'male'){
+								dtmem.gender_interest = 'female';
+							}else if(post.gender == 'female'){
+								dtmem.gender_interest = 'male';
+							}else{
+								dtmem.gender_interest = 'both';
+							}
+							
 							
 							
 							membersettings_coll.insert(dtmem,function(err,ins){
@@ -458,4 +468,27 @@ function get_data(cond,next){
 			debug.log(e);
 		}
 	});
+}
+
+
+exports.sync_about = function(req,res){
+	var post = req.body;
+	var fb_id = post.fb_id;
+	var about = post.about;
+	
+	customers_coll.findOne({fb_id:fb_id},function(r){
+		if(r != null){
+			customers_coll.update({_id:new ObjectId(r._id)},{$set:{about:about}},function(err,upd){
+				if(err){
+					req.app.get("helpers").logging("errors","post","errors line 483 "+JSON.stringify(err),req);
+					debug.log(err);
+				}else{
+					res.json({success:true});
+				}
+			})
+		}else{
+			// 403 => Invalid ID
+			res.json({code_error:403})
+		}
+	})
 }
