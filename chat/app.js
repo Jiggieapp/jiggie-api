@@ -2,7 +2,7 @@
  * Created By : Jannes Santoso
  * NodeJS : ExpressJS
  * Core API Development
- * V.1.2
+ * V.1.5
  */  
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 var cluster = require('cluster');
