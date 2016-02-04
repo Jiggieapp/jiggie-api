@@ -74,7 +74,7 @@ function get_conv(req,fb_id,member_fb_id,next){
 			json_data.messages = conv.messages;
 			json_data.last_message = conv.last_message;
 			json_data.last_updated = conv.last_updated;
-			json_data.unread = conv.unread;
+			json_data.unread = parseInt(conv.unread);
 			json_data.fb_id = conv.fb_id;
 			json_data.hasreplied = conv.hasreplied;
 			
@@ -255,6 +255,7 @@ function post_message(req,next){
 			customers_coll.findOne({fb_id:fromId},function(errs,rw){
 				var json_form = {
 					fb_id :toId,
+					fromId:fromId,
 					message : rw.first_name+':'+message,
 					route : 'chat'
 				}

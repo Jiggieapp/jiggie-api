@@ -10,7 +10,7 @@ exports.index = function(req, res){
 	
 	get_data(req,function(data){
 		if(data == 0){
-			res.json({error_code:204})
+			res.json({code_error:204})
 		}else{
 			res.json(data);
 		}

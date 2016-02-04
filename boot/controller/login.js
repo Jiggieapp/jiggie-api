@@ -133,3 +133,28 @@ exports.sync_about = function(req,res){
 		}
 	})
 }
+
+exports.userlogin = function(req,res){
+	var post = req.body;
+	var options = {
+		url : url+"/app/userlogin",
+		form : post
+	}
+	curl.post(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				var rsp = {
+					response : 1,
+					msg : 'Success'
+				}
+				res.send(json_data);
+			}
+		}else{
+			res.send(err);
+		}
+	})
+}

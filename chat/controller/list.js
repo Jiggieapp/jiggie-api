@@ -46,7 +46,7 @@ function get_data(req,fb_id,next){
 						}
 						json_data[n].last_message = v.last_message;
 						json_data[n].last_updated = v.last_updated;
-						json_data[n].unread = v.unread;
+						json_data[n].unread = parseInt(v.unread);
 						json_data[n].fb_id = v.fb_id;
 						json_data[n].hasreplied = v.hasreplied;
 						n++;

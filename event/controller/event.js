@@ -133,6 +133,7 @@ function get_data(fb_id,from_date,to_date,next){
 			});
 		}
 	],function(err,rows_event,rows_venue){
+		debug.log(rows_event);
 		var json_data = [];
 		if(rows_event.length > 0 ){
 			async.forEachOf(rows_event,function(v,k,e){
@@ -145,37 +146,51 @@ function get_data(fb_id,from_date,to_date,next){
 				json_data[k].end_datetime = v.end_datetime;
 				json_data[k].special_type = "Trending";
 				json_data[k].tags = v.tags;
-				var d = new Date(v.start_datetime);
-				json_data[k].date_day = getDay(d.getDay());
+				
+				if(v.source == 'featured'){
+					json_data[k].date_day = 'Featured Events';
+				}else{
+					var d = new Date(v.start_datetime);
+					json_data[k].date_day = getDay(d.getDay());
+				}
+				
 				
 				json_data[k].photos = new Object();
 				
-				var convert_original_photos = [];
-				async.forEachOf(v.photos,function(v2,k2,e2){
-					var str = v2.indexOf('original');
-					if(str != -1){
-						var ex = v2.split('/');
-						var ex2 = ex[ex.length-1];
-						var ex3 = ex2.split('.');
-						var str1 = ex3[0].replace('original','540');
-						
-						
-						ex[ex.length-1] = str1+'.jpg';
-						convert_original_photos[k2] = ex.join('/');
-					}else{
-						// ini dinyalain klo semua image udah dimigrasi ke 540
-						// var ex = v2.split('/');
-						// var ex2 = ex[ex.length-1];
-						// var ex3 = ex2.split('.');
-						// var str1 = ex3[0]+'_540.jpg';
-						
-						// ex[ex.length-1] = str1;
-						// convert_original_photos[k2] = ex.join('/');
-						
-						convert_original_photos[k2] = v2;
-					}
-				});
-				json_data[k].photos = convert_original_photos;
+				if(v.photos.length > 0){
+					var convert_original_photos = [];
+					async.forEachOf(v.photos,function(v2,k2,e2){
+						var str = v2.indexOf('original');
+						if(str != -1){
+							var ex = v2.split('/');
+							var ex2 = ex[ex.length-1];
+							var ex3 = ex2.split('.');
+							var str1 = ex3[0].replace('original','540');
+							
+							
+							ex[ex.length-1] = str1+'.jpg';
+							convert_original_photos[k2] = ex.join('/');
+						}else{
+							// ini dinyalain klo semua image udah dimigrasi ke 540
+							// var ex = v2.split('/');
+							// var ex2 = ex[ex.length-1];
+							// var ex3 = ex2.split('.');
+							// var str1 = ex3[0]+'_540.jpg';
+							
+							// ex[ex.length-1] = str1;
+							// convert_original_photos[k2] = ex.join('/');
+							
+							convert_original_photos[k2] = v2;
+						}
+					});
+					json_data[k].photos = convert_original_photos;
+				}else{
+					async.forEachOf(rows_venue,function(vv,kk,ee){
+						if(vv._id == v.venue_id){
+							json_data[k].photos = vv.photos;
+						}
+					})
+				}
 				
 			});
 			json_data.sort(sortRank);

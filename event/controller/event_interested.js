@@ -99,7 +99,7 @@ function getdata(event_details_id,fb_id,gender_interest,next){
 												json_data[n].is_invited = false;
 												json_data[n].is_connected = false;
 												(ve.from_state == "approved") ? json_data[n].is_invited = true : json_data[n].is_invited = false;
-												(ve.to_state == "approved") ? json_data[n].is_connected = true : json_data[n].is_connected = false;
+												(ve.to_state == "approved" && ve.from_state == "approved") ? json_data[n].is_connected = true : json_data[n].is_connected = false;
 												n++;
 											}
 										}
@@ -116,7 +116,7 @@ function getdata(event_details_id,fb_id,gender_interest,next){
 												json_data[n].is_invited = false;
 												json_data[n].is_connected = false;
 												(ve.from_state == "approved") ? json_data[n].is_invited = true : json_data[n].is_invited = false;
-												(ve.to_state == "approved") ? json_data[n].is_connected = true : json_data[n].is_connected = false;
+												(ve.to_state == "approved" && ve.from_state == "approved") ? json_data[n].is_connected = true : json_data[n].is_connected = false;
 												n++;
 											}
 										}
