@@ -32,6 +32,9 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   
   var share = require(path_controller+'share');
   app.get('/app/v3/invitelink',share.index);
+  app.get('/s/:id',share.parseShareLink);
+  app.get('/ss/:id',share.showParseShareLink);
+  
   
   var commerce = require(path_controller+'commerce');
   app.get('/app/v3/product/list/:event_id',commerce.index);

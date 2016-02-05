@@ -75,7 +75,7 @@ exports.interest = function(req,res){
 
 exports.match = function(req,res){
 	var options = {
-		url : url+"/app/v3/partyfeed/match/"+req.params.fb_id+"/"+req.params.guest_fb_id+'/approved'
+		url : "http://127.0.0.1:31213/app/v3/partyfeed_socialmatch/match/"+req.params.fb_id+"/"+req.params.guest_fb_id+'/approved'
 	}
 	curl.get(options,function(err,resp,body){
 		if (!err && resp.statusCode == 200) {

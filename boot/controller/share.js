@@ -26,3 +26,35 @@ exports.index = function(req,res){
 		}
 	});
 }
+
+exports.parseShareLink = function(req,res){
+	var hash_id = req.params.id;
+	var options = {
+		url:'http://127.0.0.1:53412/lookuplink/'+hash_id
+	}
+	
+	curl.get(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			res.send(body);
+		}else{
+			res.send(err);
+		}
+	});
+}
+
+exports.showParseShareLink = function(req,res){
+	var hash_id = req.params.id;
+	var options = {
+		url:'http://127.0.0.1:53412/lookuplink/'+hash_id
+	}
+	
+	curl.get(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			res.send(body);
+		}else{
+			res.send(err);
+		}
+	});
+}

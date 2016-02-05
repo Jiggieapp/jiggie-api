@@ -63,6 +63,11 @@ function doall(event_details_id,fb_id,gender_interest,next){
 			upd_socialfeed(event_details_id,fb_id,function(upd){
 				callback(null,upd);
 			});
+		},
+		function clean_data(cb){
+			cleaning_data(event_details_id,function(dt){
+				cb(null,'next')
+			})
 		}
 	],function(err,merge){
 		try{
@@ -73,6 +78,70 @@ function doall(event_details_id,fb_id,gender_interest,next){
 			}
 		}catch(e){
 			debug.log(e);
+		}
+	})
+}
+
+function cleaning_data(event_details_id,next){
+	events_detail_coll.findOne({_id:new ObjectId(event_details_id)},function(err,r){
+		if(r != null){
+			if(typeof r.guests_viewed != 'undefined' && r.guests_viewed.length > 0){
+				var arr_fbid = [];
+				var data_to_push = [];
+				var n = 0;
+				async.forEachOf(r.guests_viewed,function(v,k,e){
+					arr_fbid[n] = v.fb_id;
+					data_to_push[n] = v;
+					n++;
+				})
+				
+				// check what double value //
+				var dup_arr = [];
+				var sorted_arr = arr_fbid.sort();
+				for (var i = 0; i < arr_fbid.length - 1; i++) {
+					if (sorted_arr[i + 1] == sorted_arr[i]) {
+						dup_arr.push(sorted_arr[i]);
+					}
+				}
+				// check what double value //
+				
+				async.forEachOf(dup_arr,function(v,k,e){
+					async.waterfall([
+						function upd1(cb){
+							var upd_form = {
+								$pull:{guests_viewed:{fb_id:v}}
+							}
+							events_detail_coll.update({_id:new ObjectId(r._id)},upd_form,function(err,upd){
+								if(err){
+									// debug.log('12');
+									debug.log(err)
+								}else{
+									cb(null,1)
+								}
+							})
+						},
+						function upd2(dt,cb){
+							var upd_form = {
+								$push:{guests_viewed:data_to_push[k]}
+							}
+							events_detail_coll.update({_id:new ObjectId(r._id)},upd_form,function(err,upd){
+								if(err){
+									// debug.log('12');
+									debug.log(err);
+								}
+								cb(null,'next');
+							})
+						}
+					],function(err,mgg){
+						debug.log(mgg)
+					})
+				})
+				next('cleaning guests_viewed')
+			}else{
+				next('no data guests_viewed');
+			}
+		}else{
+			next('no content');
 		}
 	})
 }

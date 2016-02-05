@@ -5,6 +5,7 @@ exports.environ = function(app,express,helmet,path,compression,bodyParser){
 	app.set('views', path.join(__dirname, '../views'));
 	app.set('view engine', 'ejs');
 	app.set('public',path.join(__dirname, '../public'));
+	app.set('mongo_path',path.join(__dirname, '../scheme'));
 	app.set('path_public','/../');
 	app.set('helpers',require('./helpers'));
 	app.use(express.logger('dev'));

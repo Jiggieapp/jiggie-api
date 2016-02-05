@@ -1,8 +1,10 @@
 require('./../models/emit');
+require('./../models/mongoose');
 var debug = require('./../config/debug');
 var async = require('async');
 var ObjectId = require('mongodb').ObjectID;
 var request = require('request');
+
 
 
 exports.index = function(req, res){
@@ -68,4 +70,39 @@ function get_data(req,next){
 	})
 	
 	
+}
+
+
+exports.post_summary = function(req,res){
+	var schema = req.app.get('mongo_path');
+	var order = require(schema+'/order_product.js');
+	var post = req.body;
+	
+	var ticket_id = String(post.ticket_id);
+	var event_id = String(post.event_id);
+	var name = String(post.name);
+	var ticket_type= String(post.ticket_type);
+	var quantity= parseFloat(post.quantity);
+	var total_price= parseFloat(post.total_price);
+	var num_buy= parseFloat(post.num_buy);
+	var total_price_all= parseFloat(post.total_price_all);
+	var fb_id= String(post.fb_id);
+	
+	var data_post = {
+		ticket_id:ticket_id,
+		event_id:event_id,
+		name:name,
+		ticket_type:ticket_type,
+		quantity:quantity,
+		total_price:total_price,
+		num_buy:num_buy,
+		total_price_all:total_price_all,
+		fb_id:fb_id,
+	}
+	
+	var insert = new order(data_post);
+	insert.save(function(err){
+		if(err){debug.log(err);}
+	})
+	res.send(1)
 }
