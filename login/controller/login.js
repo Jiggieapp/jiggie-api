@@ -23,6 +23,14 @@ eventEmitter.on('database_connected',function(){
 	});
 });
 
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('ref_tags',function(collection)
+	{
+		tags_coll = collection;
+		console.log("ref_tags connected");
+	});
+});
+
 exports.index = function(req, res){
 	req.app.get("helpers").logging("request","post",JSON.stringify(req.body),req);
 	
@@ -523,5 +531,20 @@ exports.userlogin = function(req,res){
 	jwt.sign(json_data,datakey,options,function(token){
 		debug.log(token);
 		res.json({"success":true,token:token});
+	})
+}
+
+
+exports.tagslist = function(req,res){
+	tags_coll.find({}).toArray(function(err,r){
+		if(r.length > 0){
+			var data = [];
+			var n = 0;
+			async.forEachOf(r,function(v,k,e){
+				data[n] = v.ref_title;
+				n++;
+			})
+			res.json(data);
+		}
 	})
 }

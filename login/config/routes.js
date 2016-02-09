@@ -9,6 +9,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.post('/app/v3/appsflyerinfo',login.sync_appsflyer); // Sync Apps Flyer Info in customers collections
   app.post('/app/v3/updateuserabout',login.sync_about); // Update user About
   app.post('/app/userlogin',login.userlogin); // Auth Token
+  app.get('/app/v3/user/tagslist',login.tagslist);
   
   
   var membersettings = require(path_controller+'membersettings');
