@@ -4,6 +4,8 @@ var async = require('async');
 var NodeCache = require("node-cache");
 var cache = new NodeCache({ stdTTL: 100, checkperiod: 120 });
 var eventEmitter = mongo.eventEmitter;
+var ObjectId = require('mongodb').ObjectID;
+
 
 eventEmitter.on('database_connected',function(){
 	mongo.getCollection('customers',function(collection)
@@ -44,9 +46,14 @@ exports.index = function(req, res){
 					set_customers.last_name = post.user_last_name;
 					set_customers.profile_image_url = post.profile_image_url;
 					set_customers.gender = post.gender;
-					set_customers.about = post.about;
+					// set_customers.about = post.about;
 					set_customers.birthday = post.birthday;
-					set_customers.location = post.location;
+					if(typeof post.location != 'undefined'){
+						set_customers.location = post.location;
+					}else{
+						set_customers.location = '';
+					}
+					
 					set_customers.userId = post.userId;
 					set_customers.updated_at = new Date();
 					set_customers.payment = {};
@@ -80,7 +87,13 @@ exports.index = function(req, res){
 							dtmem.updated_at = new Date();
 							dtmem.account_type = 'host';
 							dtmem.experiences = [];
-							dtmem.gender_interest = 'both';
+							if(post.gender == 'male'){
+								dtmem.gender_interest = 'female';
+							}else if(post.gender == 'female'){
+								dtmem.gender_interest = 'male';
+							}else{
+								dtmem.gender_interest = 'both';
+							}
 							
 							
 							membersettings_coll.insert(dtmem,function(err,ins){
@@ -113,7 +126,11 @@ exports.index = function(req, res){
 					set_customers.photos = ['https://graph.facebook.com/'+post.fb_id+'/picture?width=1000&height=1000'];
 					set_customers.about = post.about;
 					set_customers.birthday = post.birthday;
-					set_customers.location = post.location;
+					if(typeof post.location != 'undefined'){
+						set_customers.location = post.location;
+					}else{
+						set_customers.location = '';
+					}
 					set_customers.userId = post.userId;
 					set_customers.created_at = new Date();
 					set_customers.last_login = new Date();
@@ -128,11 +145,7 @@ exports.index = function(req, res){
 					set_customers.device_type = post.device_type;
 					// set_customers.twilio_token = 0;
 					// set_customers.tmp_phone = 0;
-					if(post.gender == "male"){
-						set_customers.gender_interest = "female";
-					}else{
-						set_customers.gender_interest = "male";
-					}
+					
 					set_customers.matchme = true;
 					set_customers.phone = "";
 					
@@ -165,7 +178,14 @@ exports.index = function(req, res){
 							dtmem.updated_at = new Date();
 							dtmem.account_type = 'host';
 							dtmem.experiences = [];
-							dtmem.gender_interest = 'both';
+							if(post.gender == 'male'){
+								dtmem.gender_interest = 'female';
+							}else if(post.gender == 'female'){
+								dtmem.gender_interest = 'male';
+							}else{
+								dtmem.gender_interest = 'both';
+							}
+							
 							
 							
 							membersettings_coll.insert(dtmem,function(err,ins){
@@ -302,6 +322,7 @@ exports.sync_membersettings = function(req,res){
 	var post = req.body;
 	var cond = {fb_id:post.fb_id}
 	
+	debug.log('membersettings_data');
 	debug.log(post);
 	
 	var dt = new Object();
@@ -315,27 +336,27 @@ exports.sync_membersettings = function(req,res){
 	
 	var json_data = new Object();
 	if(typeof post.fb_id != 'undefined'){json_data.fb_id = post.fb_id;}
-	if(typeof post.gender != 'undefined'){json_data.gender = post.gender;}else{json_data.gender = 'male';}
+	if(typeof post.gender != 'undefined'){json_data.gender = post.gender;}
 	
 	json_data.notifications = new Object();
 	if(typeof post.chat != 'undefined'){
 		(post.chat == 1) ? json_data.notifications.chat = true : json_data.notifications.chat = false;
-	}else{
-		json_data.notifications.chat = false;
 	}
+	
 	if(typeof post.feed != 'undefined'){
 		(post.feed == 1) ? json_data.notifications.feed = true : json_data.notifications.feed = false;
-	}else{
-		json_data.notifications.feed = false;
 	}
+	
 	if(typeof post.location != 'undefined'){
 		(post.location == 1) ? json_data.notifications.location = true : json_data.notifications.location = false;
-	}else{
-		json_data.notifications.location = false;
+	}
+	
+	if(JSON.stringify(json_data.notifications) == '{}'){
+		delete json_data.notifications;
 	}
 	
 	json_data.updated_at = new Date();
-	if(typeof post.account_type != 'undefined'){json_data.account_type = post.account_type;}else{json_data.account_type = 'guest';}
+	if(typeof post.account_type != 'undefined'){json_data.account_type = post.account_type;}
 	
 	if(typeof post.experiences != 'undefined'){json_data.experiences = post.experiences.split(",");}else{
 		membersettings_coll.findOne({fb_id:post.fb_id},function(ersd,rt){
@@ -349,7 +370,7 @@ exports.sync_membersettings = function(req,res){
 		})
 	}
 	
-	if(typeof post.gender_interest != 'undefined'){json_data.gender_interest = post.gender_interest;}else{json_data.gender_interest = 'both';}
+	if(typeof post.gender_interest != 'undefined'){json_data.gender_interest = post.gender_interest;}
 			
 	if(typeof post.fb_id != 'undefined'){
 		membersettings_coll.find(cond).toArray(function(err,rows){
@@ -458,4 +479,49 @@ function get_data(cond,next){
 			debug.log(e);
 		}
 	});
+}
+
+
+exports.sync_about = function(req,res){
+	var post = req.body;
+	var fb_id = post.fb_id;
+	var about = post.about;
+	debug.log(post);
+	
+	customers_coll.findOne({fb_id:fb_id},function(errs,r){
+		if(r != null){
+			customers_coll.update({_id:new ObjectId(r._id)},{$set:{about:about}},function(err,upd){
+				if(err){
+					req.app.get("helpers").logging("errors","post","errors line 483 "+JSON.stringify(err),req);
+					debug.log(err);
+				}else{
+					res.json({success:true});
+				}
+			})
+		}else{
+			// 403 => Invalid ID
+			res.json({code_error:403})
+		}
+	})
+}
+
+exports.userlogin = function(req,res){
+	var jwt = require('jsonwebtoken');
+	var datakey = 'Wk0rXZTxsesP99giBjIm12Vbq8nPbW4chfudbcAdmindjjJannesSantoso123JJJjklsqiiSecretDataKey90909087869';
+
+	var post = req.body;
+	var fb_token = post.fb_token;
+	
+	var json_data = {
+		fb_token : fb_token
+	}
+	var options = {
+		algoritm:'ES512',
+		expiresIn:'1m'
+	}
+	
+	jwt.sign(json_data,datakey,options,function(token){
+		debug.log(token);
+		res.json({"success":true,token:token});
+	})
 }

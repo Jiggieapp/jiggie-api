@@ -27,6 +27,49 @@ exports.list = function(req, res){
 };
 
 function get_data(req,fb_id,next){
+	async.parallel([
+		function getdata(cb){
+			get_chatlist(req,fb_id,function(data){
+				cb(null,data);
+			})
+		},
+		function clean_data(cb){
+			cleandata(fb_id,function(dtu){})
+			cb(null,1);
+		}
+	],function(err,merge){
+		next(merge[0]);
+	})
+}
+
+function cleandata(fb_id,next){
+	chatmessages_coll.find({fb_id:fb_id}).toArray(function(err,r){
+		if(r.length > 1){
+			var data_to_push = r[0];
+			async.waterfall([
+				function step1(cb){
+					chatmessages_coll.remove({fb_id:fb_id},function(err,del){
+						if(err){debug.log(err);}else{
+							cb(null,1)
+						}
+					})
+				},
+				function step2(dt,cb){
+					chatmessages_coll.insert(data_to_push,function(err,ins){
+						if(err){debug.log(err)}
+					})
+					cb(null,true)
+				}
+			],function(err,mgg){
+				next(mgg);
+			})
+		}else{
+			next(true)
+		}
+	})
+}
+
+function get_chatlist(req,fb_id,next){
 	chatmessages_coll.findOne({fb_id:fb_id},function(err,rows){
 		var json_data = [];
 		var n = 0;
@@ -46,7 +89,7 @@ function get_data(req,fb_id,next){
 						}
 						json_data[n].last_message = v.last_message;
 						json_data[n].last_updated = v.last_updated;
-						json_data[n].unread = v.unread;
+						json_data[n].unread = parseInt(v.unread);
 						json_data[n].fb_id = v.fb_id;
 						json_data[n].hasreplied = v.hasreplied;
 						n++;

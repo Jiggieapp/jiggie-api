@@ -63,6 +63,16 @@ function doall(event_details_id,fb_id,gender_interest,next){
 			upd_socialfeed(event_details_id,fb_id,function(upd){
 				callback(null,upd);
 			});
+		},
+		function clean_data(cb){
+			cleaning_data(event_details_id,function(dt){
+				cb(null,'next')
+			})
+		},
+		function clean_socialfeed(cb){
+			cleansocfed(fb_id,function(dt){
+				cb(null,'next');
+			})
 		}
 	],function(err,merge){
 		try{
@@ -73,6 +83,141 @@ function doall(event_details_id,fb_id,gender_interest,next){
 			}
 		}catch(e){
 			debug.log(e);
+		}
+	})
+}
+
+function cleansocfed(fb_id,next){
+	socialfeed_coll.findOne({fb_id:fb_id},function(err,r){
+		if(r != null){
+			if(r.users.length > 0){
+				var arr_fbid = [];
+				var n = 0;
+				var data_to_push = [];
+				async.forEachOf(r.users,function(v,k,e){
+					arr_fbid[n] = v.fb_id;
+					data_to_push[n] = v;
+					n++;
+				})
+				
+				// check what double value //
+				var dup_arr = [];
+				var sorted_arr = arr_fbid.sort();
+				for (var i = 0; i < arr_fbid.length - 1; i++) {
+					if (sorted_arr[i + 1] == sorted_arr[i]) {
+						dup_arr.push(sorted_arr[i]);
+					}
+				}
+				// check what double value //
+				
+				async.forEachOf(dup_arr,function(v,k,e){
+					async.waterfall([
+						function upd1(cb){
+							var upd_form = {
+								$pull:{users:{fb_id:v}}
+							}
+							socialfeed_coll.update({_id:new ObjectId(r._id)},upd_form,function(err,upd){
+								if(err){
+									// debug.log('12');
+									debug.log(err)
+								}else{
+									cb(null,1)
+								}
+							})
+						},
+						function upd2(dt,cb){
+							var data_to_push_each = new Object();
+							async.forEachOf(data_to_push,function(ve,ke,ee){
+								if(ve.fb_id == v){
+									data_to_push_each = ve
+								}
+							})
+							
+							var upd_form = {
+								$push:{users:data_to_push_each}
+							}
+							socialfeed_coll.update({_id:new ObjectId(r._id)},upd_form,function(err,upd){
+								if(err){
+									// debug.log('12');
+									debug.log(err);
+								}
+								cb(null,'next');
+							})
+						}
+					],function(err,mgg){
+						debug.log(mgg)
+					})
+				})
+				next('cleaning socfed')
+			}else{
+				next('no data');
+			}
+		}else{
+			next('no data');
+		}
+	})
+}
+
+function cleaning_data(event_details_id,next){
+	events_detail_coll.findOne({_id:new ObjectId(event_details_id)},function(err,r){
+		if(r != null){
+			if(typeof r.guests_viewed != 'undefined' && r.guests_viewed.length > 0){
+				var arr_fbid = [];
+				var data_to_push = [];
+				var n = 0;
+				async.forEachOf(r.guests_viewed,function(v,k,e){
+					arr_fbid[n] = v.fb_id;
+					data_to_push[n] = v;
+					n++;
+				})
+				
+				// check what double value //
+				var dup_arr = [];
+				var sorted_arr = arr_fbid.sort();
+				for (var i = 0; i < arr_fbid.length - 1; i++) {
+					if (sorted_arr[i + 1] == sorted_arr[i]) {
+						dup_arr.push(sorted_arr[i]);
+					}
+				}
+				// check what double value //
+				
+				async.forEachOf(dup_arr,function(v,k,e){
+					async.waterfall([
+						function upd1(cb){
+							var upd_form = {
+								$pull:{guests_viewed:{fb_id:v}}
+							}
+							events_detail_coll.update({_id:new ObjectId(r._id)},upd_form,function(err,upd){
+								if(err){
+									// debug.log('12');
+									debug.log(err)
+								}else{
+									cb(null,1)
+								}
+							})
+						},
+						function upd2(dt,cb){
+							var upd_form = {
+								$push:{guests_viewed:data_to_push[k]}
+							}
+							events_detail_coll.update({_id:new ObjectId(r._id)},upd_form,function(err,upd){
+								if(err){
+									// debug.log('12');
+									debug.log(err);
+								}
+								cb(null,'next');
+							})
+						}
+					],function(err,mgg){
+						debug.log(mgg)
+					})
+				})
+				next('cleaning guests_viewed')
+			}else{
+				next('no data guests_viewed');
+			}
+		}else{
+			next('no content');
 		}
 	})
 }
@@ -134,7 +279,6 @@ function getdata(event_details_id,fb_id,gender_interest,next){
 							})
 						})
 						
-						
 						var new_guestviewed = [];
 						var x = 0;
 						async.forEachOf(rows.guests_viewed,function(v,k,e){
@@ -152,18 +296,34 @@ function getdata(event_details_id,fb_id,gender_interest,next){
 												}
 											}
 										})
-									}else if(v.gender == gender_interest){
-										async.forEachOf(socfed_users,function(ve,ke,ee){
-											if(v.fb_id == ve.fb_id){
-												if(ve.from_state != 'denied' && ve.to_state != 'denied'){
-													new_guestviewed[x] = new Object();
-													new_guestviewed[x].fb_id = v.fb_id;
-													new_guestviewed[x].first_name = v.first_name;
-													new_guestviewed[x].gender = v.gender;
-													x++;
+									}else if(gender_interest == "female"){
+										if(v.gender == "female"){
+											async.forEachOf(socfed_users,function(ve,ke,ee){
+												if(v.fb_id == ve.fb_id){
+													if(ve.from_state != 'denied' && ve.to_state != 'denied'){
+														new_guestviewed[x] = new Object();
+														new_guestviewed[x].fb_id = v.fb_id;
+														new_guestviewed[x].first_name = v.first_name;
+														new_guestviewed[x].gender = v.gender;
+														x++;
+													}
 												}
-											}
-										})
+											})
+										}
+									}else if(gender_interest == "male"){
+										if(v.gender == "male"){
+											async.forEachOf(socfed_users,function(ve,ke,ee){
+												if(v.fb_id == ve.fb_id){
+													if(ve.from_state != 'denied' && ve.to_state != 'denied'){
+														new_guestviewed[x] = new Object();
+														new_guestviewed[x].fb_id = v.fb_id;
+														new_guestviewed[x].first_name = v.first_name;
+														new_guestviewed[x].gender = v.gender;
+														x++;
+													}
+												}
+											})
+										}
 									}
 								}
 							}

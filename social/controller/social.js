@@ -38,7 +38,7 @@ function get_data(req,fb_id,gender_interest,next){
 		function get_socialfeed(callback){
 			socialfeed_coll.findOne({fb_id:fb_id},function(err,rows){
 				if(err){
-					debug.log(err);
+					// debug.log(err);
 				}else{
 					if(rows != null){
 						if(rows.users != null){
@@ -86,56 +86,102 @@ function get_data(req,fb_id,gender_interest,next){
 					})
 				})
 				
-				var json_data = [];
-				var n = 0;
+				var cek = 0;
 				async.forEachOf(socfed_users,function(v,k,e){
-					if(v.matchme == true){
-						if(v.from_state != 'approved'){
+					if(v.from_state == 'viewed' && v.fb_id != fb_id){
+						cek++;
+					}
+				})
+				
+				if(cek > 0){
+					
+					var json_data = [];
+					var n = 0;
+					async.forEachOf(socfed_users,function(v,k,e){
+						if(v.matchme == true){
 							if(v.fb_id != fb_id){
-								if(v.from_state == "viewed"){
-									json_data[n] = new Object();				
-									if(gender_interest == "both"){
-										json_data[n].fb_id = fb_id;
-										json_data[n].from_fb_id = v.fb_id;
-										json_data[n].from_first_name = v.first_name;
-										json_data[n].event_id = v.event_id;
-										json_data[n].event_name = v.event_name;
-									
-										if(v.to_state == "approved"){
-											json_data[n].type = "approved";
-											json_data[n].type_rank = 2;
-										}else if(v.to_state == "viewed"){
-											json_data[n].type = "viewed";
-											json_data[n].type_rank = 1;
+								if(v.from_state != 'denied' && v.to_state != 'denied'){
+									if(v.from_state == "viewed"){
+										json_data[n] = new Object();				
+										if(gender_interest == "both"){
+											json_data[n].fb_id = fb_id;
+											json_data[n].from_fb_id = v.fb_id;
+											json_data[n].from_first_name = v.first_name;
+											json_data[n].event_id = v.event_id;
+											json_data[n].event_name = v.event_name;
+										
+											if(v.to_state == "approved"){
+												json_data[n].type = "approved";
+												json_data[n].type_rank = 2;
+											}else if(v.to_state == "viewed"){
+												json_data[n].type = "viewed";
+												json_data[n].type_rank = 1;
+											}
+											json_data[n].last_updated = v.last_viewed;
+											n++;
+										}else if(gender_interest == 'male'){
+											if(v.gender == 'male'){
+												json_data[n].fb_id = fb_id;
+												json_data[n].from_fb_id = v.fb_id;
+												json_data[n].from_first_name = v.first_name;
+												json_data[n].event_id = v.event_id;
+												json_data[n].event_name = v.event_name;
+												
+												
+												if(v.to_state == "approved"){
+													json_data[n].type = "approved";
+													json_data[n].type_rank = 2;
+												}else if(v.to_state == "viewed"){
+													json_data[n].type = "viewed";
+													json_data[n].type_rank = 1;
+												}
+												
+												json_data[n].last_updated = v.last_viewed;
+												n++;
+											}
+										}else if(gender_interest == 'female'){
+											if(v.gender == 'female'){
+												json_data[n].fb_id = fb_id;
+												json_data[n].from_fb_id = v.fb_id;
+												json_data[n].from_first_name = v.first_name;
+												json_data[n].event_id = v.event_id;
+												json_data[n].event_name = v.event_name;
+												
+												
+												if(v.to_state == "approved"){
+													json_data[n].type = "approved";
+													json_data[n].type_rank = 2;
+												}else if(v.to_state == "viewed"){
+													json_data[n].type = "viewed";
+													json_data[n].type_rank = 1;
+												}
+												
+												json_data[n].last_updated = v.last_viewed;
+												n++;
+											}
 										}
-										json_data[n].last_updated = v.last_viewed;
-										n++;
-									}else if(v.gender == gender_interest){
-										json_data[n].fb_id = fb_id;
-										json_data[n].from_fb_id = v.fb_id;
-										json_data[n].from_first_name = v.first_name;
-										json_data[n].event_id = v.event_id;
-										json_data[n].event_name = v.event_name;
 										
 										
-										if(v.to_state == "approved"){
-											json_data[n].type = "approved";
-											json_data[n].type_rank = 2;
-										}else if(v.to_state == "viewed"){
-											json_data[n].type = "viewed";
-											json_data[n].type_rank = 1;
-										}
-										
-										json_data[n].last_updated = v.last_viewed;
-										n++;
 									}
-									json_data = json_data.sort(sortDate);
-									callback(null,json_data);
 								}
 							}
 						}
+					});
+					
+					json_data = json_data.sort(sortDate);
+					json_data = json_data.filter(function(n){
+						return JSON.stringify(n) != '[{}]'
+					})
+					
+					// debug.log(json_data);
+					if(JSON.stringify(json_data) == '[{}]'){
+						callback(null,[]);
+					}else{
+						callback(null,json_data);
 					}
-				});
+				}else{
+					callback(null,[]);
+				}
 			}else{
 				callback(null,[]);
 			}
@@ -248,14 +294,160 @@ function do_connect_n_updchat(req,fb_id,member_fb_id,match,next){
 					}
 					request.post(options,function(err,resp,body){
 						if(err){
-							debug.log(err)
+							// debug.log(err)
 						}else{
-							debug.log('apn sent');
+							// debug.log('apn sent');
 						}
 					})
 				})
 			}
-			cb(null,'next');
+			cb(null,cek_match);
+		},
+		function clean_data(cek_match,cb){
+			cleaning_data(fb_id,member_fb_id,function(upd){
+				debug.log(upd);
+			})
+			
+			cb(null,"next")
+		}
+	],function(err,merge){
+		next(merge);
+	})
+}
+
+function cleaning_data(fb_id,member_fb_id,next){
+	async.parallel([
+		function self(cb){
+			var cond = {
+				fb_id:fb_id,
+				"conversations.fb_id":member_fb_id
+			}
+			chatmessages_coll.findOne(cond,function(err,r){
+				if(err){
+					debug.log(err);
+				}else{
+					if(r != null){
+						var cek = 0;
+						var data_to_push = new Object();
+						async.forEachOf(r.conversations,function(v,k,e){
+							if(v.fb_id == member_fb_id){
+								cek++;
+								data_to_push = v;
+							}
+						})
+						if(cek > 1){
+							var condd = {
+								fb_id:fb_id,
+								"conversations.fb_id":member_fb_id
+							}
+							async.waterfall([
+								function upd1(cb){
+									var upd_form = {
+										$pull:{conversations:{fb_id:member_fb_id}}
+									}
+									chatmessages_coll.update(condd,upd_form,{w:1,multi:false},function(err,upd){
+										if(err){
+											debug.log('asdasd 2');
+											debug.log(err);
+											cb(null,0)
+										}else{
+											debug.log('jalan')
+											cb(null,1);
+										}
+									})
+								},
+								function upd2(dt,cb){
+									if(dt == 1){
+										var cond2 = {
+											_id:new ObjectId(r._id)
+										}
+										var upd_push = {
+											$push:{conversations:data_to_push}
+										}
+										chatmessages_coll.update(cond2,upd_push,function(err,upd){
+											if(err){debug.log(err)}else{
+												debug.log("jalanin push baru")
+											}
+										})
+									}
+									cb(null,1);
+								}
+							],function(err,mgg){
+								debug.log(mgg)
+							})
+						}
+					}else{
+						debug.log("gk ada");
+					}
+				}
+			})
+			cb(null,'next')
+		},
+		function other(cb){
+			var cond = {
+				fb_id:member_fb_id,
+				"conversations.fb_id":fb_id
+			}
+			chatmessages_coll.findOne(cond,function(err,r){
+				if(err){
+					debug.log(err);
+				}else{
+					if(r != null){
+						var cek = 0;
+						var data_to_push = new Object();
+						async.forEachOf(r.conversations,function(v,k,e){
+							if(v.fb_id == fb_id){
+								cek++;
+								data_to_push = v;
+							}
+						})
+						if(cek > 1){
+							var condd = {
+								fb_id:member_fb_id,
+								"conversations.fb_id":fb_id
+							}
+							async.waterfall([
+								function upd1(cb){
+									var upd_form = {
+										$pull:{conversations:{fb_id:fb_id}}
+									}
+									chatmessages_coll.update(condd,upd_form,{w:1,multi:false},function(err,upd){
+										if(err){
+											debug.log('asdasd 2');
+											debug.log(err);
+											cb(null,0)
+										}else{
+											debug.log('jalan')
+											cb(null,1);
+										}
+									})
+								},
+								function upd2(dt,cb){
+									if(dt == 1){
+										var cond2 = {
+											_id:new ObjectId(r._id)
+										}
+										var upd_push = {
+											$push:{conversations:data_to_push}
+										}
+										chatmessages_coll.update(cond2,upd_push,function(err,upd){
+											if(err){debug.log(err)}else{
+												debug.log("jalanin push baru")
+											}
+										})
+									}
+									cb(null,1);
+								}
+							],function(err,mgg){
+								debug.log(mgg)
+							})
+						}
+					}else{
+						debug.log("gk ada");
+					}
+				}
+			})
+			cb(null,'next')
 		}
 	],function(err,merge){
 		next(merge);
@@ -289,7 +481,7 @@ function update_chat(req,fb_id,member_fb_id,next){
 								debug.log(err);
 								req.app.get("helpers").logging("error","get","Function Error Line 174 "+String(err),req);
 							}else{
-								debug.log(upd);
+								// debug.log(upd);
 							}
 						})
 					})
@@ -465,7 +657,7 @@ function do_mixpanel_async(from_id,to_id,next){
 		function tracking(event_data,cb){
 			if(event_data != ""){
 				async_mixpanel(event_data,from_id,to_id,function(dt){
-					debug.log(dt);
+					// debug.log(dt);
 				})
 				cb(null,'next');
 			}else{
@@ -513,7 +705,7 @@ function trackEvent_mixpanel(event_name,fb_id,dict){
 			for (var i = 0; i < Object.keys(data).length; i++){
 				dict[Object.keys(data)[i]] = data[Object.keys(data)[i]];
 			}
-			debug.log(dict);
+			// debug.log(dict);
 			mixpanel.track(event_name,dict,function(err){
 				if(err){debug.log(err);}
 			});

@@ -9,11 +9,13 @@ var crypto = require('crypto');
 var HashidsNPM = require("hashids");
 var Hashids = new HashidsNPM("bfdlkKjlKBKJBjkbk08y23h9hek",6,"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
+var basedomain = 'http://jigg.io';
+// var trackdomain = 'http://app.appflyer.com';
+var trackdomain = 'https://jiggieapp.onelink.me';
+
 exports.invitelink = function(req, res){
 	req.app.get("helpers").logging("request","get","",req);
-	
-	var basedomain = 'http://jigg.io';
-	var trackdomain = 'http://app.appflyer.com';
+
 	var json_data = new Object();
 	var type = req.param('type');
 	var from_fb_id = req.param('from_fb_id');
@@ -75,15 +77,39 @@ exports.invitelink = function(req, res){
 			}
 		})
 	}
-	
-	
+}
+
+
+// https://jiggieapp.onelink.me/1630402100?pid=test_source&c=no_campaign&af_dp=jiggie%3A%2F%2F&af_force_dp=true
+exports.lookuplink = function(req,res)
+{
+	var data = new Object();
+	var hash = req.params.id;
+	invitelinks_coll.findOne({hash:hash},function(err,item)
+	{
+		if(item)
+		{
+			data.success = true;
+			if(item.type != "general")
+			{
+				// data.url = trackdomain  + "/" + "id1047291489?pid=Event_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_sub2=" + item.event_id + "&af_ios_lp=true";
+				data.url = trackdomain  + "/" + "1630402100?pid=Event_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_sub2=" + item.event_id + "&af_force_dp=true";
+			}else{
+				// data.url = trackdomain + "/id1047291489?pid=App_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_ios_lp=true";
+				data.url = trackdomain + "/1630402100?pid=App_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_force_dp=true";
+			}
+		}else{
+			data.success = false;
+		}
+		res.send(data.url);
+	});
 }
 
 function createHash(callback)
 {
 	getInviteLinkCount(function(sum)
 	{
-		callback(Hashids.encrypt(Number(sum + 100000)));
+		callback(Hashids.encode(Number(sum + 100000)));
 	})
 }
 
@@ -151,6 +177,7 @@ function getInviteLinkCount(callback)
 {
 	invitelinks_coll.count(function(err,result)
 	{
+		debug.log(result);
 		callback(result);
 	})
 }

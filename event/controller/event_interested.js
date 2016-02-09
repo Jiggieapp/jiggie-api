@@ -88,8 +88,8 @@ function getdata(event_details_id,fb_id,gender_interest,next){
 						if(v.matchme == true){
 							if(v.fb_id != fb_id){
 								if(gender_interest == "both"){
-									json_data[n] = new Object();
 									async.forEachOf(socfed_users,function(ve,ke,ee){
+										json_data[n] = new Object();
 										if(v.fb_id == ve.fb_id){
 											if(ve.from_state != 'denied' && ve.to_state != 'denied'){
 												json_data[n].fb_id = ve.fb_id;
@@ -99,14 +99,14 @@ function getdata(event_details_id,fb_id,gender_interest,next){
 												json_data[n].is_invited = false;
 												json_data[n].is_connected = false;
 												(ve.from_state == "approved") ? json_data[n].is_invited = true : json_data[n].is_invited = false;
-												(ve.to_state == "approved") ? json_data[n].is_connected = true : json_data[n].is_connected = false;
+												(ve.to_state == "approved" && ve.from_state == "approved") ? json_data[n].is_connected = true : json_data[n].is_connected = false;
 												n++;
 											}
 										}
 									});
 								}else if(v.gender == gender_interest){
-									json_data[n] = new Object();
 									async.forEachOf(socfed_users,function(ve,ke,ee){
+										json_data[n] = new Object();
 										if(v.fb_id == ve.fb_id){
 											if(ve.from_state != 'denied' && ve.to_state != 'denied'){
 												json_data[n].fb_id = ve.fb_id;
@@ -116,7 +116,7 @@ function getdata(event_details_id,fb_id,gender_interest,next){
 												json_data[n].is_invited = false;
 												json_data[n].is_connected = false;
 												(ve.from_state == "approved") ? json_data[n].is_invited = true : json_data[n].is_invited = false;
-												(ve.to_state == "approved") ? json_data[n].is_connected = true : json_data[n].is_connected = false;
+												(ve.to_state == "approved" && ve.from_state == "approved") ? json_data[n].is_connected = true : json_data[n].is_connected = false;
 												n++;
 											}
 										}
