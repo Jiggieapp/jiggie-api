@@ -8,6 +8,7 @@ var request = require('request');
 
 
 exports.index = function(req, res){
+	res.json('dsa')
 	req.app.get("helpers").logging("request","get","",req);
 	
 	get_data(req,function(data){

@@ -100,33 +100,16 @@ function get_data(req,fb_id,gender_interest,next){
 					async.forEachOf(socfed_users,function(v,k,e){
 						if(v.matchme == true){
 							if(v.fb_id != fb_id){
-								if(v.from_state == "viewed"){
-									json_data[n] = new Object();				
-									if(gender_interest == "both"){
-										json_data[n].fb_id = fb_id;
-										json_data[n].from_fb_id = v.fb_id;
-										json_data[n].from_first_name = v.first_name;
-										json_data[n].event_id = v.event_id;
-										json_data[n].event_name = v.event_name;
-									
-										if(v.to_state == "approved"){
-											json_data[n].type = "approved";
-											json_data[n].type_rank = 2;
-										}else if(v.to_state == "viewed"){
-											json_data[n].type = "viewed";
-											json_data[n].type_rank = 1;
-										}
-										json_data[n].last_updated = v.last_viewed;
-										n++;
-									}else if(gender_interest == 'male'){
-										if(v.gender == 'male'){
+								if(v.from_state != 'denied' && v.to_state != 'denied'){
+									if(v.from_state == "viewed"){
+										json_data[n] = new Object();				
+										if(gender_interest == "both"){
 											json_data[n].fb_id = fb_id;
 											json_data[n].from_fb_id = v.fb_id;
 											json_data[n].from_first_name = v.first_name;
 											json_data[n].event_id = v.event_id;
 											json_data[n].event_name = v.event_name;
-											
-											
+										
 											if(v.to_state == "approved"){
 												json_data[n].type = "approved";
 												json_data[n].type_rank = 2;
@@ -134,33 +117,52 @@ function get_data(req,fb_id,gender_interest,next){
 												json_data[n].type = "viewed";
 												json_data[n].type_rank = 1;
 											}
-											
 											json_data[n].last_updated = v.last_viewed;
 											n++;
-										}
-									}else if(gender_interest == 'female'){
-										if(v.gender == 'female'){
-											json_data[n].fb_id = fb_id;
-											json_data[n].from_fb_id = v.fb_id;
-											json_data[n].from_first_name = v.first_name;
-											json_data[n].event_id = v.event_id;
-											json_data[n].event_name = v.event_name;
-											
-											
-											if(v.to_state == "approved"){
-												json_data[n].type = "approved";
-												json_data[n].type_rank = 2;
-											}else if(v.to_state == "viewed"){
-												json_data[n].type = "viewed";
-												json_data[n].type_rank = 1;
+										}else if(gender_interest == 'male'){
+											if(v.gender == 'male'){
+												json_data[n].fb_id = fb_id;
+												json_data[n].from_fb_id = v.fb_id;
+												json_data[n].from_first_name = v.first_name;
+												json_data[n].event_id = v.event_id;
+												json_data[n].event_name = v.event_name;
+												
+												
+												if(v.to_state == "approved"){
+													json_data[n].type = "approved";
+													json_data[n].type_rank = 2;
+												}else if(v.to_state == "viewed"){
+													json_data[n].type = "viewed";
+													json_data[n].type_rank = 1;
+												}
+												
+												json_data[n].last_updated = v.last_viewed;
+												n++;
 											}
-											
-											json_data[n].last_updated = v.last_viewed;
-											n++;
+										}else if(gender_interest == 'female'){
+											if(v.gender == 'female'){
+												json_data[n].fb_id = fb_id;
+												json_data[n].from_fb_id = v.fb_id;
+												json_data[n].from_first_name = v.first_name;
+												json_data[n].event_id = v.event_id;
+												json_data[n].event_name = v.event_name;
+												
+												
+												if(v.to_state == "approved"){
+													json_data[n].type = "approved";
+													json_data[n].type_rank = 2;
+												}else if(v.to_state == "viewed"){
+													json_data[n].type = "viewed";
+													json_data[n].type_rank = 1;
+												}
+												
+												json_data[n].last_updated = v.last_viewed;
+												n++;
+											}
 										}
+										
+										
 									}
-									
-									
 								}
 							}
 						}

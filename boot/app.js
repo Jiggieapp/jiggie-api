@@ -9,22 +9,22 @@ var cluster = require('cluster');
 var numCPUs = require('os').cpus().length;
 console.log("CPU Worker : "+numCPUs);
 
-if (cluster.isMaster) {
+// if (cluster.isMaster) {
 
-  for (var i = 0; i < numCPUs; i++) {
-    cluster.fork();
-  }
+  // for (var i = 0; i < numCPUs; i++) {
+    // cluster.fork();
+  // }
 
-  cluster.on('online', function(worker) {
-      console.log('Worker ' + worker.process.pid + ' is online');
-  });
+  // cluster.on('online', function(worker) {
+      // console.log('Worker ' + worker.process.pid + ' is online');
+  // });
 
-  cluster.on('exit', function(worker, code, signal) {
-      console.log('Worker ' + worker.process.pid + ' died with code: ' + code + ', and signal: ' + signal);
-      console.log('Starting a new worker');
-      cluster.fork();
-  });
-} else {
+  // cluster.on('exit', function(worker, code, signal) {
+      // console.log('Worker ' + worker.process.pid + ' died with code: ' + code + ', and signal: ' + signal);
+      // console.log('Starting a new worker');
+      // cluster.fork();
+  // });
+// } else {
 
 
 /* S:Module dependencies. */
@@ -75,4 +75,4 @@ routes.rerute(app,path_controller,csrf,bodyParser,passport);
 var launcher = require('./launcher');
 launcher.execute(app,https,http,fs);
 
-}
+// }

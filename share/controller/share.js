@@ -109,7 +109,7 @@ function createHash(callback)
 {
 	getInviteLinkCount(function(sum)
 	{
-		callback(Hashids.encrypt(Number(sum + 100000)));
+		callback(Hashids.encode(Number(sum + 100000)));
 	})
 }
 
@@ -177,6 +177,7 @@ function getInviteLinkCount(callback)
 {
 	invitelinks_coll.count(function(err,result)
 	{
+		debug.log(result);
 		callback(result);
 	})
 }

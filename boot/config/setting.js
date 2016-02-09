@@ -36,13 +36,13 @@ exports.setting = function(app,express,helmet,hpp,xssFilters,validator,http,http
 
 	app.configure(function(){
 	  app.use(express.cookieParser());
-	  // app.set('trust proxy', 1); // only use if behind proxy
+	  app.set('trust proxy', 1); // only use if behind proxy
 	  app.use(express.session({
-		secret:"jannes_santoso_secret_7868581231113211",
-   	 	key:"jannes_santoso_sessionID_FrontEnd",
+		secret:"jannes_santoso_secret_78685812311132112B7A7EF2B277FB6A2A9B1CBB4F522C2ECAD6EE116E6EDE216311AA8DA9B737214AB5AE82723BD8A7B3CB585E4E9BC6C4EEC12D33CCBCBDFE7865",
+   	 	key:"jannes_santoso_67676345345355642bbhfhggsessionID",
 	    cookie:{
 	      httpOnly:true,
-	      secure:false, // Secure only True if SSL Turn ON
+	      secure:true, // Secure only True if SSL Turn ON
 	      maxAge: 600000
 	    },
 		resave: false,

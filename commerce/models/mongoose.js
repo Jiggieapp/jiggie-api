@@ -1,3 +1,10 @@
 var mongoose = require('mongoose');
-var url = 'mongodb://localhost:27017/local';
-mongoose.connect(url);
+
+var fs = require('fs');
+var path = require('path');
+var ppt = path.join(__dirname,"../../global/db.json");
+fs.readFile(ppt,"utf-8",function(err,data){
+	var obj = JSON.parse(data);
+	mongoose.connect(obj.mongoUri);
+})
+
