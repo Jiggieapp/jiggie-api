@@ -22,6 +22,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/app/v3/memberinfo/:fb_id',login.memberinfo);
   app.post('/app/v3/updateuserabout',login.sync_about);
   app.post('/app/v3/userlogin',login.userlogin); // Auth Token
+  app.get('/app/v3/user/tagslist',login.tagslist);
 
   var chat = require(path_controller+'chat');
   app.get('/app/v3/conversations',chat.list); // List Users Can be Chats;

@@ -158,3 +158,26 @@ exports.userlogin = function(req,res){
 		}
 	})
 }
+
+exports.tagslist = function(req,res){
+	var fb_id = req.params.fb_id;
+	
+	var options = {
+		url : url+'/app/v3/user/tagslist'
+	}
+	curl.get(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				hr.data = new Object();
+				hr.data.tagslist = JSON.parse(body);
+				res.send(hr);
+			}
+		}else{
+			res.send(err);
+		}
+	})
+}
