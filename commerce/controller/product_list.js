@@ -5,6 +5,9 @@ var async = require('async');
 var ObjectId = require('mongodb').ObjectID;
 var request = require('request');
 
+var HashidsNPM = require("hashids");
+var Hashids = new HashidsNPM("bfdlkKjlKBKJBjkbk08y23h9hek",12,"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+
 
 
 exports.index = function(req, res){
@@ -78,29 +81,31 @@ exports.post_summary = function(req,res){
 	var order = require(schema+'/order_product.js');
 	var post = req.body;
 	
-	var ticket_id = String(post.ticket_id);
-	var event_id = String(post.event_id);
-	var name = String(post.name);
-	var ticket_type= String(post.ticket_type);
-	var quantity= parseFloat(post.quantity);
-	var total_price= parseFloat(post.total_price);
-	var num_buy= parseFloat(post.num_buy);
-	var total_price_all= parseFloat(post.total_price_all);
-	var fb_id= String(post.fb_id);
+	var json_data = new Object();
 	
-	var data_post = {
-		ticket_id:ticket_id,
-		event_id:event_id,
-		name:name,
-		ticket_type:ticket_type,
-		quantity:quantity,
-		total_price:total_price,
-		num_buy:num_buy,
-		total_price_all:total_price_all,
-		fb_id:fb_id,
-	}
+	json_data.code = String(Hashids.encode(new Date().getTime()));
+	json_data.status = 'summary';
+	json_data.fb_id = post.fb_id;
+	json_data.event_id = post.event_id;
 	
-	var insert = new order(data_post);
+	var n = 0;
+	var totall = 0;
+	json_data.product_list = [];
+	async.forEachOf(post.product_list,function(v,k,e){
+		json_data.product_list[n] = new Object();
+		json_data.product_list[n].ticket_id = String(v.ticket_id);
+		json_data.product_list[n].name = String(v.name);
+		json_data.product_list[n].ticket_type = String(v.ticket_type);
+		json_data.product_list[n].total_price = String(v.total_price);
+		json_data.product_list[n].num_buy = String(v.num_buy);
+		json_data.product_list[n].total_price_all = String(parseFloat(v.num_buy) * parseFloat(v.total_price));
+		
+		totall += parseFloat(v.num_buy) * parseFloat(v.total_price);
+		n++;
+	})
+	json_data.total_price = totall;
+	
+	var insert = new order(json_data);
 	insert.save(function(err){
 		if(err){debug.log(err);}
 	})
