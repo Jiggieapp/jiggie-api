@@ -12,15 +12,14 @@ exports.index = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
-	jwt.verify(token,datakey,function(err,decode){
-		if(err){
-			// res.send(err);
-			if(err.name == 'JsonWebTokenError'){
-				res.status(401).send({});
-			}else if(err.name == 'TokenExpiredError'){
-				res.status(410).send({});
-			}
-		}else{
+	// jwt.verify(token,datakey,function(err,decode){
+		// if(err){
+			// if(err.name == 'JsonWebTokenError'){
+				// res.status(401).send({});
+			// }else if(err.name == 'TokenExpiredError'){
+				// res.status(410).send({});
+			// }
+		// }else{
 			var options = {
 				url : url+"/app/v3/product/list/"+req.params.event_id
 			}
@@ -39,8 +38,8 @@ exports.index = function(req,res){
 					res.send(err);
 				}
 			});
-		}
-	});
+		// }
+	// });
 	
 	
 }
