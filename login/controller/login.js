@@ -37,7 +37,9 @@ exports.index = function(req, res){
 	var post = req.body;
 	var cond = {fb_id:post.fb_id}
 	
+	debug.log('Login DATA')
 	debug.log(post);
+	debug.log('#############################');
 	
 	async.waterfall([
 		function step1(callback){
@@ -332,6 +334,7 @@ exports.sync_membersettings = function(req,res){
 	
 	debug.log('membersettings_data');
 	debug.log(post);
+	debug.log('###########################');
 	
 	var dt = new Object();
 	if(typeof post.photos != 'undefined'){

@@ -75,4 +75,10 @@ routes.rerute(app,path_controller,csrf,bodyParser,passport);
 var launcher = require('./launcher');
 launcher.execute(app,https,http,fs);
 
+// var memwatch = require('memwatch');
+// memwatch.setup();
+// memwatch.on('leak', function(info) {
+ // console.error('Memory leak detected: ', info);
+// });
+
 // }
