@@ -3,6 +3,7 @@ require('./../models/mongoose');
 var debug = require('./../config/debug');
 var async = require('async');
 var ObjectId = require('mongodb').ObjectID;
+var ObjectIdM = require('mongoose').Types.ObjectId; 
 var request = require('request');
 
 var HashidsNPM = require("hashids");
@@ -77,37 +78,103 @@ function get_data(req,next){
 
 
 exports.post_summary = function(req,res){
+	post_summary(req,function(data){
+		if(data == false){
+			res.json({code_error:403})
+		}else{
+			res.json({success:true});
+		}
+	})
+}
+
+function post_summary(req,next){
 	var schema = req.app.get('mongo_path');
 	var order = require(schema+'/order_product.js');
 	var post = req.body;
 	
-	var json_data = new Object();
+	async.waterfall([
+		function syncdata(cb){
+			var json_data = new Object();
 	
-	json_data.code = String(Hashids.encode(new Date().getTime()));
-	json_data.status = 'summary';
-	json_data.fb_id = post.fb_id;
-	json_data.event_id = post.event_id;
-	
-	var n = 0;
-	var totall = 0;
-	json_data.product_list = [];
-	async.forEachOf(post.product_list,function(v,k,e){
-		json_data.product_list[n] = new Object();
-		json_data.product_list[n].ticket_id = String(v.ticket_id);
-		json_data.product_list[n].name = String(v.name);
-		json_data.product_list[n].ticket_type = String(v.ticket_type);
-		json_data.product_list[n].total_price = String(v.total_price);
-		json_data.product_list[n].num_buy = String(v.num_buy);
-		json_data.product_list[n].total_price_all = String(parseFloat(v.num_buy) * parseFloat(v.total_price));
+			json_data.code = String(Hashids.encode(new Date().getTime()));
+			json_data.status = 'summary';
+			json_data.fb_id = post.fb_id;
+			json_data.event_id = post.event_id;
+			
+			var n = 0;
+			var totall = 0;
+			json_data.product_list = [];
+			async.forEachOf(post.product_list,function(v,k,e){
+				json_data.product_list[n] = new Object();
+				json_data.product_list[n].ticket_id = String(v.ticket_id);
+				json_data.product_list[n].name = String(v.name);
+				json_data.product_list[n].ticket_type = String(v.ticket_type);
+				json_data.product_list[n].total_price = String(v.total_price);
+				json_data.product_list[n].num_buy = String(v.num_buy);
+				json_data.product_list[n].total_price_all = String(parseFloat(v.num_buy) * parseFloat(v.total_price));
+				
+				totall += parseFloat(v.num_buy) * parseFloat(v.total_price);
+				n++;
+			})
+			json_data.total_price = String(totall);
+			cb(null,json_data);
+		},
+		function cek(json_data,cb){
+			var cek_exist = true;
+			var cek_quantity = true;
+			var cek_type = true;
+			
+			var n = 0;
+			var in_ticketid = [];
+			var temp_type = post.product_list[0].ticket_type;
+			var temp_quantity = [];
+			async.forEachOf(post.product_list,function(v,k,e){
+				if(temp_type != v.ticket_type){
+					cek_type = false
+				}
+				in_ticketid[n] = new ObjectId(v.ticket_id);
+				temp_quantity[v.ticket_id] = v.num_buy;
+				n++;
+			})
+			
+			tickettypes_coll.find({_id:{$in:in_ticketid}}).toArray(function(err,dt){
+				if(err){
+					debug.log(err);
+					cb(null,[],false,false,false)
+				}else{
+					if(dt.length > 0){
+						async.forEachOf(dt,function(v,k,e){
+							if(v.quantity <= temp_quantity[v._id]){
+								cek_quantity = false;
+							}
+						})
+					}else{
+						cek_exist = false;
+					}
+					
+					cb(null,json_data,cek_exist,cek_quantity,cek_type)
+				}
+			})
+			
+			
+		},
+		function post_data(json_data,cek_exist,cek_quantity,cek_type,cb){
+			debug.log(cek_exist);
+			debug.log(cek_quantity);
+			debug.log(cek_type);
+			if(cek_exist == true && cek_quantity == true && cek_type == true){
+				var insert = new order(json_data);
+				insert.save(function(err){
+					if(err){debug.log(err);}else{
+						cb(null,true)
+					}
+				})
+			}else{
+				cb(null,false);
+			}
+		}
 		
-		totall += parseFloat(v.num_buy) * parseFloat(v.total_price);
-		n++;
+	],function(err,merge){
+		next(merge);
 	})
-	json_data.total_price = totall;
-	
-	var insert = new order(json_data);
-	insert.save(function(err){
-		if(err){debug.log(err);}
-	})
-	res.send(1)
 }

@@ -5,15 +5,15 @@ ObjectId = Schema.ObjectId;
 var varScheme = new Schema({
 	// id : {type:Number,required:true,index: {unique: true, dropDups: true}, default: },
 	
-	code : {type:String, min:12, max:12},
-	status : {type:String, enum:['summary','confirmation','unpaid','paid','cancel']},
+	code : {type:String, min:12, max:12,required:true},
+	status : {type:String, enum:['summary','confirmation','unpaid','paid','cancel'],required:true},
 	product_list : [{
-		ticket_type : {type:String, enum:['purchase','reservation']},
-		num_buy : {type:String, default:'0'},
-		total_price : {type:String, default:'0'},
-		name:{type:String,default:'n'},
-		ticket_id:{type:String,default:'n'},
-		total_price_all:{type:String,default:'0'}
+		ticket_type : {type:String, enum:['purchase','reservation'],required:true},
+		num_buy : {type:String, required:true},
+		total_price : {type:String, required:true},
+		name:{type:String,required:true},
+		ticket_id:{type:String,required:true},
+		total_price_all:{type:String,required:true}
 	}],
 	fb_id:{type:String,required:true},
 	event_id:{type:String,required:true},
