@@ -43,48 +43,55 @@ exports.apn = function(req,res){
 	
 	customers_coll.findOne({fb_id:fb_id},function(err,r){
 		var token = r.apn_token
+		var gcm_token = r.gcm_token;
 		var alert = lim_msg;
-		// if(route == 'social'){
-			// alert = lim_msg;
-		// }else if(route == 'chat'){
-			// alert = r.first_name+' '+r.last_name+' : '+lim_msg;
-		// }else{
-			// alert = lim_msg;
-		// }
 		
-		if(checkIfAndroid(token) == true){
-			debug.log('ANDROID TOKEN USING');
-			sendGPN(fb_id,fromIdData,alert,token);
-		}else{
-			debug.log('IOS TOKEN USING');
-			if(token != 'empty'){
-				var fromId = fromIdData;
-				var fromFBId = fromIdData;
-				var fromName = r.first_name+' '+r.last_name;
-				
-				var payload = new Object();
-				payload.type = "message";
-				payload.fromId = fromId;
-				payload.fromFBId = fromFBId;
-				payload.fromName = fromName;
-				payload.message = message;
-				payload.hosting_id = "";
-				payload.badge = 1;
+		async.parallel([
+			function push_gcm(cb){
+				if(typeof gcm_token != 'undefined'){
+					if(gcm_token != '' || gcm_token != 'empty'){
+						sendGPN(fb_id,fromIdData,alert,gcm_token);
+					}else{
+						debug.log('GCM Token Empty')
+					}
+				}else{
+					debug.log('GCM Token undefined')
+				}
+				cb(null,'next');
+			},
+			function push_apn(cb){
+				if(token != 'empty'){
+					var fromId = fromIdData;
+					var fromFBId = fromIdData;
+					var fromName = r.first_name+' '+r.last_name;
+					
+					var payload = new Object();
+					payload.type = "message";
+					payload.fromId = fromId;
+					payload.fromFBId = fromFBId;
+					payload.fromName = fromName;
+					payload.message = message;
+					payload.hosting_id = "";
+					payload.badge = 1;
 
-				var connection = new apn.Connection(optionsLive);
-				notification = new apn.Notification();
-				// notification.device = new apn.Device("88bc6dcb277a2a1d4709f0b921c42bd144221af36a1acd8da60fd2f4426483f7");
-				notification.device = new apn.Device(token);
-				notification.alert = alert;
-				notification.payload = payload;
-				notification.badge = 1;
-				notification.sound = "default";
-				connection.sendNotification(notification);
-			}else{
-				debug.log('token empty');
+					var connection = new apn.Connection(optionsLive);
+					notification = new apn.Notification();
+					notification.device = new apn.Device(token);
+					notification.alert = alert;
+					notification.payload = payload;
+					notification.badge = 1;
+					notification.sound = "default";
+					connection.sendNotification(notification);
+					debug.log('IOS TOKEN USING');
+				}else{
+					debug.log('APN token empty');
+				}
+				cb(null,'next');
 			}
-			
-		}
+		],function(err,ush){
+			debug.log(ush)
+		})
+		
 	});
 	
 	res.send("APN_SENT!!");
