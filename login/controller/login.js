@@ -49,7 +49,8 @@ exports.index = function(req, res){
 					// update data each time login //
 					is_new_users = false;
 					var set_customers = new Object();
-					set_customers.apn_token = post.apn_token;
+					
+					
 					set_customers.user_first_name = post.user_first_name;
 					set_customers.first_name = post.user_first_name;
 					set_customers.user_last_name = post.user_last_name;
@@ -72,8 +73,10 @@ exports.index = function(req, res){
 					(typeof post.device_type != 'undefined') ? device_type = post.device_type : device_type = 1;
 					if(device_type == 1){
 						set_customers.device_type_ios = true
+						set_customers.apn_token = post.apn_token;
 					}else if(device_type == 2){
 						set_customers.device_type_android = true
+						set_customers.gcm_token = post.apn_token;
 					}
 					
 					customers_coll.update(cond,{$set:set_customers},function(err,upd){
@@ -125,7 +128,7 @@ exports.index = function(req, res){
 					set_customers.visible = true;
 					set_customers.fb_id = post.fb_id;
 					set_customers.payment = new Object();
-					set_customers.apn_token = post.apn_token;
+					
 					set_customers.user_first_name = post.user_first_name;
 					set_customers.user_last_name = post.user_last_name;
 					set_customers.first_name = post.user_first_name;
@@ -163,8 +166,10 @@ exports.index = function(req, res){
 					(typeof post.device_type != 'undefined') ? device_type = post.device_type : device_type = 1;
 					if(device_type == 1){
 						set_customers.device_type_ios = true
+						set_customers.apn_token = post.apn_token;
 					}else if(device_type == 2){
 						set_customers.device_type_android = true
+						set_customers.gcm_token = post.apn_token;
 					}
 			
 					
