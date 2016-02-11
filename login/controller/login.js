@@ -296,6 +296,14 @@ exports.index = function(req, res){
 								json_data.data.notifications.chat = true;
 								json_data.data.notifications.feed = true;
 							
+							if(post.gender == 'male'){
+								json_data.data.gender_interest = 'female';
+							}else if(post.gender == 'female'){
+								json_data.data.gender_interest = 'male';
+							}else{
+								json_data.data.gender_interest = 'both';
+							}
+							
 							json_data.data.payment = new Object();
 							json_data.data.phone = '';
 							json_data.data.updated_at = new Date();
