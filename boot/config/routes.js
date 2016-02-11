@@ -40,4 +40,11 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   var commerce = require(path_controller+'commerce');
   app.get('/app/v3/product/list/:event_id',commerce.index);
   app.post('/app/v3/product/summary',commerce.post_summary);
+  
+  
+  
+  // Notif //
+  var notif = require(path_controller+'notif');
+  app.post('/notif',notif.index);
+  // Notif //
 }
