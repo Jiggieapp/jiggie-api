@@ -78,12 +78,35 @@ function get_data(req,next){
 
 
 exports.post_summary = function(req,res){
-	post_summary(req,function(data){
+	get_summary(req,function(data){
 		if(data == false){
 			res.json({code_error:403})
 		}else{
-			res.json({success:true});
+			res.json(data);
 		}
+	})
+}
+
+function get_summary(req,next){
+	async.waterfall([
+		function post(cb){
+			post_summary(req,function(data){
+				if(data == false){
+					cb(null,false);
+				}else{
+					cb(null,data)
+				}
+			})
+		},
+		function get(data,cb){
+			if(data == false){
+				cb(null,false)
+			}else{
+				cb(null,data)
+			}
+		}
+	],function(err,merge){
+		next(merge)
 	})
 }
 
@@ -166,7 +189,7 @@ function post_summary(req,next){
 				var insert = new order(json_data);
 				insert.save(function(err){
 					if(err){debug.log(err);}else{
-						cb(null,true)
+						cb(null,json_data)
 					}
 				})
 			}else{
