@@ -52,6 +52,7 @@ function get_data(req,next){
 						json_data.purchase = []
 						json_data.reservation = []
 						var n = 0;
+						var m = 0
 						async.forEachOf(r,function(v,k,e){
 							if(v.ticket_type == 'purchase'){
 								json_data.purchase[n] = new Object();
@@ -63,14 +64,14 @@ function get_data(req,next){
 								json_data.purchase[n].total_price = v.total;
 								n++;
 							}else if(v.ticket_type == 'reservation'){
-								json_data.reservation[n] = new Object();
-								json_data.reservation[n].ticket_id = v._id;
-								json_data.reservation[n].event_id = v.event_id;
-								json_data.reservation[n].name = v.name;
-								json_data.reservation[n].ticket_type = v.ticket_type;
-								json_data.reservation[n].quantity = v.quantity;
-								json_data.reservation[n].total_price = v.total;
-								n++;
+								json_data.reservation[m] = new Object();
+								json_data.reservation[m].ticket_id = v._id;
+								json_data.reservation[m].event_id = v.event_id;
+								json_data.reservation[m].name = v.name;
+								json_data.reservation[m].ticket_type = v.ticket_type;
+								json_data.reservation[m].quantity = v.quantity;
+								json_data.reservation[m].total_price = v.total;
+								m++;
 							}
 						})
 						cb(null,json_data);
