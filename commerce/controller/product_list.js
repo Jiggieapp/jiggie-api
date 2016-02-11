@@ -48,17 +48,30 @@ function get_data(req,next){
 			if(cek == 1){
 				tickettypes_coll.find({event_id:event_id}).toArray(function(err,r){
 					if(r.length > 0){
-						var json_data = [];
+						var json_data = new Object();
+						json_data.purchase = []
+						json_data.reservation = []
 						var n = 0;
 						async.forEachOf(r,function(v,k,e){
-							json_data[n] = new Object();
-							json_data[n].ticket_id = v._id;
-							json_data[n].event_id = v.event_id;
-							json_data[n].name = v.name;
-							json_data[n].ticket_type = v.ticket_type;
-							json_data[n].quantity = v.quantity;
-							json_data[n].total_price = v.total;
-							n++;
+							if(v.ticket_type == 'purchase'){
+								json_data.purchase[n] = new Object();
+								json_data.purchase[n].ticket_id = v._id;
+								json_data.purchase[n].event_id = v.event_id;
+								json_data.purchase[n].name = v.name;
+								json_data.purchase[n].ticket_type = v.ticket_type;
+								json_data.purchase[n].quantity = v.quantity;
+								json_data.purchase[n].total_price = v.total;
+								n++;
+							}else if(v.ticket_type == 'reservation'){
+								json_data.reservation[n] = new Object();
+								json_data.reservation[n].ticket_id = v._id;
+								json_data.reservation[n].event_id = v.event_id;
+								json_data.reservation[n].name = v.name;
+								json_data.reservation[n].ticket_type = v.ticket_type;
+								json_data.reservation[n].quantity = v.quantity;
+								json_data.reservation[n].total_price = v.total;
+								n++;
+							}
 						})
 						cb(null,json_data);
 					}else{
