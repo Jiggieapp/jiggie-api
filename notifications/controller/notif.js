@@ -13,22 +13,9 @@ var gcm = require('node-gcm');
 var optionsLive = {
    cert : path.join(__dirname, 'livecerts') + "/PushChatLiveCert.pem",
    key : path.join(__dirname, 'livecerts') + "/PushChatLiveKey.pem",
-   // ca : path.join(__dirname, 'livecerts') + "/cklive.pem",
-   // key : path.join(__dirname, 'dev_certs') + "/PushChatKey.pem",
-   // cert : path.join(__dirname, 'dev_certs') + "/PushChatCert.pem",
-   // key : path.join(__dirname, 'dev_dev_certs') + "/PushChatKey.pem",
-   // cert : path.join(__dirname, 'dev_dev_certs') + "/PushChatCert.pem",
-   // key : path.join(__dirname, 'new_certs/dev') + "/PushChatDevKey.pem",
-   // cert : path.join(__dirname, 'new_certs/dev') + "/ckdev.pem",
-   // key : path.join(__dirname, 'new_certs') + "/PushChatLiveKey.pem",
-   // cert : path.join(__dirname, 'new_certs') + "/cklive.pem",
-   // key : path.join(__dirname, 'certs') + "/PushChatLiveKey.pem",
-   // cert : path.join(__dirname, 'certs') + "/cklive.pem",
    passphrase:"manhattan",
    production :true,
-   // gateway:"gateway.sandbox.push.apple.com",
-   debug:true,
-   // errorCallback:onErrorCB
+   debug:true
 };
 
 exports.apn = function(req,res){
@@ -42,16 +29,32 @@ exports.apn = function(req,res){
 	var fromIdData = post.fromId;
 	
 	customers_coll.findOne({fb_id:fb_id},function(err,r){
-		var token = r.apn_token
-		var gcm_token = r.gcm_token;
 		var alert = lim_msg;
+		
+		var token = '';
+		(r.apn_token == null) ? token = '' : token = r.apn_token;
+		if(checkIfAndroid(token) == false){
+			token = token
+		}else{
+			token = '';
+		}
+		
+		var gcm_token = '';
+		(r.gcm_token == null) ? gcm_token = '' : gcm_token = r.gcm_token;
+		if(checkIfAndroid(gcm_token) == true){
+			gcm_token = gcm_token
+		}else{
+			gcm_token = '';
+		}
+		
 		debug.log('APN Token :'+token)
 		debug.log('GCM Token :'+gcm_token)
+		debug.log('FBID :'+fb_id)
 		
 		async.parallel([
 			function push_gcm(cb){
 				if(typeof gcm_token != 'undefined'){
-					if(gcm_token != '' && gcm_token != 'empty'){
+					if(gcm_token != '' && gcm_token != 'empty' && gcm_token != 'undefined'){
 						sendGPN(fb_id,fromIdData,alert,gcm_token);
 					}else{
 						debug.log('GCM Token Empty')
@@ -62,7 +65,7 @@ exports.apn = function(req,res){
 				cb(null,'next');
 			},
 			function push_apn(cb){
-				if(token != 'empty'  && token != ''){
+				if(typeof token != 'undefined' && token != 'empty'  && token != '' && token != 'undefined'){
 					var fromId = fromIdData;
 					var fromFBId = fromIdData;
 					var fromName = r.first_name+' '+r.last_name;

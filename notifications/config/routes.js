@@ -5,6 +5,6 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   var notif = require(path_controller+'notif');
   app.post('/apn',notif.apn);
   
-  var notif_all = require(path_controller+'notif');
+  var notif_all = require(path_controller+'notif_all');
   app.post('/apn_all',notif_all.apn);
 }

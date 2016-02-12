@@ -26,18 +26,34 @@ exports.apn = function(req,res){
 	var lim_msg = message.trunc(50,true);
 	
 	customers_coll.find({}).toArray(function(err,rows){
+		var howtot = 0;
 		async.forEachOf(rows,function(ve,ke,ee){
-			var token = ve.apn_token
-			var gcm_token = ve.gcm_token;
+			var token = '';
+			(ve.apn_token == null) ? token = '' : token = ve.apn_token;
+			if(checkIfAndroid(token) == false){
+				token = token
+			}else{
+				token = '';
+			}
+			
+			var gcm_token = '';
+			(ve.gcm_token == null) ? gcm_token = '' : gcm_token = ve.gcm_token;
+			if(checkIfAndroid(gcm_token) == true){
+				gcm_token = gcm_token
+			}else{
+				gcm_token = '';
+			}
+			
 			var alert = lim_msg;
 			debug.log('APN Token :'+token)
 			debug.log('GCM Token :'+gcm_token)
+			debug.log('FBID :'+ve.fb_id)
 			
 			async.parallel([
 				function push_gcm(cb){
 					if(typeof gcm_token != 'undefined'){
-						if(gcm_token != '' && gcm_token != 'empty'){
-							sendGPN(fb_id,fromIdData,alert,gcm_token);
+						if(gcm_token != '' && gcm_token != 'empty' && gcm_token != 'undefined'){
+							sendGPN(ve.fb_id,'',alert,gcm_token);
 						}else{
 							debug.log('GCM Token Empty')
 						}
@@ -47,9 +63,9 @@ exports.apn = function(req,res){
 					cb(null,'next');
 				},
 				function push_apn(cb){
-					if(token != 'empty'  && token != ''){
-						var fromId = fromIdData;
-						var fromFBId = fromIdData;
+					if(typeof token != 'undefined' && token != 'empty'  && token != '' && token != 'undefined'){
+						var fromId = '';
+						var fromFBId = '';
 						var fromName = ve.first_name+' '+ve.last_name;
 						
 						var payload = new Object();
@@ -78,7 +94,9 @@ exports.apn = function(req,res){
 			],function(err,ush){
 				debug.log(ush)
 			})
+			howtot++;
 		})
+		debug.log(howtot);
 	});
 	
 	res.send("APN_SENT!!");
