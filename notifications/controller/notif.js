@@ -45,11 +45,13 @@ exports.apn = function(req,res){
 		var token = r.apn_token
 		var gcm_token = r.gcm_token;
 		var alert = lim_msg;
+		debug.log('APN Token :'+token)
+		debug.log('GCM Token :'+gcm_token)
 		
 		async.parallel([
 			function push_gcm(cb){
 				if(typeof gcm_token != 'undefined'){
-					if(gcm_token != '' || gcm_token != 'empty'){
+					if(gcm_token != '' && gcm_token != 'empty'){
 						sendGPN(fb_id,fromIdData,alert,gcm_token);
 					}else{
 						debug.log('GCM Token Empty')
@@ -60,7 +62,7 @@ exports.apn = function(req,res){
 				cb(null,'next');
 			},
 			function push_apn(cb){
-				if(token != 'empty'){
+				if(token != 'empty'  && token != ''){
 					var fromId = fromIdData;
 					var fromFBId = fromIdData;
 					var fromName = r.first_name+' '+r.last_name;

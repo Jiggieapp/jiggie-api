@@ -11,7 +11,7 @@ exports.index = function(req,res){
 	curl.post(options,function(err,resp,body){
 		if (!err && resp.statusCode == 200) {
 			res.header("Content-type","application/json");
-			res.send(body);
+			res.send({success:true});
 		}else{
 			res.send(err);
 		}

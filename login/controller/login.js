@@ -71,12 +71,19 @@ exports.index = function(req, res){
 					
 					var device_type = '';
 					(typeof post.device_type != 'undefined') ? device_type = post.device_type : device_type = 1;
-					if(device_type == 1){
+					if(device_type == 1 || device_type == '1'){
 						set_customers.device_type_ios = true
-						set_customers.apn_token = post.apn_token;
-					}else if(device_type == 2){
+					}else if(device_type == 2 || device_type == '2'){
 						set_customers.device_type_android = true
+						
+					}
+					
+					if(String(post.device_type) == '1'){
+						set_customers.apn_token = post.apn_token;
+						delete set_customers.gcm_token;
+					}else if(String(post.device_type) == '2'){
 						set_customers.gcm_token = post.apn_token;
+						delete set_customers.apn_token;
 					}
 					
 					customers_coll.update(cond,{$set:set_customers},function(err,upd){
@@ -164,12 +171,18 @@ exports.index = function(req, res){
 					
 					var device_type = '';
 					(typeof post.device_type != 'undefined') ? device_type = post.device_type : device_type = 1;
-					if(device_type == 1){
+					if(device_type == 1 || device_type == '1'){
 						set_customers.device_type_ios = true
-						set_customers.apn_token = post.apn_token;
-					}else if(device_type == 2){
+					}else if(device_type == 2 || device_type == '2'){
 						set_customers.device_type_android = true
+					}
+					
+					if(String(post.device_type) == '1'){
+						set_customers.apn_token = post.apn_token;
+						delete set_customers.gcm_token;
+					}else if(String(post.device_type) == '2'){
 						set_customers.gcm_token = post.apn_token;
+						delete set_customers.apn_token;
 					}
 			
 					
