@@ -46,5 +46,6 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   // Notif //
   var notif = require(path_controller+'notif');
   app.post('/notif',notif.index);
+  app.post('/notif_all',notif.all);
   // Notif //
 }
