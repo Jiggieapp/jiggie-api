@@ -160,5 +160,4 @@ function checkIfAndroid(token)
 
 	return false;
 }
-
 // END : GCM //

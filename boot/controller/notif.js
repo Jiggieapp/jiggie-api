@@ -17,3 +17,19 @@ exports.index = function(req,res){
 		}
 	})
 }
+
+exports.index = function(req,res){
+	var post = req.body;
+	var options = {
+		url : url+"/apn_all",
+		form : post
+	}
+	curl.post(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			res.send({success:true});
+		}else{
+			res.send(err);
+		}
+	})
+}
