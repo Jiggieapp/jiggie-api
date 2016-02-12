@@ -68,26 +68,29 @@ exports.apn = function(req,res){
 				if(typeof token != 'undefined' && token != 'empty'  && token != '' && token != 'undefined'){
 					var fromId = fromIdData;
 					var fromFBId = fromIdData;
-					var fromName = r.first_name+' '+r.last_name;
 					
-					var payload = new Object();
-					payload.type = "message";
-					payload.fromId = fromId;
-					payload.fromFBId = fromFBId;
-					payload.fromName = fromName;
-					payload.message = message;
-					payload.hosting_id = "";
-					payload.badge = 1;
+					customers_coll.findOne({fb_id:fromId},function(err2,r2){
+						var fromName = r2.first_name+' '+r2.last_name;
+						var payload = new Object();
+						payload.type = "message";
+						payload.fromId = fromId;
+						payload.fromFBId = fromFBId;
+						payload.fromName = fromName;
+						payload.message = message;
+						payload.hosting_id = "";
+						payload.badge = 1;
 
-					var connection = new apn.Connection(optionsLive);
-					notification = new apn.Notification();
-					notification.device = new apn.Device(token);
-					notification.alert = alert;
-					notification.payload = payload;
-					notification.badge = 1;
-					notification.sound = "default";
-					connection.sendNotification(notification);
-					debug.log('IOS TOKEN USING');
+						var connection = new apn.Connection(optionsLive);
+						notification = new apn.Notification();
+						notification.device = new apn.Device(token);
+						notification.alert = alert;
+						notification.payload = payload;
+						notification.badge = 1;
+						notification.sound = "default";
+						connection.sendNotification(notification);
+						debug.log('IOS TOKEN USING');
+					})
+					
 				}else{
 					debug.log('APN token empty');
 				}
