@@ -70,7 +70,7 @@ exports.apn = function(req,res){
 					var fromFBId = fromIdData;
 					
 					customers_coll.findOne({fb_id:fromId},function(err2,r2){
-						var fromName = r2.first_name+' '+r2.last_name;
+						var fromName = r2.first_name;
 						var payload = new Object();
 						payload.type = "message";
 						payload.fromId = fromId;
