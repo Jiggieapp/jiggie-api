@@ -58,6 +58,8 @@ function get_data(req,next){
 				tickettypes_coll.find({event_id:event_id}).toArray(function(err,r){
 					if(r.length > 0){
 						var json_data = new Object();
+						json_data.event_id = event_id;
+						json_data.event_name = rows_event.title;
 						json_data.purchase = []
 						json_data.reservation = []
 						var n = 0;
@@ -66,8 +68,6 @@ function get_data(req,next){
 							if(v.ticket_type == 'purchase'){
 								json_data.purchase[n] = new Object();
 								json_data.purchase[n].ticket_id = v._id;
-								json_data.purchase[n].event_id = v.event_id;
-								json_data.purchase[n].event_name = rows_event.title;
 								json_data.purchase[n].name = v.name;
 								json_data.purchase[n].ticket_type = v.ticket_type;
 								json_data.purchase[n].quantity = v.quantity;
@@ -82,8 +82,6 @@ function get_data(req,next){
 							}else if(v.ticket_type == 'reservation'){
 								json_data.reservation[m] = new Object();
 								json_data.reservation[m].ticket_id = v._id;
-								json_data.reservation[m].event_id = v.event_id;
-								json_data.reservation[m].event_name = rows_event.title;
 								json_data.reservation[m].name = v.name;
 								json_data.reservation[m].ticket_type = v.ticket_type;
 								json_data.reservation[m].quantity = v.quantity;
