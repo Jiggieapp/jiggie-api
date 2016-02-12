@@ -18,7 +18,7 @@ exports.index = function(req,res){
 	})
 }
 
-exports.index = function(req,res){
+exports.all = function(req,res){
 	var post = req.body;
 	var options = {
 		url : url+"/apn_all",
