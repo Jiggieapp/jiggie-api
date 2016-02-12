@@ -61,6 +61,12 @@ function get_data(req,next){
 								json_data.purchase[n].name = v.name;
 								json_data.purchase[n].ticket_type = v.ticket_type;
 								json_data.purchase[n].quantity = v.quantity;
+								json_data.purchase[n].admin_fee = v.admin_fee;
+								json_data.purchase[n].tax_percent = v.tax;
+								json_data.purchase[n].tax_amount = v.tax_amount;
+								json_data.purchase[n].tip_percent = v.tip;
+								json_data.purchase[n].tip_amount = v.tip_amount;
+								json_data.purchase[n].price = v.price;
 								json_data.purchase[n].total_price = v.total;
 								n++;
 							}else if(v.ticket_type == 'reservation'){
@@ -70,6 +76,12 @@ function get_data(req,next){
 								json_data.reservation[m].name = v.name;
 								json_data.reservation[m].ticket_type = v.ticket_type;
 								json_data.reservation[m].quantity = v.quantity;
+								json_data.reservation[m].admin_fee = v.admin_fee;
+								json_data.reservation[m].tax_percent = v.tax;
+								json_data.reservation[m].tax_amount = v.tax_amount;
+								json_data.reservation[m].tip_percent = v.tip;
+								json_data.reservation[m].tip_amount = v.tip_amount;
+								json_data.reservation[m].price = v.price;
 								json_data.reservation[m].total_price = v.total;
 								m++;
 							}
@@ -140,19 +152,35 @@ function post_summary(req,next){
 			
 			var n = 0;
 			var totall = 0;
+			var tottax = 0;
+			var totadminfee = 0;
+			var tottip = 0;
 			json_data.product_list = [];
 			async.forEachOf(post.product_list,function(v,k,e){
 				json_data.product_list[n] = new Object();
 				json_data.product_list[n].ticket_id = String(v.ticket_id);
 				json_data.product_list[n].name = String(v.name);
 				json_data.product_list[n].ticket_type = String(v.ticket_type);
+				json_data.product_list[n].quantity = String(v.quantity);
+				json_data.product_list[n].admin_fee = String(v.admin_fee);
+				json_data.product_list[n].tax_percent = String(v.tax_percent);
+				json_data.product_list[n].tax_amount = String(v.tax_amount);
+				json_data.product_list[n].tip_percent = String(v.tip_percent);
+				json_data.product_list[n].tip_amount = String(v.tip_amount);
+				json_data.product_list[n].price = String(v.price);
 				json_data.product_list[n].total_price = String(v.total_price);
 				json_data.product_list[n].num_buy = String(v.num_buy);
 				json_data.product_list[n].total_price_all = String(parseFloat(v.num_buy) * parseFloat(v.total_price));
 				
+				tottax += parseFloat(v.tax_amount);
+				totadminfee += parseFloat(v.admin_fee);
+				tottip += parseFloat(v.tip_amount);
 				totall += parseFloat(v.num_buy) * parseFloat(v.total_price);
 				n++;
 			})
+			json_data.total_tax_amount = String(tottax);
+			json_data.total_tip_amount = String(tottip);
+			json_data.total_adminfee = String(totadminfee);
 			json_data.total_price = String(totall);
 			cb(null,json_data);
 		},
