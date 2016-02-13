@@ -36,43 +36,39 @@ exports.index = function(req, res){
 function doall(event_details_id,fb_id,gender_interest,next){
 	async.parallel([
 		function getalldata(callback){
-			// cache.get("event_"+event_details_id,function(err,val){
-				// if(typeof val == "undefined"){
+			cache.get("event_"+event_details_id,function(err,val){
+				if(typeof val == "undefined"){
 					getdata(event_details_id,fb_id,gender_interest,function(rows){
-						// cache.set("event_"+event_details_id,rows,function(err,suc){
-							// if(suc == true){
-								// debug.log("not cached");
+						cache.set("event_"+event_details_id,rows,function(err,suc){
+							if(suc == true){
+								debug.log("not cached");
 								callback(null,rows);
-							// }else{
-								// debug.log("Data Not Cached");
-							// }
+							}else{
+								debug.log("Data Not Cached");
+							}
 						});	
-					// })
-				// }else{
-					// debug.log("cached")
-					// callback(null,val);
-				// }
-			// })
+					})
+				}else{
+					debug.log("cached")
+					callback(null,val);
+				}
+			})
 		},
 		function updating(callback){
-			upd_data(event_details_id,fb_id,function(upd){
-				callback(null,upd);
-			});
+			upd_data(event_details_id,fb_id,function(upd){});
+			callback(null,'next');
 		},
 		function update_socialfeed(callback){
-			upd_socialfeed(event_details_id,fb_id,function(upd){
-				callback(null,upd);
-			});
+			upd_socialfeed(event_details_id,fb_id,function(upd){});
+			callback(null,'next');
 		},
 		function clean_data(cb){
-			cleaning_data(event_details_id,function(dt){
-				cb(null,'next')
-			})
+			cleaning_data(event_details_id,function(dt){})
+			cb(null,'next')
 		},
 		function clean_socialfeed(cb){
-			cleansocfed(fb_id,function(dt){
-				cb(null,'next');
-			})
+			cleansocfed(fb_id,function(dt){})
+			cb(null,'next');
 		}
 	],function(err,merge){
 		try{
