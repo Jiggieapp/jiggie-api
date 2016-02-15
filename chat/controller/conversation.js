@@ -3,6 +3,8 @@ var debug = require('./../config/debug');
 var async = require('async');
 var ObjectId = require('mongodb').ObjectID;
 var request = require('request');
+var Mixpanel = require('mixpanel');
+var mixpanel = Mixpanel.init('39ae6be779ffea77ea2b2a898305f560');
 
 
 exports.index = function(req, res){
@@ -113,11 +115,68 @@ function doall_message(req,next){
 			response_message(req,function(state){
 				cb(null,state);
 			})
+		},
+		function do_mixpxanel(state,cb){
+			async_mixpanel(req,state,function(){
+				
+			})
 		}
 	],function(err,state){
 		next(state);
 	})
 }
+
+// mixpanel //
+
+function async_mixpanel(req,state,next){
+	var post = req.body;
+	var fromId = post.fromId;
+	var toId = post.toId;
+	var event_data = {"state":state}
+	async.parallel([
+		function trackEvent_fromid(cb){
+			trackEvent_mixpanel("Conversation Updated",from_id,event_data)
+			cb(null,'next')
+		},
+		function incrementItem(cb){
+			incrementItem_mixpanel(from_id,'chat_count');
+			incrementItem_mixpanel(toId,'chat_count');
+			cb(null,'next');
+		},
+		function trackEvent_toid(cb){
+			trackEvent_mixpanel("Conversation Updated",toId,event_data)
+			cb(null,'next')
+		}
+	],function(err,merge){
+		next('next');
+	})
+}
+
+function trackEvent_mixpanel(event_name,fb_id,dict){
+	dict.distinct_id = fb_id;
+	customers_coll.findOne({fb_id:fb_id},function(err,rows){
+		var data = rows.mixpanel;
+		if(data != undefined){
+			for (var i = 0; i < Object.keys(data).length; i++){
+				dict[Object.keys(data)[i]] = data[Object.keys(data)[i]];
+			}
+			// debug.log(dict);
+			mixpanel.track(event_name,dict,function(err){
+				if(err){debug.log(err);}
+			});
+		}
+	});
+	return true;
+}
+
+function incrementItem_mixpanel(fb_id,item_name){
+	mixpanel.people.increment(fb_id, item_name,function(err){
+		if(err){debug.log(err);}
+	});
+	return true;
+}
+
+// mixpanel //
 
 function response_message(req,next){
 	var post = req.body;
