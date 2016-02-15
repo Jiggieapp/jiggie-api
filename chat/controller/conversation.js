@@ -135,11 +135,11 @@ function async_mixpanel(req,state,next){
 	var event_data = {"state":state}
 	async.parallel([
 		function trackEvent_fromid(cb){
-			trackEvent_mixpanel("Conversation Updated",from_id,event_data)
+			trackEvent_mixpanel("Conversation Updated",fromId,event_data)
 			cb(null,'next')
 		},
 		function incrementItem(cb){
-			incrementItem_mixpanel(from_id,'chat_count');
+			incrementItem_mixpanel(fromId,'chat_count');
 			incrementItem_mixpanel(toId,'chat_count');
 			cb(null,'next');
 		},
