@@ -199,7 +199,7 @@ exports.sync_apntoken = function(req,res){
 					response : 1,
 					msg : 'Success'
 				}
-				res.send(json_data);
+				res.send(rsp);
 			}
 		}else{
 			res.send(err);
