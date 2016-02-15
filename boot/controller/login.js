@@ -195,9 +195,11 @@ exports.sync_apntoken = function(req,res){
 			if(typeof json_data.code_error != 'undefined'){
 				res.status(json_data.code_error).send({});
 			}else{
-				hr.data = new Object();
-				hr.data.tagslist = JSON.parse(body);
-				res.send(hr);
+				var rsp = {
+					response : 1,
+					msg : 'Success'
+				}
+				res.send(json_data);
 			}
 		}else{
 			res.send(err);
