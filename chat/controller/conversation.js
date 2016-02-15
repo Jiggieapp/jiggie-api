@@ -118,7 +118,7 @@ function doall_message(req,next){
 		},
 		function do_mixpxanel(state,cb){
 			async_mixpanel(req,state,function(){
-				
+				cb(null,state);
 			})
 		}
 	],function(err,state){
