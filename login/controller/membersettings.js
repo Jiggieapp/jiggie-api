@@ -118,3 +118,57 @@ exports.memberinfo = function(req,res){
 		}
 	})
 }
+
+exports.sendSMS = function(req,res){
+	var phone = req.params.phone;
+	var fb_id = req.params.fb_id;
+	
+	if(phone == undefined){
+		res.json({"success":false,"reason":"phone is undefined"});
+		return;
+	}
+	var phone = String(req.params.phone).replace( /[^0-9]/g, '' )
+
+	var token = "";
+	for (var i = 0; i < 6; i++)
+	{
+		token += String(Math.round(Math.random() * 9));
+	};
+	
+	
+
+	customers_coll.update({fb_id:fb_id},{tmp_phone:phone,twilio_token:token},function(err,upd){
+		if(err){
+			console.log(err)
+		}else{
+			sendSMSConfirm(phone,token,function(){
+				res.json({success:true})
+			})
+		}
+	})
+}
+
+exports.validateSMS = function(req,res){
+	
+}
+
+function sendSMSConfirm(phone,token,callback){
+	// Twilio Credentials 
+	var accountSid = 'AC889d3b24ca4753b2166eda4ff81b66a4'; 
+	var authToken = '73a998b5d6e91547e6e62bbabb6770be'; 
+	 
+	//require the Twilio module and create a REST client 
+	var client = require('twilio')(accountSid, authToken);
+	client.messages.create({
+		to:'+' + phone,
+		from: '+16466933110', 
+		body: 'Your pin is ' + token
+	}, function(err, message) {
+			if(err){
+				console.log(err);
+			}else{
+				console.log(message);
+			}
+			callback();
+	});
+}

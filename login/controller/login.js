@@ -79,7 +79,7 @@ exports.index = function(req, res){
 					}
 					
 					if(String(post.device_type) == '1'){
-						set_customers.apn_token = post.apn_token;
+						// set_customers.apn_token = post.apn_token;
 						delete set_customers.gcm_token;
 					}else if(String(post.device_type) == '2'){
 						set_customers.gcm_token = post.apn_token;
@@ -178,7 +178,7 @@ exports.index = function(req, res){
 					}
 					
 					if(String(post.device_type) == '1'){
-						set_customers.apn_token = post.apn_token;
+						// set_customers.apn_token = post.apn_token;
 						delete set_customers.gcm_token;
 					}else if(String(post.device_type) == '2'){
 						set_customers.gcm_token = post.apn_token;
@@ -574,6 +574,19 @@ exports.tagslist = function(req,res){
 				n++;
 			})
 			res.json(data);
+		}
+	})
+}
+
+exports.sync_apntoken = function(req,res){
+	var fb_id = req.params.fb_id;
+	var apn = req.params.apn;
+	
+	customers_coll.update({fb_id:fb_id},{$set:{apn_token:apn}},function(err,upd){
+		if(err){
+			res.json({code_error:403})
+		}else{
+			res.json({success:true});
 		}
 	})
 }
