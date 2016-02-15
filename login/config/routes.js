@@ -10,9 +10,13 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.post('/app/v3/updateuserabout',login.sync_about); // Update user About
   app.post('/app/userlogin',login.userlogin); // Auth Token
   app.get('/app/v3/user/tagslist',login.tagslist);
+  app.get('/app/v3/apntoken/:fb_id/:apn',login.sync_apntoken);
   
   
   var membersettings = require(path_controller+'membersettings');
   app.get('/app/v3/membersettings',membersettings.index);
   app.get('/app/v3/memberinfo/:fb_id',membersettings.memberinfo);
+  app.get('/app/v3/user/phone/verification/send/:fb_id/:phone',membersettings.sendSMS);
+  app.get('/app/v3/user/phone/verification/validate/:fb_id/:phone',membersettings.validateSMS);
+  
 }
