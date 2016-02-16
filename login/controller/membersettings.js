@@ -30,38 +30,37 @@ exports.index = function(req,res){
 			var r_memset = rows[0];
 			var r_cust = rows[1];
 			
-			json_data.success = true;
-			json_data.data = new Object();
-				json_data.data._id = r_memset._id;
-				json_data.data.fb_id = r_memset.fb_id;
-				json_data.data.notifications = new Object();
+			
+				json_data._id = r_memset._id;
+				json_data.fb_id = r_memset.fb_id;
+				json_data.notifications = new Object();
 					
 					if(typeof r_memset.notifications.feed != 'undefined'){
-						json_data.data.notifications.feed = r_memset.notifications.feed;
+						json_data.notifications.feed = r_memset.notifications.feed;
 					}else{
-						json_data.data.notifications.feed = false;
+						json_data.notifications.feed = false;
 					}
 					
 					if(typeof r_memset.notifications.chat != 'undefined'){
-						json_data.data.notifications.chat = r_memset.notifications.chat;
+						json_data.notifications.chat = r_memset.notifications.chat;
 					}else{
-						json_data.data.notifications.chat = false;
+						json_data.notifications.chat = false;
 					}
 					
 					if(typeof r_memset.notifications.location != 'undefined'){
-						json_data.data.notifications.location = r_memset.notifications.location;
+						json_data.notifications.location = r_memset.notifications.location;
 					}else{
-						json_data.data.notifications.location = false;
+						json_data.notifications.location = false;
 					}
 					
-					json_data.data.account_type = r_memset.account_type;
-					json_data.data.gender = r_memset.gender;
-					json_data.data.experiences = r_memset.experiences;
-					json_data.data.gender_interest = r_memset.gender_interest;
-					json_data.data.updated_at = r_memset.updated_at;
-					json_data.data.matchme = r_cust.matchme;
-					json_data.data.payment = new Object;
-					json_data.data.phone = r_cust.phone;
+					json_data.account_type = r_memset.account_type;
+					json_data.gender = r_memset.gender;
+					json_data.experiences = r_memset.experiences;
+					json_data.gender_interest = r_memset.gender_interest;
+					json_data.updated_at = r_memset.updated_at;
+					json_data.matchme = r_cust.matchme;
+					json_data.payment = new Object;
+					json_data.phone = r_cust.phone;
 				
 			res.json(json_data);
 		}
