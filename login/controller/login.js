@@ -234,28 +234,27 @@ exports.index = function(req, res){
 			get_data(cond,function(data){
 				var json_data = new Object();
 				if(data[0].length > 0){
-					json_data.success = true;
+					// json_data.success = true;
 					
 					if(typeof data[1][0] == "undefined"){
-						json_data.data = new Object();
-							json_data.data._id = data[0][0]._id;
-							json_data.data.account_type = 'host';
-							json_data.data.experiences = [];
-							json_data.data.fb_id = post.fb_id;
-							json_data.data.gender = post.gender;
-							
-							json_data.data.notifications = new Object();
-								json_data.data.notifications.chat = true;
-								json_data.data.notifications.feed = true;
-							
-							json_data.data.payment = new Object();
-							json_data.data.phone = '';
-							json_data.data.updated_at = new Date();
+						json_data._id = data[0][0]._id;
+						json_data.account_type = 'host';
+						json_data.experiences = [];
+						json_data.fb_id = post.fb_id;
+						json_data.gender = post.gender;
+						
+						json_data.notifications = new Object();
+							json_data.notifications.chat = true;
+							json_data.notifications.feed = true;
+						
+						json_data.payment = new Object();
+						json_data.phone = '';
+						json_data.updated_at = new Date();
 					}else{
 						data[1][0].payment = new Object();
 						data[1][0].phone = data[0][0].phone;
 						
-						json_data.data = data[1][0];
+						json_data = data[1][0];
 						
 					}
 					
@@ -303,28 +302,27 @@ exports.index = function(req, res){
 				}else{
 					// customers_coll.findOne({fb_id:post.fb_id},function(erros,dti){
 						json_data.success = true;
-							json_data.data = new Object();
-							json_data.data._id = '56ab1920fefe9bb110c1c20f';
-							json_data.data.account_type = 'host';
-							json_data.data.experiences = [];
-							json_data.data.fb_id = post.fb_id;
-							json_data.data.gender = post.gender;
-							
-							json_data.data.notifications = new Object();
-								json_data.data.notifications.chat = true;
-								json_data.data.notifications.feed = true;
-							
-							if(post.gender == 'male'){
-								json_data.data.gender_interest = 'female';
-							}else if(post.gender == 'female'){
-								json_data.data.gender_interest = 'male';
-							}else{
-								json_data.data.gender_interest = 'both';
-							}
-							
-							json_data.data.payment = new Object();
-							json_data.data.phone = '';
-							json_data.data.updated_at = new Date();
+						json_data._id = '56ab1920fefe9bb110c1c20f';
+						json_data.account_type = 'host';
+						json_data.experiences = [];
+						json_data.fb_id = post.fb_id;
+						json_data.gender = post.gender;
+						
+						json_data.notifications = new Object();
+							json_data.notifications.chat = true;
+							json_data.notifications.feed = true;
+						
+						if(post.gender == 'male'){
+							json_data.gender_interest = 'female';
+						}else if(post.gender == 'female'){
+							json_data.gender_interest = 'male';
+						}else{
+							json_data.gender_interest = 'both';
+						}
+						
+						json_data.payment = new Object();
+						json_data.phone = '';
+						json_data.updated_at = new Date();
 						
 						json_data.has_phone = 0;
 						json_data.help_phone = "6466008233";
