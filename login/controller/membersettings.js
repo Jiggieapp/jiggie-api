@@ -134,10 +134,8 @@ exports.sendSMS = function(req,res){
 	{
 		token += String(Math.round(Math.random() * 9));
 	};
-	
-	
 
-	customers_coll.update({fb_id:fb_id},{tmp_phone:phone,twilio_token:token},function(err,upd){
+	customers_coll.update({fb_id:fb_id},{$set:{tmp_phone:phone,twilio_token:token}},function(err,upd){
 		if(err){
 			console.log(err)
 		}else{
@@ -149,26 +147,48 @@ exports.sendSMS = function(req,res){
 }
 
 exports.validateSMS = function(req,res){
+	var fb_id = req.params.fb_id;
+	var token = String(req.params.token).replace( /[^0-9]/g, '' )
 	
+	customers_coll.findOne({fb_id:fb_id},function(err,r){
+		if(err){
+			res.json({code_error:503})
+		}else{
+			if(typeof r.twilio_token != 'undefined' && r.twilio_token != '' && r.tmp_phone != '' && typeof r.tmp_phone != 'undefined'){
+				debug.log(r.twilio_token);
+				debug.log(token);
+				if(token == r.twilio_token){
+					customers_coll.update({fb_id:fb_id},{$set:{phone:r.tmp_phone,verifiedbyphone:true}},function(err2,upd){
+						res.json({success:true})
+					})
+				}else{
+					debug.log('Twilio Token Error')
+					res.json({code_error:401})
+				}
+				
+			}else{
+				debug.log('data empty')
+				res.json({code_error:401})
+			}
+		}
+	})
 }
 
-function sendSMSConfirm(phone,token,callback){
-	// Twilio Credentials 
-	var accountSid = 'AC889d3b24ca4753b2166eda4ff81b66a4'; 
-	var authToken = '73a998b5d6e91547e6e62bbabb6770be'; 
+function sendSMSConfirm(phone,dttoken,callback){
+	var accountSid = 'AC2e411537efa8bd75d3f4bd72624cf7ff'; 
+	var authToken = '2ef11198d624fab5b23f009d53a3035a'; 
 	 
-	//require the Twilio module and create a REST client 
 	var client = require('twilio')(accountSid, authToken);
 	client.messages.create({
 		to:'+' + phone,
-		from: '+16466933110', 
-		body: 'Your pin is ' + token
+		from: '+12248032473', 
+		body: 'Your pin is ' + dttoken
 	}, function(err, message) {
-			if(err){
-				console.log(err);
-			}else{
-				console.log(message);
-			}
-			callback();
+		if(err){
+			console.log(err);
+		}else{
+			console.log(message);
+		}
+		callback();
 	});
 }
