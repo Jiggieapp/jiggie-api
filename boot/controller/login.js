@@ -233,7 +233,7 @@ exports.sendSMS = function(req,res){
 	})
 }
 
-exports.sendSMS = function(req,res){
+exports.validateSMS = function(req,res){
 	var fb_id = req.params.fb_id;
 	var token = req.params.token;
 	
