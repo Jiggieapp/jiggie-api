@@ -15,7 +15,14 @@ exports.index = function(req,res){
 	curl.post(options,function(err,resp,body){
 		if (!err && resp.statusCode == 200) {
 			res.header("Content-type","application/json");
-			res.send(body);
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				hr.data = new Object();
+				hr.data.login = JSON.parse(body);
+				res.send(hr);
+			}
 		}else{
 			res.send(err);
 		}
@@ -31,7 +38,16 @@ exports.sync_membersettings = function(req,res){
 	curl.post(options,function(err,resp,body){
 		if (!err && resp.statusCode == 200) {
 			res.header("Content-type","application/json");
-			res.send(body);
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				var rsp = {
+					response : 1,
+					msg : 'Success'
+				}
+				res.send(rsp);
+			}
 		}else{
 			res.send(err);
 		}
@@ -47,7 +63,16 @@ exports.sync_mixpanel = function(req,res){
 	curl.post(options,function(err,resp,body){
 		if (!err && resp.statusCode == 200) {
 			res.header("Content-type","application/json");
-			res.send(body);
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				var rsp = {
+					response : 1,
+					msg : 'Success'
+				}
+				res.send(rsp);
+			}
 		}else{
 			res.send(err);
 		}
@@ -63,7 +88,16 @@ exports.sync_appsflyer = function(req,res){
 	curl.post(options,function(err,resp,body){
 		if (!err && resp.statusCode == 200) {
 			res.header("Content-type","application/json");
-			res.send(body);
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				var rsp = {
+					response : 1,
+					msg : 'Success'
+				}
+				res.send(rsp);
+			}
 		}else{
 			res.send(err);
 		}
@@ -79,7 +113,14 @@ exports.membersettingsGet = function(req,res){
 	curl.get(options,function(err,resp,body){
 		if (!err && resp.statusCode == 200) {
 			res.header("Content-type","application/json");
-			res.send(body);
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				hr.data = new Object();
+				hr.data.membersettings = JSON.parse(body);
+				res.send(hr);
+			}
 		}else{
 			res.send(err);
 		}
@@ -151,7 +192,7 @@ exports.userlogin = function(req,res){
 					response : 1,
 					msg : 'Success'
 				}
-				res.send(json_data);
+				res.send(rsp);
 			}
 		}else{
 			res.send(err);
