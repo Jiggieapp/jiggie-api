@@ -206,3 +206,55 @@ exports.sync_apntoken = function(req,res){
 		}
 	})
 }
+
+exports.sendSMS = function(req,res){
+	var fb_id = req.params.fb_id;
+	var phone = req.params.phone;
+	
+	var options = {
+		url : url+'/app/v3/user/phone/verification/send/'+fb_id+'/'+phone
+	}
+	curl.get(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				var rsp = {
+					response : 1,
+					msg : 'Success'
+				}
+				res.send(rsp);
+			}
+		}else{
+			res.send(err);
+		}
+	})
+}
+
+exports.sendSMS = function(req,res){
+	var fb_id = req.params.fb_id;
+	var token = req.params.token;
+	
+	var options = {
+		url : url+'/app/v3/user/phone/verification/validate/'+fb_id+'/'+token
+	}
+	curl.get(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				var rsp = {
+					response : 1,
+					msg : 'Success'
+				}
+				res.send(rsp);
+			}
+		}else{
+			res.send(err);
+		}
+	})
+}

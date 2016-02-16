@@ -17,6 +17,6 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/app/v3/membersettings',membersettings.index);
   app.get('/app/v3/memberinfo/:fb_id',membersettings.memberinfo);
   app.get('/app/v3/user/phone/verification/send/:fb_id/:phone',membersettings.sendSMS);
-  app.get('/app/v3/user/phone/verification/validate/:fb_id/:phone',membersettings.validateSMS);
+  app.get('/app/v3/user/phone/verification/validate/:fb_id/:token',membersettings.validateSMS);
   
 }
