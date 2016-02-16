@@ -24,8 +24,11 @@ exports.index = function(req, res){
 			res.json({code_error:403})
 		}else{
 			get_data(req,fb_id,gender_interest,function(data){
-				req.app.get("helpers").logging("response","get",JSON.stringify(data),req);
-				res.json(data);
+				if(data.length == 0){
+					res.json({code_error:204})
+				}else{
+					res.json(data);
+				}
 			})
 		}
 	})	

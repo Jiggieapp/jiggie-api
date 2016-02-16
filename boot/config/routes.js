@@ -41,6 +41,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   var commerce = require(path_controller+'commerce');
   app.get('/app/v3/product/list/:event_id',commerce.index);
   app.post('/app/v3/product/summary',commerce.post_summary);
+  app.get('/app/v3/product/term/:codeid',commerce.term);
   
   
   
