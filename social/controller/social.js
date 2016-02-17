@@ -679,7 +679,7 @@ function async_mixpanel(event_data,from_id,to_id,next){
 		function trackEvent_fromid(cb){
 			event_data.match_order = 2;
 			setTimeout(function(){
-				trackEvent_mixpanel("User Match",from_id,event_data)
+				trackEvent_mixpanel("User Match",from_id,to_id,event_data)
 				debug.log('mix 1');
 			},1000)
 			cb(null,'next')
@@ -692,7 +692,7 @@ function async_mixpanel(event_data,from_id,to_id,next){
 		function trackEvent_toid(cb){
 			event_data.match_order = 1;
 			setTimeout(function(){
-				trackEvent_mixpanel("User Match",to_id,event_data)
+				trackEvent_mixpanel("User Match",to_id,from_id,event_data)
 				debug.log('mix 2');
 			},6000)
 			cb(null,'next')
@@ -707,8 +707,8 @@ function async_mixpanel(event_data,from_id,to_id,next){
 	})
 }
 
-function trackEvent_mixpanel(event_name,fb_id,dict){
-	dict.distinct_id = fb_id;
+function trackEvent_mixpanel(event_name,distinct_id,fb_id,dict){
+	dict.distinct_id = distinct_id;
 	customers_coll.findOne({fb_id:fb_id},function(err,rows){
 		var data = rows.mixpanel;
 		if(data != undefined){

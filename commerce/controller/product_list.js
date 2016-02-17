@@ -214,6 +214,7 @@ function post_summary(req,next){
 				json_data.code = String(Hashids.encode(new Date().getTime()));
 				json_data.order_status = 'checkout_completed';
 				json_data.payment_status = 'awaiting_payment';
+				json_data.order_id = new Date().getTime();;
 				json_data.fb_id = post.fb_id;
 				json_data.event_id = post.event_id;
 				json_data.event_name = rows_event.title;
