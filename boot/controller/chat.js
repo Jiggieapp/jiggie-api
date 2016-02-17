@@ -62,7 +62,8 @@ exports.post_message = function(req,res){
 			res.header("Content-type","application/json");
 			var rsp = {
 				response : 1,
-				msg : 'Success'
+				msg : 'Success',
+				data: body
 			}
 			res.send(rsp);
 		}else{

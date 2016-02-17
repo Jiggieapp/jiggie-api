@@ -9,4 +9,5 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   
   var confirmation = require(path_controller+'confirmation');
   app.get('/app/v3/product/confirmation/:codeid',confirmation.index);
+  app.get('/app/v3/product/term/:codeid',confirmation.termagreement);
 }

@@ -5,8 +5,10 @@ ObjectId = Schema.ObjectId;
 var varScheme = new Schema({
 	// id : {type:Number,required:true,index: {unique: true, dropDups: true}, default: },
 	
-	code : {type:String, min:12, max:12,required:true},
-	status : {type:String, enum:['summary','confirmation','unpaid','paid','cancel'],required:true},
+	order_id:{type:String,default:''},
+	code : {type:String, min:6, max:6,required:true},
+	order_status : {type:String, enum:['checkout_completed','pending_payment','pending_shipment','shipped','completed','cancel'],required:true},
+	payment_status : {type:String, enum:['awaiting_payment','paid','refund'],required:true},
 	product_list : [{
 		ticket_type : {type:String, enum:['purchase','reservation'],required:true},
 		num_buy : {type:String, required:true},

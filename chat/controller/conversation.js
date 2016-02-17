@@ -98,7 +98,6 @@ function get_conv(req,fb_id,member_fb_id,next){
 exports.post_message = function(req,res){
 	doall_message(req,function(state){
 		res.json({
-			success:true,
 			chat_state:state
 		})
 	})
@@ -132,24 +131,28 @@ function async_mixpanel(req,state,next){
 	var post = req.body;
 	var fromId = post.fromId;
 	var toId = post.toId;
+	debug.log(fromId);
+	debug.log(toId);
 	var event_data = {"state":state}
-	async.parallel([
-		function trackEvent_fromid(cb){
-			trackEvent_mixpanel("Conversation Updated",fromId,event_data)
-			cb(null,'next')
-		},
-		function incrementItem(cb){
-			incrementItem_mixpanel(fromId,'chat_count');
-			incrementItem_mixpanel(toId,'chat_count');
-			cb(null,'next');
-		},
-		function trackEvent_toid(cb){
-			trackEvent_mixpanel("Conversation Updated",toId,event_data)
-			cb(null,'next')
-		}
-	],function(err,merge){
-		next('next');
-	})
+	
+	if(state == 'ACTIVATED_CHAT_INITIATED'){
+		incrementItem_mixpanel(fromId,'chat_activated_count');
+		incrementItem_mixpanel(toId,'chat_activated_count');
+	}
+	
+	
+	trackEvent_mixpanel("Conversation Updated",fromId,event_data)
+	debug.log('mix 1');
+	setTimeout(function(){
+		trackEvent_mixpanel("Conversation Updated",toId,event_data)
+		debug.log('mix 2');
+	},5000);
+	
+	
+	incrementItem_mixpanel(fromId,'chat_count');
+	incrementItem_mixpanel(toId,'chat_count');
+	
+	next('next');	
 }
 
 function trackEvent_mixpanel(event_name,fb_id,dict){
@@ -161,9 +164,7 @@ function trackEvent_mixpanel(event_name,fb_id,dict){
 				dict[Object.keys(data)[i]] = data[Object.keys(data)[i]];
 			}
 			// debug.log(dict);
-			mixpanel.track(event_name,dict,function(err){
-				if(err){debug.log(err);}
-			});
+			mixpanel.track(event_name,dict);
 		}
 	});
 	return true;
@@ -204,6 +205,8 @@ function response_message(req,next){
 						is_fromother++;
 					}
 				})
+				debug.log(is_fromyou);
+				debug.log(is_fromother);
 				
 				if(is_fromother == 0 && is_fromyou == 1){
 					state = "NON_ACTIVATED_CHAT_INITIATED";
@@ -217,6 +220,8 @@ function response_message(req,next){
 					state = "ACTIVATED_CHAT_UPDATED";
 				}else if(is_fromother == 0 && is_fromyou == 0){
 					state = "NON_ACTIVATED_CHAT_INITIATED";
+				}else if(is_fromother > 1 && is_fromyou == 1){
+					state = "ACTIVATED_CHAT_INITIATED";
 				}
 				cb(null,state);
 			});
@@ -323,9 +328,9 @@ function post_message(req,next){
 					form:json_form,
 				}
 				request.post(options,function(err,resp,body){
-					debug.log(err);
-					debug.log(resp);
-					debug.log(body);
+					// debug.log(err);
+					// debug.log(resp);
+					// debug.log(body);
 				})
 				cb(null,'next');
 			})
