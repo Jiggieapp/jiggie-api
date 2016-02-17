@@ -47,3 +47,75 @@ function get_data(req,next){
 		next(dt);
 	})
 }
+
+exports.termagreement = function(req,res){
+	var code = req.params.codeid;
+	var schema = req.app.get('mongo_path');
+	var order = require(schema+'/order_product.js');
+	async.waterfall([
+		function get_ticketid(cb){
+			order.findOne({code:code},function(err,r){
+				if(err){
+					cb(null,false,401)
+				}else{
+					var in_ticketid = [];
+					var n = 0;
+					async.forEachOf(r.product_list,function(v,k,e){
+						in_ticketid[n] = new ObjectId(v.ticket_id);
+						n++;
+					})
+					cb(null,true,in_ticketid);
+				}
+			})
+		},
+		function get_termconfirmation(state,data,cb){
+			if(state == true){
+				tickettypes_coll.find({_id:{$in:data}}).toArray(function(err,r){
+					if(err){
+						debug.log('errs')
+						cb(null,false,401);
+					}else{
+						if(r.length > 0){
+							var term_arr = [];
+							var n = 0;
+							async.forEachOf(r,function(v,k,e){
+								if(v.purchase_confirmations.length > 0 && typeof v.purchase_confirmations != 'undefined'){
+									term_arr[n] = new Object();
+									term_arr[n].ticket_id = v._id;
+									term_arr[n].term = v.purchase_confirmations;
+									n++;
+								}
+							})
+							if(term_arr.length > 0){
+								cb(null,true,term_arr)
+							}else{
+								debug.log('purchase confirmation empty')
+								cb(null,false,204)
+							}
+							
+						}else{
+							debug.log('data empty')
+							cb(null,false,401)
+						}
+						
+					}
+				})
+			}else{
+				debug.log('errs')
+				cb(null,false,data);
+			}
+		}
+	],function(err,state,data){
+		if(state == false){
+			res.json({code_error:data});
+		}else{
+			if(typeof data == 'undefined'){
+				res.json({code_error:401});
+			}else{
+				res.json(data)
+			}
+		}
+		
+	})
+	
+}

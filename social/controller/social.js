@@ -289,7 +289,7 @@ function do_connect_n_updchat(req,fb_id,member_fb_id,match,next){
 					var json_form = {
 						fb_id :member_fb_id,
 						message : 'You are now matched with '+r.first_name.capitalizeFirstLetter(),
-						route : 'social'
+						fromId : fb_id
 					}
 					var options = {
 						url:'http://127.0.0.1:16523/apn',

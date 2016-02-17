@@ -7,13 +7,11 @@ var ObjectIdM = require('mongoose').Types.ObjectId;
 var request = require('request');
 
 var HashidsNPM = require("hashids");
-var Hashids = new HashidsNPM("bfdlkKjlKBKJBjkbk08y23h9hek",12,"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+var Hashids = new HashidsNPM("bfdlkKjlKBKJBjkbk08y23h9hek",6,"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
 
 
 exports.index = function(req, res){
-	req.app.get("helpers").logging("request","get","",req);
-	
 	get_data(req,function(data){
 		if(data == 0){
 			res.json({code_error:204})
@@ -114,32 +112,71 @@ function get_data(req,next){
 
 exports.post_summary = function(req,res){
 	get_summary(req,function(data){
-		if(data == false){
-			res.json({code_error:403})
-		}else if(data == 0){
-			res.json({code_error:204})
-		}else{
-			res.json(data);
-		}
+		res.json(data);
 	})
 }
 
 function get_summary(req,next){
+	var fb_id = req.body.fb_id;
+	
 	async.waterfall([
 		function post(cb){
 			post_summary(req,function(data){
 				if(data == false){
-					cb(null,false);
+					cb(null,false,{code_error:403});
+				}else if(data == 0){
+					cb(null,false,{code_error:204});
 				}else{
-					cb(null,data)
+					cb(null,true,data)
 				}
 			})
 		},
-		function get(data,cb){
-			if(data == false){
-				cb(null,false)
-			}else{
-				cb(null,data)
+		function get_purchase_confirmation(stat,dt,cb){
+			if(stat == false){
+				cb(null,false,dt)
+			}else if(stat == true){
+				var ticket_id_in = [];
+				var x = 0;
+				async.forEachOf(dt.product_list,function(v,k,e){
+					ticket_id_in[x] = new ObjectId(v.ticket_id);
+					x++;
+				})
+				
+				tickettypes_coll.find({_id:{$in:ticket_id_in}}).toArray(function(err,r){
+					var conf = [];
+					async.forEachOf(r,function(v,k,e){
+						conf[v._id] = v.purchase_confirmations;
+					})
+					
+					async.forEachOf(dt.product_list,function(v,k,e){
+						if(typeof conf[v.ticket_id] != 'undefined'){
+							dt.product_list[k].terms = conf[v.ticket_id];
+						}else{
+							dt.product_list[k].terms = [];
+						}
+						
+					})
+					cb(null,true,dt)
+				})
+			}
+		},
+		function get_cc(stat,dt,cb){
+			if(stat == false){
+				cb(null,dt)
+			}else if(stat == true){
+				customers_coll.findOne({fb_id:fb_id},function(err,r){
+					if(r == null){
+						debug.log('error fbid');
+						cb(null,{code_error:403})
+					}else{
+						if(r.credit_card_vt == null){
+							dt.credit_card = [];
+						}else{
+							dt.credit_card = r.credit_card_vt
+						}
+						cb(null,dt);
+					}
+				})
 			}
 		}
 	],function(err,merge){
@@ -167,7 +204,8 @@ function post_summary(req,next){
 				var json_data = new Object();
 		
 				json_data.code = String(Hashids.encode(new Date().getTime()));
-				json_data.status = 'summary';
+				json_data.order_status = 'checkout_completed';
+				json_data.payment_status = 'awaiting_payment';
 				json_data.fb_id = post.fb_id;
 				json_data.event_id = post.event_id;
 				json_data.event_name = rows_event.title;
@@ -252,9 +290,9 @@ function post_summary(req,next){
 		},
 		function post_data(cek,json_data,cek_exist,cek_quantity,cek_type,cb){
 			if(cek == 1){
-				debug.log(cek_exist);
-				debug.log(cek_quantity);
-				debug.log(cek_type);
+				debug.log('cek_exist : '+cek_exist);
+				debug.log('cek_quantity : '+cek_quantity);
+				debug.log('cek_type : '+cek_type);
 				if(cek_exist == true && cek_quantity == true && cek_type == true){
 					var insert = new order(json_data);
 					insert.save(function(err){
