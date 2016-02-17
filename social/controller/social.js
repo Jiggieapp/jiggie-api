@@ -678,7 +678,10 @@ function async_mixpanel(event_data,from_id,to_id,next){
 	async.parallel([
 		function trackEvent_fromid(cb){
 			event_data.match_order = 2;
-			trackEvent_mixpanel("User Match",from_id,event_data)
+			setTimeout(function(){
+				trackEvent_mixpanel("User Match",from_id,event_data)
+				debug.log('mix 1');
+			},1000)
 			cb(null,'next')
 		},
 		function incrementItem_fromId(cb){
@@ -688,7 +691,10 @@ function async_mixpanel(event_data,from_id,to_id,next){
 		},
 		function trackEvent_toid(cb){
 			event_data.match_order = 1;
-			trackEvent_mixpanel("User Match",from_id,event_data)
+			setTimeout(function(){
+				trackEvent_mixpanel("User Match",to_id,event_data)
+				debug.log('mix 2');
+			},6000)
 			cb(null,'next')
 		},
 		function incrementItem_toId(cb){
