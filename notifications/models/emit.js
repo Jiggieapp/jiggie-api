@@ -1,12 +1,12 @@
 var mongo = require('./mongo');
 var eventEmitter = mongo.eventEmitter;
 
-// eventEmitter.on('database_connected',function(){
-	// mongo.getCollection('membersettings',function(collection){
-		// membersettings_coll = collection;
-		// console.log("membersettings connected");
-	// });
-// });
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('membersettings',function(collection){
+		membersettings_coll = collection;
+		console.log("membersettings connected");
+	});
+});
 
 eventEmitter.on('database_connected',function(){
 	mongo.getCollection('customers',function(collection){
