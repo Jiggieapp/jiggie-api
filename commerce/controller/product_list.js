@@ -121,15 +121,23 @@ function get_summary(req,next){
 	
 	async.waterfall([
 		function post(cb){
-			post_summary(req,function(data){
-				if(data == false){
-					cb(null,false,{code_error:403});
-				}else if(data == 0){
-					cb(null,false,{code_error:204});
+			customers_coll.findOne({fb_id:fb_id},function(err,r){
+				if(r == null){
+					debug.log('error fbid');
+					cb(null,{code_error:403})
 				}else{
-					cb(null,true,data)
+					post_summary(req,function(data){
+						if(data == false){
+							cb(null,false,{code_error:403});
+						}else if(data == 0){
+							cb(null,false,{code_error:204});
+						}else{
+							cb(null,true,data)
+						}
+					})
 				}
 			})
+			
 		},
 		function get_purchase_confirmation(stat,dt,cb){
 			if(stat == false){
