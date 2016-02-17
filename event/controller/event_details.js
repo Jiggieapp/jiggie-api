@@ -55,20 +55,24 @@ function doall(event_details_id,fb_id,gender_interest,next){
 			// })
 		},
 		function updating(callback){
-			upd_data(event_details_id,fb_id,function(upd){});
-			callback(null,'next');
+			upd_data(event_details_id,fb_id,function(upd){
+				callback(null,'next');
+			});
 		},
 		function update_socialfeed(callback){
-			upd_socialfeed(event_details_id,fb_id,function(upd){});
-			callback(null,'next');
+			upd_socialfeed(event_details_id,fb_id,function(upd){
+				callback(null,'next');
+			});
 		},
 		function clean_data(cb){
-			cleaning_data(event_details_id,function(dt){})
-			cb(null,'next')
+			cleaning_data(event_details_id,function(dt){
+				cb(null,'next')
+			})
 		},
 		function clean_socialfeed(cb){
-			cleansocfed(fb_id,function(dt){})
-			cb(null,'next');
+			cleansocfed(fb_id,function(dt){
+				cb(null,'next');
+			})
 		}
 	],function(err,merge){
 		try{
