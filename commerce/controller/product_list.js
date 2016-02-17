@@ -124,7 +124,7 @@ function get_summary(req,next){
 			customers_coll.findOne({fb_id:fb_id},function(err,r){
 				if(r == null){
 					debug.log('error fbid');
-					cb(null,{code_error:403})
+					cb(null,false,{code_error:403})
 				}else{
 					post_summary(req,function(data){
 						if(data == false){
