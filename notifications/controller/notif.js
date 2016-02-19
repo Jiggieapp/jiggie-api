@@ -27,6 +27,8 @@ exports.apn = function(req,res){
 	var lim_msg = message.trunc(50,true);
 	var route = post.route;
 	var fromIdData = post.fromId;
+	var post_type = post.type;
+	var event_id = post.event_id;
 	
 	customers_coll.findOne({fb_id:fb_id},function(err,r){
 		membersettings_coll.findOne({fb_id:fb_id},function(errmem,memr){
@@ -67,7 +69,6 @@ exports.apn = function(req,res){
 				}else{
 					gcm_token = '';
 				}
-				
 				debug.log('APN Token :'+token)
 				debug.log('GCM Token :'+gcm_token)
 				debug.log('FBID :'+fb_id)
@@ -76,7 +77,7 @@ exports.apn = function(req,res){
 					function push_gcm(cb){
 						if(typeof gcm_token != 'undefined'){
 							if(gcm_token != '' && gcm_token != 'empty' && gcm_token != 'undefined'){
-								sendGPN(fb_id,fromIdData,alert,gcm_token);
+								sendGPN(fb_id,fromIdData,alert,gcm_token,post_type,event_id);
 							}else{
 								debug.log('GCM Token Empty')
 							}
@@ -92,11 +93,34 @@ exports.apn = function(req,res){
 							
 							customers_coll.findOne({fb_id:fromId},function(err2,r2){
 								var fromName = r2.first_name;
+								
 								var payload = new Object();
-								payload.type = "message";
-								payload.fromId = fromId;
-								payload.fromFBId = fromFBId;
-								payload.fromName = fromName;
+								if(post_type == 'general'){
+									payload.type = 'general';
+								}else if(post_type == 'event'){
+									payload.type = "event";
+									payload.event_id = post.event_id;
+								}else if(post_type == 'match'){
+									payload.type = "match";
+									payload.fromId = fromId;
+									payload.fromFBId = fromFBId;
+									payload.fromName = fromName;
+									payload.toId = fb_id;
+								}else if(post_type == 'message'){
+									payload.type = "message";
+									payload.fromId = fromId;
+									payload.fromFBId = fromFBId;
+									payload.fromName = fromName;
+									payload.toId = fb_id;
+								}else{
+									payload.type = "message";
+									payload.fromId = fromId;
+									payload.fromFBId = fromFBId;
+									payload.fromName = fromName;
+									payload.toId = fb_id;
+								}
+								
+								var payload = new Object();
 								payload.message = message;
 								payload.hosting_id = "";
 								payload.badge = 1;
@@ -151,16 +175,36 @@ String.prototype.capitalizeFirstLetter = function() {
 
 // START : GCM //
 
-function sendGPN(fb_id,fromId,messageToAdd,token){
+function sendGPN(fb_id,fromId,messageToAdd,token,post_type,event_id){
 	// example token aggas
 	// eqnRKBHQk7E:APA91bErfoh7unz94_NKM5HgMIz3jKiRvYS12w6HktEymm5kw6DdywcycVIYHV246Ge35d-tgN0D0BKrQzc2EOOFXOpNFTMnofMx0i5uwV4X_B2F1MsWPRVsSkDeQ0uWlrhGHLQri21x
 	
 	// var API_KEY = 'AIzaSyBKCeyNfIEEas5pzOckT7fcCmz_8iQnJW0';
 	var API_KEY = 'AIzaSyC9UPTbE_uPBmexhmB-g6IyB403nGbiBeI';
 	var message = new gcm.Message();
-	message.addData('Jiggie', messageToAdd);
-	message.addData('fromId', fromId);
-	message.addData('toId', fb_id);
+	if(post_type == 'general'){
+		message.addData('type', 'general');
+		message.addData('Jiggie', messageToAdd);
+	}else if(post_type == 'event'){
+		message.addData('type', 'event');
+		message.addData('Jiggie', messageToAdd);
+		message.addData('event_id', event_id);
+	}else if(post_type == 'match'){
+		message.addData('type', 'match');
+		message.addData('Jiggie', messageToAdd);
+		message.addData('fromId', fromId);
+		message.addData('toId', fb_id);
+	}else if(post_type == 'message'){
+		message.addData('type', 'message');
+		message.addData('Jiggie', messageToAdd);
+		message.addData('fromId', fromId);
+		message.addData('toId', fb_id);
+	}else{
+		message.addData('Jiggie', messageToAdd);
+		message.addData('fromId', fromId);
+		message.addData('toId', fb_id);
+	}
+	
 	var regTokens = [token];
 	var sender = new gcm.Sender(API_KEY);
 	sender.send(message, { registrationTokens: regTokens }, function (err, result){
