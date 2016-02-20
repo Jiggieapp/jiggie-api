@@ -7,5 +7,5 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.post('/app/v3/product/summary',product_list.post_summary);
   
   var payment = require(path_controller+'payment');
-  app.post('/app/v3/product/payment/:orderid',payment.index);
+  app.post('/app/v3/product/payment',payment.index);
 }

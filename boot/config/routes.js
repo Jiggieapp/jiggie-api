@@ -45,6 +45,10 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.post('/app/v3/product/summary',commerce.post_summary);
   app.get('/app/v3/product/term/:codeid',commerce.term);
   
+  var xmpp = require(path_controller+'xmpp');
+  app.get('/xmpp/:user',xmpp.index);
+  app.get('/ltx/:user',xmpp.ltx);
+  
   
   
   // Notif //

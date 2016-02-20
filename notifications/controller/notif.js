@@ -27,106 +27,135 @@ exports.apn = function(req,res){
 	var lim_msg = message.trunc(50,true);
 	var route = post.route;
 	var fromIdData = post.fromId;
+	var post_type = post.type;
+	var event_id = post.event_id;
 	
-	customers_coll.findOne({fb_id:fb_id},function(err,r){
-		membersettings_coll.findOne({fb_id:fb_id},function(errmem,memr){
-			var permit = 0;
-			if(memr != null){
-				if(route == 'chat'){
-					if(memr.notifications.chat == true){
-						permit = 1;
-					}else{
-						permit = 0;
+	if(typeof fb_id == 'undefined' || fb_id == '' || fb_id == null){
+		res.send('FB ID EMPTY');
+		// process.exit(1);
+	}else{
+		customers_coll.findOne({fb_id:fb_id},function(err,r){
+			membersettings_coll.findOne({fb_id:fb_id},function(errmem,memr){
+				var permit = 0;
+				if(memr != null){
+					if(route == 'chat'){
+						if(memr.notifications.chat == true){
+							permit = 1;
+						}else{
+							permit = 0;
+						}
+					}else if(route == 'social'){
+						if(memr.notifications.feed == true){
+							permit = 1;
+						}else{
+							permit = 0;
+						}
 					}
-				}else if(route == 'social'){
-					if(memr.notifications.feed == true){
-						permit = 1;
+				}else{
+					permit = 0;
+				}
+				
+				if(permit == 1){
+					var alert = lim_msg;
+				
+					var token = '';
+					(r.apn_token == null) ? token = '' : token = r.apn_token;
+					if(checkIfAndroid(token) == false){
+						token = token
 					}else{
-						permit = 0;
+						token = '';
 					}
-				}
-			}else{
-				permit = 0;
-			}
-			
-			if(permit == 1){
-				var alert = lim_msg;
-			
-				var token = '';
-				(r.apn_token == null) ? token = '' : token = r.apn_token;
-				if(checkIfAndroid(token) == false){
-					token = token
-				}else{
-					token = '';
-				}
-				
-				var gcm_token = '';
-				(r.gcm_token == null) ? gcm_token = '' : gcm_token = r.gcm_token;
-				if(checkIfAndroid(gcm_token) == true){
-					gcm_token = gcm_token
-				}else{
-					gcm_token = '';
-				}
-				
-				debug.log('APN Token :'+token)
-				debug.log('GCM Token :'+gcm_token)
-				debug.log('FBID :'+fb_id)
-				
-				async.parallel([
-					function push_gcm(cb){
-						if(typeof gcm_token != 'undefined'){
-							if(gcm_token != '' && gcm_token != 'empty' && gcm_token != 'undefined'){
-								sendGPN(fb_id,fromIdData,alert,gcm_token);
+					
+					var gcm_token = '';
+					(r.gcm_token == null) ? gcm_token = '' : gcm_token = r.gcm_token;
+					if(checkIfAndroid(gcm_token) == true){
+						gcm_token = gcm_token
+					}else{
+						gcm_token = '';
+					}
+					debug.log('APN Token :'+token)
+					debug.log('GCM Token :'+gcm_token)
+					debug.log('FBID :'+fb_id)
+					
+					async.parallel([
+						function push_gcm(cb){
+							if(typeof gcm_token != 'undefined'){
+								if(gcm_token != '' && gcm_token != 'empty' && gcm_token != 'undefined'){
+									sendGPN(fb_id,fromIdData,alert,gcm_token,post_type,event_id);
+								}else{
+									debug.log('GCM Token Empty')
+								}
 							}else{
-								debug.log('GCM Token Empty')
+								debug.log('GCM Token undefined')
 							}
-						}else{
-							debug.log('GCM Token undefined')
-						}
-						cb(null,'next');
-					},
-					function push_apn(cb){
-						if(typeof token != 'undefined' && token != 'empty'  && token != '' && token != 'undefined'){
-							var fromId = fromIdData;
-							var fromFBId = fromIdData;
-							
-							customers_coll.findOne({fb_id:fromId},function(err2,r2){
-								var fromName = r2.first_name;
-								var payload = new Object();
-								payload.type = "message";
-								payload.fromId = fromId;
-								payload.fromFBId = fromFBId;
-								payload.fromName = fromName;
-								payload.message = message;
-								payload.hosting_id = "";
-								payload.badge = 1;
+							cb(null,'next');
+						},
+						function push_apn(cb){
+							if(typeof token != 'undefined' && token != 'empty'  && token != '' && token != 'undefined'){
+								var fromId = fromIdData;
+								var fromFBId = fromIdData;
+								
+								customers_coll.findOne({fb_id:fromId},function(err2,r2){
+									var fromName = r2.first_name;
+									
+									var payload = new Object();
+									if(post_type == 'general'){
+										payload.type = 'general';
+									}else if(post_type == 'event'){
+										payload.type = "event";
+										payload.event_id = post.event_id;
+									}else if(post_type == 'match'){
+										payload.type = "match";
+										payload.fromId = fromId;
+										payload.fromFBId = fromFBId;
+										payload.fromName = fromName;
+										payload.toId = fb_id;
+									}else if(post_type == 'message'){
+										payload.type = "message";
+										payload.fromId = fromId;
+										payload.fromFBId = fromFBId;
+										payload.fromName = fromName;
+										payload.toId = fb_id;
+									}else{
+										payload.type = "message";
+										payload.fromId = fromId;
+										payload.fromFBId = fromFBId;
+										payload.fromName = fromName;
+										payload.toId = fb_id;
+									}
+									
+									var payload = new Object();
+									payload.message = message;
+									payload.hosting_id = "";
+									payload.badge = 1;
 
-								var connection = new apn.Connection(optionsLive);
-								notification = new apn.Notification();
-								notification.device = new apn.Device(token);
-								notification.alert = alert;
-								notification.payload = payload;
-								notification.badge = 1;
-								notification.sound = "default";
-								connection.sendNotification(notification);
-								debug.log('IOS TOKEN USING');
-							})
-							
-						}else{
-							debug.log('APN token empty');
+									var connection = new apn.Connection(optionsLive);
+									notification = new apn.Notification();
+									notification.device = new apn.Device(token);
+									notification.alert = alert;
+									notification.payload = payload;
+									notification.badge = 1;
+									notification.sound = "default";
+									connection.sendNotification(notification);
+									debug.log('IOS TOKEN USING');
+								})
+								
+							}else{
+								debug.log('APN token empty');
+							}
+							cb(null,'next');
 						}
-						cb(null,'next');
-					}
-				],function(err,ush){
-					debug.log(ush)
-				})
-			}else{
-				debug.log('Not Permited');
-			}
-		})
-	});
-	
-	res.send("APN_SENT!!");
+					],function(err,ush){
+						debug.log(ush)
+					})
+				}else{
+					debug.log('Not Permited');
+				}
+			})
+		});
+		
+		res.send("APN_SENT!!");
+	}
 }
 
 function onErrorCB(err,obj){
@@ -151,16 +180,36 @@ String.prototype.capitalizeFirstLetter = function() {
 
 // START : GCM //
 
-function sendGPN(fb_id,fromId,messageToAdd,token){
+function sendGPN(fb_id,fromId,messageToAdd,token,post_type,event_id){
 	// example token aggas
 	// eqnRKBHQk7E:APA91bErfoh7unz94_NKM5HgMIz3jKiRvYS12w6HktEymm5kw6DdywcycVIYHV246Ge35d-tgN0D0BKrQzc2EOOFXOpNFTMnofMx0i5uwV4X_B2F1MsWPRVsSkDeQ0uWlrhGHLQri21x
 	
 	// var API_KEY = 'AIzaSyBKCeyNfIEEas5pzOckT7fcCmz_8iQnJW0';
 	var API_KEY = 'AIzaSyC9UPTbE_uPBmexhmB-g6IyB403nGbiBeI';
 	var message = new gcm.Message();
-	message.addData('Jiggie', messageToAdd);
-	message.addData('fromId', fromId);
-	message.addData('toId', fb_id);
+	if(post_type == 'general'){
+		message.addData('type', 'general');
+		message.addData('Jiggie', messageToAdd);
+	}else if(post_type == 'event'){
+		message.addData('type', 'event');
+		message.addData('Jiggie', messageToAdd);
+		message.addData('event_id', event_id);
+	}else if(post_type == 'match'){
+		message.addData('type', 'match');
+		message.addData('Jiggie', messageToAdd);
+		message.addData('fromId', fromId);
+		message.addData('toId', fb_id);
+	}else if(post_type == 'message'){
+		message.addData('type', 'message');
+		message.addData('Jiggie', messageToAdd);
+		message.addData('fromId', fromId);
+		message.addData('toId', fb_id);
+	}else{
+		message.addData('Jiggie', messageToAdd);
+		message.addData('fromId', fromId);
+		message.addData('toId', fb_id);
+	}
+	
 	var regTokens = [token];
 	var sender = new gcm.Sender(API_KEY);
 	sender.send(message, { registrationTokens: regTokens }, function (err, result){
