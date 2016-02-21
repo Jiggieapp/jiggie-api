@@ -2,12 +2,12 @@
 // var eventEmitter = new events.EventEmitter();
 // exports.eventEmitter = eventEmitter;
 // eventEmitter.setMaxListeners(0);
-var xmpp = require('simple-xmpp');
-xmpp.connect({
-	jid                 : 'admin@jannesjiggie-pc/Ressource',
-	password        	: 'Admin123!',
-	port                : 5222
-});
+// var xmpp = require('simple-xmpp');
+// xmpp.connect({
+	// jid                 : 'admin@jannesjiggie-pc/Ressource',
+	// password        	: 'Admin123!',
+	// port                : 5222
+// });
 // eventEmitter.emit('XMPP Connected');
 
 
