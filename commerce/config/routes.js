@@ -8,4 +8,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   
   var payment = require(path_controller+'payment');
   app.post('/app/v3/product/payment',payment.index);
+  
+  var notif = require(path_controller+'notifications-handler');
+  app.get('/notif-handle',notif.index);
 }
