@@ -103,32 +103,43 @@ exports.apn = function(req,res){
 								var fromFBId = fromIdData;
 								
 								customers_coll.findOne({fb_id:fromId},function(err2,r2){
-									var fromName = r2.first_name;
+									var fromName = '';
+									if(r2 == null){
+										fromName = '';
+									}else{
+										fromName = r2.first_name;
+									}
+									
 									
 									var payload = new Object();
 									if(post_type == 'general'){
 										payload.type = 'general';
+										debug.log('use IOS General');
 									}else if(post_type == 'event'){
 										payload.type = "event";
 										payload.event_id = post.event_id;
+										debug.log('use IOS Event');
 									}else if(post_type == 'match'){
 										payload.type = "match";
 										payload.fromId = fromId;
 										payload.fromFBId = fromFBId;
 										payload.fromName = fromName;
 										payload.toId = fb_id;
+										debug.log('use IOS Match');
 									}else if(post_type == 'message'){
 										payload.type = "message";
 										payload.fromId = fromId;
 										payload.fromFBId = fromFBId;
 										payload.fromName = fromName;
 										payload.toId = fb_id;
+										debug.log('use IOS Message');
 									}else{
 										payload.type = "message";
 										payload.fromId = fromId;
 										payload.fromFBId = fromFBId;
 										payload.fromName = fromName;
 										payload.toId = fb_id;
+										debug.log('use IOS Message');
 									}
 									
 									payload.message = message;
@@ -196,24 +207,29 @@ function sendGPN(fb_id,fromId,messageToAdd,token,post_type,event_id){
 	if(post_type == 'general'){
 		message.addData('type', 'general');
 		message.addData('Jiggie', messageToAdd);
+		debug.log('use Android General');
 	}else if(post_type == 'event'){
 		message.addData('type', 'event');
 		message.addData('Jiggie', messageToAdd);
 		message.addData('event_id', event_id);
+		debug.log('use Android Event');
 	}else if(post_type == 'match'){
 		message.addData('type', 'match');
 		message.addData('Jiggie', messageToAdd);
 		message.addData('fromId', fromId);
 		message.addData('toId', fb_id);
+		debug.log('use Android Match');
 	}else if(post_type == 'message'){
 		message.addData('type', 'message');
 		message.addData('Jiggie', messageToAdd);
 		message.addData('fromId', fromId);
 		message.addData('toId', fb_id);
+		debug.log('use Android Message');
 	}else{
 		message.addData('Jiggie', messageToAdd);
 		message.addData('fromId', fromId);
 		message.addData('toId', fb_id);
+		debug.log('use Android Message');
 	}
 	
 	var regTokens = [token];
