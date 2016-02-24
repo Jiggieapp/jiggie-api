@@ -6,21 +6,22 @@ var ObjectId = require('mongodb').ObjectID;
 var ObjectIdM = require('mongoose').Types.ObjectId; 
 var curl = require('request');
 
-var comurl = 'http://54.169.78.162/VT/examples/';
+// var comurl = 'http://54.169.78.162/VT/examples/';
+var comurl = 'http://127.0.0.1/VT/examples/';
 
 exports.index = function(req, res){
 	post_transaction_cc(req,function(dt){
 		res.send(dt);
 	})
-	
 };
 
 function post_transaction_cc(req,next){
 	var post = req.body;
 	var order_id = post.order_id;
 	var token_id = post.token_id;
-	var save_cc = post.save_cc;
-	(parseInt(save_cc) == 1) ? save_cc = true : save_cc = false;
+	var type = post.type;
+	var save_cc = post.is_new_card;
+	var secure_cc = 1;
 	
 	var schema = req.app.get('mongo_path');
 	var order = require(schema+'/order_product.js');
@@ -80,6 +81,7 @@ function post_transaction_cc(req,next){
 					items[n].price = parseInt(v.total_price);
 					items[n].quantity = parseInt(v.num_buy);
 					items[n].name = v.name;
+					n++;
 				})
 				json_data.items = items;
 				// e:items //
@@ -137,7 +139,9 @@ function post_transaction_cc(req,next){
 				// e:transaction_data //
 				
 				json_data.token_id = token_id;
-				// example token : 401111-1112-c36418e1-0ebd-421a-abf5-a89d38471884 //
+				
+				json_data.save_cc = parseInt(save_cc);
+				json_data.secure = parseInt(secure_cc);
 				
 				var options = {
 					url : comurl+'vt-direct/checkout-process2.php',
@@ -145,14 +149,166 @@ function post_transaction_cc(req,next){
 				}
 				curl.post(options,function(err,resp,body){
 					if (!err && resp.statusCode == 200) {
-						cb(null,body);
+						cb(null,true,body)
 					}else{
-						debug.log('error post curl');
-						cb(null,{code_error:401});
+						cb(null,false,[]);
 					}
 				});
 			}else{
 				cb(null,dt);
+			}
+		},
+		function merge_data(stat,body,cb){
+			if(stat == true){
+				debug.log(body);
+				var vt = JSON.parse(body);
+				if(type == 'cc'){
+					var is_new_card = post.is_new_card;
+					if(typeof is_new_card != 'undefined'){
+						if(String(is_new_card) == '1'){
+							if(vt.transaction_status == 'capture'){
+								async.waterfall([
+									function upd_order(cb2){
+										var form_upd = {
+											$set:{
+												order_status:'pending_shipment',
+												payment_status:'paid'
+											}
+										}
+										order.update({order_id:order_id},form_upd,function(err,upd){
+											if(err){
+												debug.log('error line 165');
+												cb2(null,false);
+											}else{
+												cb2(null,true);
+											}
+										})
+									},
+									function upd_cust(stat,cb2){
+										if(stat == true){
+											var masked_card = vt.masked_card;
+											var saved_token_id = vt.saved_token_id;
+											var payment_type = vt.payment_type;
+											var saved_token_id_expired_at = vt.saved_token_id_expired_at;
+											var data_push = {
+												masked_card : masked_card,
+												saved_token_id : saved_token_id,
+												saved_token_id_expired_at : saved_token_id_expired_at,
+												payment_type : payment_type
+											}
+											customers_coll.findOne({fb_id:dt2.fb_id},function(err,r){
+												if(r.ccinfo != null || r.ccinfo != undefined){
+													if(r.length > 0){
+														customers_coll.update({fb_id:dt2.fb_id},{$push:{ccinfo:data_push}},function(err2,upd){
+															if(err2){
+																debug.log("error update line 172");
+															}else{
+																debug.log("updated cc info");
+															}
+														})
+													}else{
+														var data_ins = [];
+														data_ins[0] = data_push;
+														customers_coll.update({fb_id:dt2.fb_id},{$set:{ccinfo:data_ins}},function(err2,upd){
+															if(err2){
+																debug.log("error update line 181");
+															}else{
+																debug.log("updated cc info");
+															}
+														})
+													}
+												}else{
+													var data_ins = [];
+													data_ins[0] = data_push;
+													customers_coll.update({fb_id:dt2.fb_id},{$set:{ccinfo:data_ins}},function(err2,upd){
+														if(err2){
+															debug.log("error update line 192");
+														}else{
+															debug.log("updated cc info");
+														}
+													})
+												}
+											})
+											cb2(null,true);
+										}else{
+											cb2(null,false);
+										}
+									},
+									function upd_vt(stat,cb2){
+										if(stat == true){
+											order_coll.update({order_id:order_id},{$set:{vt_response:vt}},function(err,upd){
+												if(err){
+													debug.log('error line 228');
+													cb2(null,false);
+												}else{
+													cb2(null,true);
+												}
+											})
+										}else{
+											cb2(null,false);
+										}
+									}
+								],function(err,merge2){
+									if(merge2 == true){
+										cb(null,{success:true,status:'capture'});
+									}else if(merge2 == false){
+										debug.log('error line 255');
+										cb(null,{code_error:403});
+									}
+								})
+							}else if(vt.transaction_status == 'challenge'){
+								
+							}else if(vt.transaction_status == 'deny'){
+								
+							}
+						}else if(String(is_new_card) == '0' || String(is_new_card) == ''){
+							/*Using One Click Method*/
+							async.waterfall([
+								function upd_order(cb2){
+									var form_upd = {
+										$set:{
+											order_status:'pending_shipment',
+											payment_status:'paid'
+										}
+									}
+									order.update({order_id:order_id},form_upd,function(err,upd){
+										if(err){
+											debug.log('error line 272');
+											cb2(null,false);
+										}else{
+											cb2(null,true);
+										}
+									})
+								},
+								function upd_vt(stat,cb2){
+									if(stat == true){
+										order_coll.update({order_id:order_id},{$set:{vt_response:vt}},function(err,upd){
+											if(err){
+												debug.log('error line 283');
+												cb2(null,false);
+											}else{
+												cb2(null,true);
+											}
+										})
+									}else{
+										cb2(null,false);
+									}
+								}
+							],function(err,merge){
+								if(merge == true){
+									cb(null,{success:true,status:'capture',method:'one click'});
+								}else if(merge == false){
+									debug.log('error line 298');
+									cb(null,false);
+								}
+							})
+						}
+					}else{
+						
+					}
+				}
+			}else{
+				
 			}
 			
 		}

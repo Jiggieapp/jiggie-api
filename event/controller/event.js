@@ -8,14 +8,13 @@ var request = require('request');
 
 
 exports.index = function(req, res){
-	var days = 7; // Interval Data for Events
+	var days = 8; // Interval Data for Events
 	var from_date = new Date();
 	var to_date = req.app.get("helpers").intervalDate(days);
 	
+	
 	debug.log(from_date);
 	debug.log(to_date);
-	
-	req.app.get("helpers").logging("request","get","",req);
 	
 	customers_coll.findOne({fb_id:req.params.fb_id},function(errrs,cek){
 		if(cek == undefined){
@@ -24,7 +23,7 @@ exports.index = function(req, res){
 		}else{
 			// cache.get('eventlist',function(errcache,valcache){
 				// if(typeof valcache == 'undefined'){
-					get_data(req.params.fb_id,from_date,to_date,function(err,rows){
+					get_data(req,req.params.fb_id,from_date,to_date,function(err,rows){
 						if(err){
 							req.app.get("helpers").logging("response","get",JSON.stringify({success:false}),req);
 							res.json({success:false});
@@ -56,7 +55,8 @@ exports.index = function(req, res){
 	
 };
 
-function get_data(fb_id,from_date,to_date,next){
+function get_data(req,fb_id,from_date,to_date,next){
+	var to_date_filter = req.app.get("helpers").intervalDateFilter(7);
 	async.waterfall([
 		function step1(callback){
 			membersettings_coll.findOne({fb_id:fb_id},function(err,cr){
@@ -133,7 +133,7 @@ function get_data(fb_id,from_date,to_date,next){
 			});
 		}
 	],function(err,rows_event,rows_venue){
-		debug.log(rows_event);
+		// debug.log(rows_event);
 		var json_data = [];
 		if(rows_event.length > 0 ){
 			async.forEachOf(rows_event,function(v,k,e){
@@ -154,6 +154,8 @@ function get_data(fb_id,from_date,to_date,next){
 					json_data[k].date_day = getDay(d.getDay());
 				}
 				
+				var dd = new Date(v.start_datetime);
+				json_data[k].start_date = new Date(dd.getFullYear(),dd.getMonth(),dd.getDate());
 				
 				json_data[k].photos = new Object();
 				
@@ -196,7 +198,18 @@ function get_data(fb_id,from_date,to_date,next){
 			json_data.sort(sortRank);
 		}
 		
-		next(err,json_data);
+		var filtered_array = [];
+		var n = 0;
+		async.forEachOf(json_data,function(v,k,e){
+			if(v.start_date <= to_date_filter){
+				filtered_array[n] = v;
+			}
+			n++;
+		})
+		
+		// debug.log(filtered_array);
+		
+		next(err,filtered_array);
 	});
 }
 
