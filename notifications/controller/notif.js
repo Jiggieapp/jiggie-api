@@ -131,7 +131,6 @@ exports.apn = function(req,res){
 										payload.toId = fb_id;
 									}
 									
-									var payload = new Object();
 									payload.message = message;
 									payload.hosting_id = "";
 									payload.badge = 1;
