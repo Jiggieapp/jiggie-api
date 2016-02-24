@@ -37,22 +37,27 @@ exports.apn = function(req,res){
 		customers_coll.findOne({fb_id:fb_id},function(err,r){
 			membersettings_coll.findOne({fb_id:fb_id},function(errmem,memr){
 				var permit = 0;
-				if(memr != null){
-					if(route == 'chat'){
-						if(memr.notifications.chat == true){
-							permit = 1;
-						}else{
-							permit = 0;
-						}
-					}else if(route == 'social'){
-						if(memr.notifications.feed == true){
-							permit = 1;
-						}else{
-							permit = 0;
-						}
-					}
+				if(post_type == 'general' || post_type == 'event' || post_type == 'match' || post_type == 'message'){
+					// using directly from api
+					permit = 1;
 				}else{
-					permit = 0;
+					if(memr != null){
+						if(route == 'chat'){
+							if(memr.notifications.chat == true){
+								permit = 1;
+							}else{
+								permit = 0;
+							}
+						}else if(route == 'social'){
+							if(memr.notifications.feed == true){
+								permit = 1;
+							}else{
+								permit = 0;
+							}
+						}
+					}else{
+						permit = 0;
+					}
 				}
 				
 				if(permit == 1){

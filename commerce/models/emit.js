@@ -35,3 +35,10 @@ eventEmitter.on('database_connected',function(){
 		console.log("tickettypes connected");
 	});
 });
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('order_products',function(collection){
+		order_coll = collection;
+		console.log("order_products connected");
+	});
+});
