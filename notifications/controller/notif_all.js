@@ -24,6 +24,7 @@ exports.apn = function(req,res){
 	
 	var message = post.message;
 	var lim_msg = message.trunc(50,true);
+	var post_type = post.type;
 	
 	customers_coll.find({}).toArray(function(err,rows){
 		var howtot = 0;
@@ -53,7 +54,7 @@ exports.apn = function(req,res){
 				function push_gcm(cb){
 					if(typeof gcm_token != 'undefined'){
 						if(gcm_token != '' && gcm_token != 'empty' && gcm_token != 'undefined'){
-							sendGPN(ve.fb_id,'',alert,gcm_token);
+							sendGPN(ve.fb_id,'',alert,gcm_token,post_type);
 						}else{
 							debug.log('GCM Token Empty')
 						}
@@ -64,15 +65,16 @@ exports.apn = function(req,res){
 				},
 				function push_apn(cb){
 					if(typeof token != 'undefined' && token != 'empty'  && token != '' && token != 'undefined'){
-						var fromId = '';
-						var fromFBId = '';
-						var fromName = ve.first_name+' '+ve.last_name;
-						
 						var payload = new Object();
-						payload.type = "message";
-						payload.fromId = fromId;
-						payload.fromFBId = fromFBId;
-						payload.fromName = fromName;
+						if(post_type == 'general'){
+							payload.type = 'general';
+						}else if(post_type == 'event'){
+							payload.type = "event";
+							payload.event_id = post.event_id;
+						}else{
+							payload.type = 'general';
+						}
+						
 						payload.message = message;
 						payload.hosting_id = "";
 						payload.badge = 1;
@@ -124,16 +126,22 @@ String.prototype.capitalizeFirstLetter = function() {
 
 // START : GCM //
 
-function sendGPN(fb_id,fromId,messageToAdd,token){
-	// example token aggas
-	// eqnRKBHQk7E:APA91bErfoh7unz94_NKM5HgMIz3jKiRvYS12w6HktEymm5kw6DdywcycVIYHV246Ge35d-tgN0D0BKrQzc2EOOFXOpNFTMnofMx0i5uwV4X_B2F1MsWPRVsSkDeQ0uWlrhGHLQri21x
-	
-	// var API_KEY = 'AIzaSyBKCeyNfIEEas5pzOckT7fcCmz_8iQnJW0';
+function sendGPN(fb_id,fromId,messageToAdd,token,post_type){
 	var API_KEY = 'AIzaSyC9UPTbE_uPBmexhmB-g6IyB403nGbiBeI';
 	var message = new gcm.Message();
-	message.addData('Jiggie', messageToAdd);
-	message.addData('fromId', fromId);
-	message.addData('toId', fb_id);
+	
+	if(post_type == 'general'){
+		message.addData('type', 'general');
+		message.addData('Jiggie', messageToAdd);
+	}else if(post_type == 'event'){
+		message.addData('type', 'event');
+		message.addData('Jiggie', messageToAdd);
+		message.addData('event_id', event_id);
+	}else{
+		message.addData('type', 'general');
+		message.addData('Jiggie', messageToAdd);
+	}
+	
 	var regTokens = [token];
 	var sender = new gcm.Sender(API_KEY);
 	sender.send(message, { registrationTokens: regTokens }, function (err, result){
