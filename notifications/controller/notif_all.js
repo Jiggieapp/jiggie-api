@@ -54,7 +54,7 @@ exports.apn = function(req,res){
 				function push_gcm(cb){
 					if(typeof gcm_token != 'undefined'){
 						if(gcm_token != '' && gcm_token != 'empty' && gcm_token != 'undefined'){
-							sendGPN(ve.fb_id,'',alert,gcm_token,post_type);
+							sendGPN(post,ve.fb_id,'',alert,gcm_token,post_type);
 						}else{
 							debug.log('GCM Token Empty')
 						}
@@ -126,7 +126,7 @@ String.prototype.capitalizeFirstLetter = function() {
 
 // START : GCM //
 
-function sendGPN(fb_id,fromId,messageToAdd,token,post_type){
+function sendGPN(post,fb_id,fromId,messageToAdd,token,post_type){
 	var API_KEY = 'AIzaSyC9UPTbE_uPBmexhmB-g6IyB403nGbiBeI';
 	var message = new gcm.Message();
 	
@@ -136,7 +136,7 @@ function sendGPN(fb_id,fromId,messageToAdd,token,post_type){
 	}else if(post_type == 'event'){
 		message.addData('type', 'event');
 		message.addData('Jiggie', messageToAdd);
-		message.addData('event_id', event_id);
+		message.addData('event_id', post.event_id);
 	}else{
 		message.addData('type', 'general');
 		message.addData('Jiggie', messageToAdd);
