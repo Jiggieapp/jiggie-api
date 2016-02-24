@@ -43,12 +43,14 @@ exports.apn = function(req,res){
 				}else{
 					if(memr != null){
 						if(route == 'chat'){
+							post_type = 'message';
 							if(memr.notifications.chat == true){
 								permit = 1;
 							}else{
 								permit = 0;
 							}
 						}else if(route == 'social'){
+							post_type = 'match';
 							if(memr.notifications.feed == true){
 								permit = 1;
 							}else{
