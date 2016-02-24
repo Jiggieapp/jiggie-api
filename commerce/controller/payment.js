@@ -6,8 +6,8 @@ var ObjectId = require('mongodb').ObjectID;
 var ObjectIdM = require('mongoose').Types.ObjectId; 
 var curl = require('request');
 
-// var comurl = 'http://54.169.78.162/VT/examples/';
-var comurl = 'http://127.0.0.1/VT/examples/';
+var comurl = 'https://commerce.jiggieapp.com/VT/examples/';
+// var comurl = 'http://127.0.0.1/VT/examples/';
 
 exports.index = function(req, res){
 	post_transaction_cc(req,function(dt){

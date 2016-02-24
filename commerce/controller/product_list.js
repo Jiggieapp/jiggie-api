@@ -6,8 +6,7 @@ var ObjectId = require('mongodb').ObjectID;
 var ObjectIdM = require('mongoose').Types.ObjectId; 
 var request = require('request');
 
-var HashidsNPM = require("hashids");
-var Hashids = new HashidsNPM("bfdlkKjlKBKJBjkbk08y23h9hek",6,"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+var randomString = require('random-strings');
 
 
 
@@ -76,6 +75,7 @@ function get_data(req,next){
 								json_data.purchase[n].tip_amount = v.tip_amount;
 								json_data.purchase[n].price = v.price;
 								json_data.purchase[n].total_price = v.total;
+								json_data.purchase[n].description = v.description;
 								n++;
 							}else if(v.ticket_type == 'reservation'){
 								json_data.reservation[m] = new Object();
@@ -90,6 +90,7 @@ function get_data(req,next){
 								json_data.reservation[m].tip_amount = v.tip_amount;
 								json_data.reservation[m].price = v.price;
 								json_data.reservation[m].total_price = v.total;
+								json_data.reservation[m].description = v.description;
 								m++;
 							}
 						})
@@ -211,7 +212,7 @@ function post_summary(req,next){
 			if(cek == 1){
 				var json_data = new Object();
 		
-				json_data.code = String(Hashids.encode(new Date().getTime()));
+				json_data.code = String(randomString.alphaNumUpper(6,new Date().getTime()));
 				json_data.order_status = 'checkout_completed';
 				json_data.payment_status = 'awaiting_payment';
 				json_data.order_id = new Date().getTime();;
@@ -240,6 +241,7 @@ function post_summary(req,next){
 					json_data.product_list[n].total_price = String(v.total_price);
 					json_data.product_list[n].num_buy = String(v.num_buy);
 					json_data.product_list[n].total_price_all = String(parseFloat(v.num_buy) * parseFloat(v.total_price));
+					json_data.product_list[n].guest_detail = v.guest_detail;
 					
 					tottax += parseFloat(v.tax_amount);
 					totadminfee += parseFloat(v.admin_fee);
