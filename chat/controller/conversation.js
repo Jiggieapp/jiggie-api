@@ -136,8 +136,12 @@ function async_mixpanel(req,state,next){
 	var event_data = {"state":state}
 	
 	if(state == 'ACTIVATED_CHAT_INITIATED'){
-		incrementItem_mixpanel(fromId,'chat_activated_count');
-		incrementItem_mixpanel(toId,'chat_activated_count');
+		setTimeout(function(){
+			incrementItem_mixpanel(fromId,'chat_activated_count');
+		},2000);
+		setTimeout(function(){
+			incrementItem_mixpanel(toId,'chat_activated_count');
+		},4000);
 	}
 	
 	
@@ -149,8 +153,15 @@ function async_mixpanel(req,state,next){
 	},5000);
 	
 	
-	incrementItem_mixpanel(fromId,'chat_count');
-	incrementItem_mixpanel(toId,'chat_count');
+	setTimeout(function(){
+		incrementItem_mixpanel(fromId,'chat_count');
+	},6000);
+	
+	setTimeout(function(){
+		incrementItem_mixpanel(toId,'chat_count');
+	},8000);
+	
+	
 	
 	next('next');	
 }

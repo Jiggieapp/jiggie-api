@@ -145,6 +145,8 @@ exports.apn = function(req,res){
 									payload.message = message;
 									payload.hosting_id = "";
 									payload.badge = 1;
+									
+									debug.log(payload);
 
 									var connection = new apn.Connection(optionsLive);
 									notification = new apn.Notification();
