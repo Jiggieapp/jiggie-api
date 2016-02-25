@@ -430,12 +430,12 @@ exports.sync_membersettings = function(req,res){
 						debug.log("Failed Inserted New Member Settings");
 						res.json({"success":false});
 					}
-					
 				});
 			}
 		});
 	}else{
-		res.json({"success":false,'code':'fb_id Not Exist'});
+		debug.log('FB ID Undefined');
+		res.json({code_error:403});
 	}
 }
 

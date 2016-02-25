@@ -11,7 +11,11 @@ var comurl = 'https://commerce.jiggieapp.com/VT/examples/';
 
 exports.index = function(req, res){
 	post_transaction_cc(req,function(dt){
-		res.send(dt);
+		if(dt == false){
+			res.json({code_error:403})
+		}else{
+			res.json(dt);
+		}
 	})
 };
 
@@ -167,9 +171,68 @@ function post_transaction_cc(req,next){
 					if(typeof is_new_card != 'undefined'){
 						if(String(is_new_card) == '1'){
 							if(vt.transaction_status == 'capture'){
-								if(vt.fraud_status == 'accept'){
-									async.waterfall([
-										function upd_order(cb2){
+								async.waterfall([
+									function upd_challenge(cb2){
+										if(vt.fraud_status == 'challenge'){
+											debug.log('fraud status challenge');
+											var form_post = new Object();
+											form_post.order_id = order_id
+											var options = {
+												url : comurl+"/approve.php",
+												form : form_post
+											}
+											curl.post(options,function(err2,response,dt){
+												if (!err2 && response.statusCode == 200) {
+													var dt = JSON.parse(dt);
+													if(typeof dt.code_error != 'undefined'){
+														debug.log('error push api approve challange');
+														cb2(null,false);
+													}else{
+														cb2(null,true);
+													}
+												}else{
+													debug.log('error line 189');
+													cb2(null,false)
+												}
+											});
+										}else{
+											debug.log('fraud status accepted');
+											cb(null,true);
+										}
+									},
+									function get_stock(stat,cb2){
+										if(stat == true){
+											order.findOne({order_id:order_id},function(err,r){
+												if(err){
+													debug.log('error line 203');
+													cb2(null,false,{code_error:403});
+												}else{
+													// update stock after success buy //
+													var num_buy = 0;
+													async.forEachOf(r.product_list,function(v,k,e){
+														num_buy = v.num_buy;
+														tickettypes_coll.findOne({_id:new ObjectId(v.ticket_id)},function(err2,r2){
+															var quantity_old = r2.quantity;
+															var new_qty = parseInt(quantity_old)-parseInt(num_buy);
+															tickettypes_coll.update({_id:new ObjectId(v.ticket_id)}),{$set:{quantity:new_qty}},function(err3,upd){
+																if(err3){
+																	debug.log('error update stock');
+																	cb2(null,false);
+																}else{
+																	cb2(null,true);
+																}
+															})
+														})
+													})
+												
+												}
+											})
+										}else if(stat == false){
+											cb2(null,false);
+										}
+									},
+									function upd_order(stat,cb2){
+										if(stat == true){
 											var form_upd = {
 												$set:{
 													order_status:'pending_shipment',
@@ -184,100 +247,86 @@ function post_transaction_cc(req,next){
 													cb2(null,true);
 												}
 											})
-										},
-										function upd_cust(stat,cb2){
-											if(stat == true){
-												var masked_card = vt.masked_card;
-												var saved_token_id = vt.saved_token_id;
-												var payment_type = vt.payment_type;
-												var saved_token_id_expired_at = vt.saved_token_id_expired_at;
-												var data_push = {
-													masked_card : masked_card,
-													saved_token_id : saved_token_id,
-													saved_token_id_expired_at : saved_token_id_expired_at,
-													payment_type : payment_type
-												}
-												customers_coll.findOne({fb_id:dt2.fb_id},function(err,r){
-													if(r.ccinfo != null || r.ccinfo != undefined){
-														if(r.length > 0){
-															customers_coll.update({fb_id:dt2.fb_id},{$push:{ccinfo:data_push}},function(err2,upd){
-																if(err2){
-																	debug.log("error update line 172");
-																}else{
-																	debug.log("updated cc info");
-																}
-															})
-														}else{
-															var data_ins = [];
-															data_ins[0] = data_push;
-															customers_coll.update({fb_id:dt2.fb_id},{$set:{ccinfo:data_ins}},function(err2,upd){
-																if(err2){
-																	debug.log("error update line 181");
-																}else{
-																	debug.log("updated cc info");
-																}
-															})
-														}
+										}else{
+											cb2(null,false);
+										}
+									},
+									function upd_cust(stat,cb2){
+										if(stat == true){
+											var masked_card = vt.masked_card;
+											var saved_token_id = vt.saved_token_id;
+											var payment_type = vt.payment_type;
+											var saved_token_id_expired_at = vt.saved_token_id_expired_at;
+											var data_push = {
+												masked_card : masked_card,
+												saved_token_id : saved_token_id,
+												saved_token_id_expired_at : saved_token_id_expired_at,
+												payment_type : payment_type
+											}
+											customers_coll.findOne({fb_id:dt2.fb_id},function(err,r){
+												if(r.ccinfo != null || r.ccinfo != undefined){
+													if(r.length > 0){
+														customers_coll.update({fb_id:dt2.fb_id},{$push:{ccinfo:data_push}},function(err2,upd){
+															if(err2){
+																debug.log("error update line 172");
+																cb2(null,false);
+															}else{
+																debug.log("updated cc info");
+															}
+														})
 													}else{
 														var data_ins = [];
 														data_ins[0] = data_push;
 														customers_coll.update({fb_id:dt2.fb_id},{$set:{ccinfo:data_ins}},function(err2,upd){
 															if(err2){
-																debug.log("error update line 192");
+																debug.log("error update line 181");
+																cb2(null,false);
 															}else{
 																debug.log("updated cc info");
 															}
 														})
 													}
-												})
-												cb2(null,true);
-											}else{
-												cb2(null,false);
-											}
-										},
-										function upd_vt(stat,cb2){
-											if(stat == true){
-												order_coll.update({order_id:order_id},{$set:{vt_response:vt}},function(err,upd){
-													if(err){
-														debug.log('error line 228');
-														cb2(null,false);
-													}else{
-														cb2(null,true);
-													}
-												})
-											}else{
-												cb2(null,false);
-											}
-										}
-									],function(err,merge2){
-										if(merge2 == true){
-											cb(null,{success:true,status:'capture'});
-										}else if(merge2 == false){
-											debug.log('error line 255');
-											cb(null,{code_error:403});
-										}
-									})
-								}else if(vt.fraud_status == 'challenge'){
-									var form_post = new Object();
-									form_post.order_id = order_id
-									var options = {
-										url : comurl+"/approve.php",
-										form : form_post
-									}
-									curl.post(options,function(err2,response,dt){
-										if (!err2 && response.statusCode == 200) {
-											var dt = JSON.parse(dt);
-											if(typeof dt.code_error != 'undefined'){
-												debug.log('error push api approve challange');
-												cb(null,{code_error:403,message:dt.message});
-											}else{
-												cb(null,true);
-											}
+												}else{
+													var data_ins = [];
+													data_ins[0] = data_push;
+													customers_coll.update({fb_id:dt2.fb_id},{$set:{ccinfo:data_ins}},function(err2,upd){
+														if(err2){
+															debug.log("error update line 192");
+															cb2(null,false);
+														}else{
+															debug.log("updated cc info");
+														}
+													})
+												}
+											})
+											cb2(null,true);
 										}else{
-											cb(null,false)
+											cb2(null,false);
 										}
-									})
-								}
+									},
+									function upd_vt(stat,cb2){
+										if(stat == true){
+											order_coll.update({order_id:order_id},{$set:{vt_response:vt}},function(err,upd){
+												if(err){
+													debug.log('error line 228');
+													cb2(null,false);
+												}else{
+													cb2(null,true);
+												}
+											})
+										}else{
+											cb2(null,false);
+										}
+									}
+								],function(err,merge2){
+									if(merge2 == true){
+										cb(null,{success:true,status:'capture'});
+									}else if(merge2 == false){
+										debug.log('error line 255');
+										cb(null,{code_error:403});
+									}
+								})
+								
 							}else if(vt.transaction_status == 'deny'){
 								
 							}
@@ -324,11 +373,16 @@ function post_transaction_cc(req,next){
 							})
 						}
 					}else{
-						
+						debug.log('no card data');
+						cb(null,false);
 					}
+				}else{
+					debug.log('not credit_card payment');
+					cb(null,false);
 				}
 			}else{
-				
+				debug.log('error line 377');
+				cb(null,false);
 			}
 			
 		}
