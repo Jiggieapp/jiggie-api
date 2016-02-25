@@ -685,8 +685,13 @@ function async_mixpanel(event_data,from_id,to_id,next){
 			cb(null,'next')
 		},
 		function incrementItem_fromId(cb){
-			incrementItem_mixpanel(from_id,'match_count');
-			incrementItem_mixpanel(from_id,'chat_count');
+			setTimeout(function(){
+				incrementItem_mixpanel(from_id,'match_count');
+			},2000);
+			
+			setTimeout(function(){
+				incrementItem_mixpanel(from_id,'chat_count');
+			},3000)
 			cb(null,'next');
 		},
 		function trackEvent_toid(cb){
@@ -698,8 +703,13 @@ function async_mixpanel(event_data,from_id,to_id,next){
 			cb(null,'next')
 		},
 		function incrementItem_toId(cb){
-			incrementItem_mixpanel(to_id,'match_count');
-			incrementItem_mixpanel(to_id,'chat_count');
+			setTimeout(function(){
+				incrementItem_mixpanel(to_id,'match_count');
+			},4000);
+			
+			setTimeout(function(){
+				incrementItem_mixpanel(to_id,'match_count');
+			},5000)
 			cb(null,'next');
 		}
 	],function(err,merge){
