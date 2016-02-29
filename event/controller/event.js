@@ -75,9 +75,9 @@ function get_data(req,fb_id,from_date,to_date,next){
 					end_datetime:{
 						$gte : from_date
 					},
-					start_datetime:{
-						$lte : to_date
-					},
+					// start_datetime:{
+						// $lte : to_date
+					// },
 					active:{$ne:false},
 					status:'published'
 				}
@@ -86,9 +86,9 @@ function get_data(req,fb_id,from_date,to_date,next){
 					end_datetime:{
 						$gte : from_date
 					},
-					start_datetime:{
-						$lte : to_date
-					},
+					// start_datetime:{
+						// $lte : to_date
+					// },
 					active:{$ne:false},
 					status:'published'
 				}
@@ -100,9 +100,9 @@ function get_data(req,fb_id,from_date,to_date,next){
 					end_datetime:{
 						$gte : from_date
 					},
-					start_datetime:{
-						$lte : to_date
-					},
+					// start_datetime:{
+						// $lte : to_date
+					// },
 					active:{$ne:false},
 					status:'published'
 				}
