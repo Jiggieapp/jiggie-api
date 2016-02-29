@@ -214,56 +214,69 @@ function sendGPN(fb_id,fromId,messageToAdd,token,post_type,event_id){
 	// var API_KEY = 'AIzaSyBKCeyNfIEEas5pzOckT7fcCmz_8iQnJW0';
 	var API_KEY = 'AIzaSyC9UPTbE_uPBmexhmB-g6IyB403nGbiBeI';
 	var message = new gcm.Message();
-	if(post_type == 'general'){
-		message.addData('type', 'general');
-		message.addData('Jiggie', messageToAdd);
-		debug.log('use Android General');
-	}else if(post_type == 'event'){
-		message.addData('type', 'event');
-		message.addData('Jiggie', messageToAdd);
-		message.addData('event_id', event_id);
-		debug.log('use Android Event');
-	}else if(post_type == 'match'){
-		message.addData('type', 'match');
-		message.addData('Jiggie', messageToAdd);
-		message.addData('fromId', fromId);
-		message.addData('toId', fb_id);
-		debug.log('use Android Match');
-	}else if(post_type == 'message'){
-		message.addData('type', 'message');
-		message.addData('Jiggie', messageToAdd);
-		message.addData('fromId', fromId);
-		message.addData('toId', fb_id);
-		debug.log('use Android Message');
-	}else if(post_type == 'chat'){
-		message.addData('type', 'chat');
-		message.addData('Jiggie', messageToAdd);
-		message.addData('toId', fb_id);
-		debug.log('use Android Message');
-	}else if(post_type == 'social'){
-		message.addData('type', 'social');
-		message.addData('Jiggie', messageToAdd);
-		message.addData('toId', fb_id);
-		debug.log('use Android Message');
-	}else{
-		message.addData('Jiggie', messageToAdd);
-		message.addData('fromId', fromId);
-		message.addData('toId', fb_id);
-		debug.log('use Android Message');
-	}
 	
-	var regTokens = [token];
-	var sender = new gcm.Sender(API_KEY);
-	sender.send(message, { registrationTokens: regTokens }, function (err, result){
-		if(err){
-			debug.log("fail_android_push")
-			debug.log(err);
+	customers_coll.findOne({fb_id:fromId},function(err2,r2){
+		var fromName = '';
+		if(r2 == null){
+			fromName = '';
 		}else{
-			debug.log("success_android_push")
-			debug.log(result)
-		};
+			fromName = r2.first_name;
+		}
+		
+		if(post_type == 'general'){
+			message.addData('type', 'general');
+			message.addData('Jiggie', messageToAdd);
+			debug.log('use Android General');
+		}else if(post_type == 'event'){
+			message.addData('type', 'event');
+			message.addData('Jiggie', messageToAdd);
+			message.addData('event_id', event_id);
+			debug.log('use Android Event');
+		}else if(post_type == 'match'){
+			message.addData('type', 'match');
+			message.addData('Jiggie', messageToAdd);
+			message.addData('fromId', fromId);
+			message.addData('fromName', fromName);
+			message.addData('toId', fb_id);
+			debug.log('use Android Match');
+		}else if(post_type == 'message'){
+			message.addData('type', 'message');
+			message.addData('Jiggie', messageToAdd);
+			message.addData('fromId', fromId);
+			message.addData('fromName', fromName);
+			message.addData('toId', fb_id);
+			debug.log('use Android Message');
+		}else if(post_type == 'chat'){
+			message.addData('type', 'chat');
+			message.addData('Jiggie', messageToAdd);
+			message.addData('toId', fb_id);
+			debug.log('use Android Message');
+		}else if(post_type == 'social'){
+			message.addData('type', 'social');
+			message.addData('Jiggie', messageToAdd);
+			message.addData('toId', fb_id);
+			debug.log('use Android Message');
+		}else{
+			message.addData('Jiggie', messageToAdd);
+			message.addData('fromId', fromId);
+			message.addData('fromName', fromName);
+			message.addData('toId', fb_id);
+			debug.log('use Android Message');
+		}
+		
+		var regTokens = [token];
+		var sender = new gcm.Sender(API_KEY);
+		sender.send(message, { registrationTokens: regTokens }, function (err, result){
+			if(err){
+				debug.log("fail_android_push")
+				debug.log(err);
+			}else{
+				debug.log("success_android_push")
+				debug.log(result)
+			};
+		});
+		
 	});
-	
 }
 
 
