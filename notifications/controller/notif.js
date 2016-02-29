@@ -133,6 +133,14 @@ exports.apn = function(req,res){
 										payload.fromName = fromName;
 										payload.toId = fb_id;
 										debug.log('use IOS Message');
+									}else if(post_type == 'chat'){
+										payload.type = "chat";
+										payload.toId = fb_id;
+										debug.log('use IOS Message');
+									}else if(post_type == 'social'){
+										payload.type = "social";
+										payload.toId = fb_id;
+										debug.log('use IOS Message');
 									}else{
 										payload.type = "message";
 										payload.fromId = fromId;
@@ -225,6 +233,16 @@ function sendGPN(fb_id,fromId,messageToAdd,token,post_type,event_id){
 		message.addData('type', 'message');
 		message.addData('Jiggie', messageToAdd);
 		message.addData('fromId', fromId);
+		message.addData('toId', fb_id);
+		debug.log('use Android Message');
+	}else if(post_type == 'chat'){
+		message.addData('type', 'chat');
+		message.addData('Jiggie', messageToAdd);
+		message.addData('toId', fb_id);
+		debug.log('use Android Message');
+	}else if(post_type == 'social'){
+		message.addData('type', 'social');
+		message.addData('Jiggie', messageToAdd);
 		message.addData('toId', fb_id);
 		debug.log('use Android Message');
 	}else{
