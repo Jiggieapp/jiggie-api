@@ -34,6 +34,7 @@ exports.index = function(req, res){
 };
 
 function doall(event_details_id,fb_id,gender_interest,next){
+	gender_interest = gender_interest.toLowerCase();
 	async.parallel([
 		function getalldata(callback){
 			// cache.get("event_"+fb_id+"_"+event_details_id,function(err,val){
