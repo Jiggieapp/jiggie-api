@@ -198,18 +198,18 @@ function get_data(req,fb_id,from_date,to_date,next){
 			json_data.sort(sortRank);
 		}
 		
-		var filtered_array = [];
-		var n = 0;
-		async.forEachOf(json_data,function(v,k,e){
-			if(v.start_date <= to_date_filter){
-				filtered_array[n] = v;
-			}
-			n++;
-		})
+		// var filtered_array = [];
+		// var n = 0;
+		// async.forEachOf(json_data,function(v,k,e){
+			// if(v.start_date <= to_date_filter){
+				// filtered_array[n] = v;
+			// }
+			// n++;
+		// })
 		
 		// debug.log(filtered_array);
 		
-		next(err,filtered_array);
+		next(err,json_data);
 	});
 }
 

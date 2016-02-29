@@ -35,8 +35,8 @@ exports.parseShareLink = function(req,res){
 	
 	curl.get(options,function(err,resp,body){
 		if (!err && resp.statusCode == 200) {
-			res.header("Content-type","application/json");
-			res.send(body);
+			// res.header("Content-type","application/json");
+			res.redirect(body);
 		}else{
 			res.send(err);
 		}
@@ -51,8 +51,8 @@ exports.showParseShareLink = function(req,res){
 	
 	curl.get(options,function(err,resp,body){
 		if (!err && resp.statusCode == 200) {
-			res.header("Content-type","application/json");
-			res.send(body);
+			// res.header("Content-type","application/json");
+			res.redirect(body);
 		}else{
 			res.send(err);
 		}
