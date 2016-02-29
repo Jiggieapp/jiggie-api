@@ -37,7 +37,7 @@ exports.apn = function(req,res){
 		customers_coll.findOne({fb_id:fb_id},function(err,r){
 			membersettings_coll.findOne({fb_id:fb_id},function(errmem,memr){
 				var permit = 0;
-				if(post_type == 'general' || post_type == 'event' || post_type == 'match' || post_type == 'message'){
+				if(post_type == 'general' || post_type == 'event' || post_type == 'match' || post_type == 'message' || post_type == 'social' || post_type == 'chat'){
 					// using directly from api
 					permit = 1;
 				}else{
