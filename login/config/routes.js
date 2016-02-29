@@ -11,6 +11,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.post('/app/userlogin',login.userlogin); // Auth Token
   app.get('/app/v3/user/tagslist',login.tagslist);
   app.get('/app/v3/apntoken/:fb_id/:apn',login.sync_apntoken);
+  app.post('/app/v3/count_walkthrough',login.sync_countwalkthrough);
   
   
   var membersettings = require(path_controller+'membersettings');

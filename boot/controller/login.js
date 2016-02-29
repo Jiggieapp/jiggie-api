@@ -299,3 +299,28 @@ exports.validateSMS = function(req,res){
 		}
 	})
 }
+
+exports.sync_countwalkthrough = function(req,res){
+	var post = req.body;
+	var options = {
+		url : url+"/app/v3/count_walkthrough",
+		form : post
+	}
+	curl.post(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				var rsp = {
+					response : 1,
+					msg : 'Success'
+				}
+				res.send(rsp);
+			}
+		}else{
+			res.send(err);
+		}
+	})
+}

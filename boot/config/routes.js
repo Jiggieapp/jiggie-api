@@ -26,6 +26,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/app/v3/apntoken/:fb_id/:apn',login.sync_apntoken);
   app.get('/app/v3/user/phone/verification/send/:fb_id/:phone',login.sendSMS);
   app.get('/app/v3/user/phone/verification/validate/:fb_id/:token',login.validateSMS);
+  app.post('/app/v3/count_walkthrough',login.sync_countwalkthrough);
 
   var chat = require(path_controller+'chat');
   app.get('/app/v3/conversations',chat.list); // List Users Can be Chats;

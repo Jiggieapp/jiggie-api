@@ -32,8 +32,6 @@ eventEmitter.on('database_connected',function(){
 });
 
 exports.index = function(req, res){
-	req.app.get("helpers").logging("request","post",JSON.stringify(req.body),req);
-	
 	var post = req.body;
 	var cond = {fb_id:post.fb_id}
 	
@@ -351,8 +349,59 @@ exports.index = function(req, res){
 	});
 };
 
+exports.sync_countwalkthrough = function(req,res){
+	var post = req.body;
+	var fb_id = post.fb_id;
+	var tab = post.fb_id;
+	var device_id = post.device_id;
+	
+	customers_coll.findOne({fb_id:fb_id},function(err,r){
+		if(err){
+			debug.log('error line 362')
+			res.json({code_error:403})
+		}else{
+			if(r == null){
+				debug.log('error line 366 => fb id null')
+				res.json({code_error:403})
+			}else{
+				if(r.list_device == null || typeof r.list_device == 'undefined' || r.list_device == '' || JSON.stringify(r.list_device) == '{}'){
+					var form_update = new Object();
+					form_update.event = 0;
+					form_update.social = 0;
+					form_update.chat = 0;
+					if(tab == 'event'){
+						form_update.event = 1;
+					}else if(tab == 'social'){
+						form_update.social = 1;
+					}else if(tab == 'chat'){
+						form_update.chat = 1;
+					}
+				}else{
+					var form_update = r.list_device;
+					if(tab == 'event'){
+						form_update.event = parseInt(r.list_device.event)+1;
+					}else if(tab == 'social'){
+						form_update.social = parseInt(r.list_device.social)+1;
+					}else if(tab == 'chat'){
+						form_update.chat = parseInt(r.list_device.chat)+1;
+					}
+					
+				}
+				
+				customers_coll.update({fb_id:fb_id},{$set:{list_device:form_update}},function(err2,upd){
+					if(err){
+						debug.log('line error 382');
+						res.json({code_error:403});
+					}else{
+						res.json({success:true});
+					}
+				})
+			}
+		}
+	})
+}
+
 exports.sync_membersettings = function(req,res){
-	req.app.get("helpers").logging("request","post",JSON.stringify(req.body),req);
 	var post = req.body;
 	var cond = {fb_id:post.fb_id}
 	
