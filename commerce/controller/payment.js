@@ -214,7 +214,7 @@ function post_transaction_cc(req,next){
 														tickettypes_coll.findOne({_id:new ObjectId(v.ticket_id)},function(err2,r2){
 															var quantity_old = r2.quantity;
 															var new_qty = parseInt(quantity_old)-parseInt(num_buy);
-															tickettypes_coll.update({_id:new ObjectId(v.ticket_id)}),{$set:{quantity:new_qty}},function(err3,upd){
+															tickettypes_coll.update({_id:new ObjectId(v.ticket_id)},{$set:{quantity:new_qty}},function(err3,upd){
 																if(err3){
 																	debug.log('error update stock');
 																	cb2(null,false);
