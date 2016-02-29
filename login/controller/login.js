@@ -291,25 +291,27 @@ exports.index = function(req, res){
 							}
 						})
 						if(dt_device_exist == 0){
-							debug.log('data xx')
-							json_data.show_walkthrough = new Object();
-							json_data.show_walkthrough.event = true;
-							json_data.show_walkthrough.social = true;
-							json_data.show_walkthrough.chat = true;
+							debug.log('walkthrough data zero')
+							json_data.show_walkthrough_new = new Object();
+							json_data.show_walkthrough_new.event = true;
+							json_data.show_walkthrough_new.social = true;
+							json_data.show_walkthrough_new.chat = true;
 						}else{
-							debug.log('data right')
-							json_data.show_walkthrough = new Object();
-							(dt_device_exist.event > 0) ? json_data.show_walkthrough.event = false : json_data.show_walkthrough.event = true;
-							(dt_device_exist.social > 0) ? json_data.show_walkthrough.social = false : json_data.show_walkthrough.social = true;
-							(dt_device_exist.chat > 0) ? json_data.show_walkthrough.chat = false : json_data.show_walkthrough.chat = true;
+							debug.log('walkthrough data exist')
+							json_data.show_walkthrough_new = new Object();
+							(dt_device_exist.event > 0) ? json_data.show_walkthrough_new.event = false : json_data.show_walkthrough_new.event = true;
+							(dt_device_exist.social > 0) ? json_data.show_walkthrough_new.social = false : json_data.show_walkthrough_new.social = true;
+							(dt_device_exist.chat > 0) ? json_data.show_walkthrough_new.chat = false : json_data.show_walkthrough_new.chat = true;
 						}
 					}else{
-						debug.log('data left')
-						json_data.show_walkthrough = new Object();
-						json_data.show_walkthrough.event = true;
-						json_data.show_walkthrough.social = true;
-						json_data.show_walkthrough.chat = true;
+						debug.log('walkthrough data still undefined')
+						json_data.show_walkthrough_new = new Object();
+						json_data.show_walkthrough_new.event = true;
+						json_data.show_walkthrough_new.social = true;
+						json_data.show_walkthrough_new.chat = true;
 					}
+					
+					json_data.show_walkthrough = false;
 					
 					// if(post_device == 1){
 						// if(ios_typecek == 1){
@@ -358,6 +360,10 @@ exports.index = function(req, res){
 						json_data.matchme = true;
 						json_data.device_type = post.device_type;
 						json_data.show_walkthrough = true;
+						json_data.show_walkthrough_new = new Object();
+						json_data.show_walkthrough_new.event = true;
+						json_data.show_walkthrough_new.social = true;
+						json_data.show_walkthrough_new.chat = true;
 						
 						callback(null,json_data);
 					// })
@@ -384,74 +390,80 @@ exports.sync_countwalkthrough = function(req,res){
 	var fb_id = post.fb_id;
 	var tab = post.tab;
 	var device_id = post.device_id;
+	debug.log(post);
 	
-	var cond = {
-		fb_id:fb_id,
-		"list_device.device_id":device_id
-	}
-	
-	customers_coll.findOne(cond,function(err,r){
-		if(err){
-			debug.log('error line 362')
-			res.json({code_error:403})
-		}else{
-			if(r == null){
-				debug.log('one')
-				var form_update = new Object();
-				form_update.device_id = device_id;
-				form_update.event = 0;
-				form_update.social = 0;
-				form_update.chat = 0;
-				if(tab == 'event'){
-					form_update.event = 1;
-				}else if(tab == 'social'){
-					form_update.social = 1;
-				}else if(tab == 'chat'){
-					form_update.chat = 1;
-				}
-				customers_coll.update({fb_id:fb_id},{$push:{list_device:form_update}},function(err2,upd){
-					if(err){
-						debug.log('line error 383');
-						res.json({code_error:403});
-					}else{
-						res.json({success:true});
-					}
-				})
+	if(typeof fb_id == 'undefined' || fb_id == '' || typeof tab == 'undefined' || tab == '' || typeof device_id == 'undefined' || device_id == ''){
+		debug.log('data post empty');
+		res.json({code_error:403});
+	}else{
+		var cond = {
+			fb_id:fb_id,
+			"list_device.device_id":device_id
+		}
+		
+		customers_coll.findOne(cond,function(err,r){
+			if(err){
+				debug.log('error line 362')
+				res.json({code_error:403})
 			}else{
-				debug.log('two')
-				var form_update = new Object();
-				async.forEachOf(r.list_device,function(v,k,e){
-					if(v.device_id == device_id){
-						form_update = v;
+				if(r == null){
+					debug.log('one')
+					var form_update = new Object();
+					form_update.device_id = device_id;
+					form_update.event = 0;
+					form_update.social = 0;
+					form_update.chat = 0;
+					if(tab == 'event'){
+						form_update.event = 1;
+					}else if(tab == 'social'){
+						form_update.social = 1;
+					}else if(tab == 'chat'){
+						form_update.chat = 1;
 					}
-				})
-				if(tab == 'event'){
-					form_update.event = parseInt(form_update.event)+1;
-				}else if(tab == 'social'){
-					form_update.social = parseInt(form_update.social)+1;
-				}else if(tab == 'chat'){
-					form_update.chat = parseInt(form_update.chat)+1;
+					customers_coll.update({fb_id:fb_id},{$push:{list_device:form_update}},function(err2,upd){
+						if(err){
+							debug.log('line error 383');
+							res.json({code_error:403});
+						}else{
+							res.json({success:true});
+						}
+					})
+				}else{
+					debug.log('two')
+					var form_update = new Object();
+					async.forEachOf(r.list_device,function(v,k,e){
+						if(v.device_id == device_id){
+							form_update = v;
+						}
+					})
+					if(tab == 'event'){
+						form_update.event = parseInt(form_update.event)+1;
+					}else if(tab == 'social'){
+						form_update.social = parseInt(form_update.social)+1;
+					}else if(tab == 'chat'){
+						form_update.chat = parseInt(form_update.chat)+1;
+					}
+					
+					var upd_form = {
+						$set:{"list_device.$":form_update}
+					}
+					customers_coll.update(cond,upd_form,function(err2,upd){
+						if(err){
+							debug.log('line error 404');
+							res.json({code_error:403});
+						}else{
+							res.json({success:true});
+						}
+					})
+					
+					
 				}
 				
-				var upd_form = {
-					$set:{"list_device.$":form_update}
-				}
-				customers_coll.update(cond,upd_form,function(err2,upd){
-					if(err){
-						debug.log('line error 404');
-						res.json({code_error:403});
-					}else{
-						res.json({success:true});
-					}
-				})
 				
 				
 			}
-			
-			
-			
-		}
-	})
+		})
+	}
 }
 
 exports.sync_membersettings = function(req,res){
