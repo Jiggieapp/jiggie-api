@@ -281,19 +281,49 @@ exports.index = function(req, res){
 					
 					json_data.device_type = post_device;
 					
-					if(post_device == 1){
-						if(ios_typecek == 1){
-							json_data.show_walkthrough = false;
-						}else if(ios_typecek == 0){
-							json_data.show_walkthrough = true;
+					if(typeof post.device_id != 'undefined' && typeof data[0][0].list_device != 'undefined'){
+						var dt_device_exist = '';
+						async.forEachOf(data[0][0].list_device,function(v,k,e){
+							if(v.device_id == post.device_id){
+								dt_device_exist = v;
+							}else{
+								dt_device_exist = 0;
+							}
+						})
+						if(dt_device_exist == 0){
+							debug.log('data xx')
+							json_data.show_walkthrough = new Object();
+							json_data.show_walkthrough.event = true;
+							json_data.show_walkthrough.social = true;
+							json_data.show_walkthrough.chat = true;
+						}else{
+							debug.log('data right')
+							json_data.show_walkthrough = new Object();
+							(dt_device_exist.event > 0) ? json_data.show_walkthrough.event = false : json_data.show_walkthrough.event = true;
+							(dt_device_exist.social > 0) ? json_data.show_walkthrough.social = false : json_data.show_walkthrough.social = true;
+							(dt_device_exist.chat > 0) ? json_data.show_walkthrough.chat = false : json_data.show_walkthrough.chat = true;
 						}
-					}else if(post_device == 2){
-						if(android_typecek == 1){
-							json_data.show_walkthrough = false;
-						}else if(android_typecek == 0){
-							json_data.show_walkthrough = true;
-						}
+					}else{
+						debug.log('data left')
+						json_data.show_walkthrough = new Object();
+						json_data.show_walkthrough.event = true;
+						json_data.show_walkthrough.social = true;
+						json_data.show_walkthrough.chat = true;
 					}
+					
+					// if(post_device == 1){
+						// if(ios_typecek == 1){
+							// json_data.show_walkthrough = false;
+						// }else if(ios_typecek == 0){
+							// json_data.show_walkthrough = true;
+						// }
+					// }else if(post_device == 2){
+						// if(android_typecek == 1){
+							// json_data.show_walkthrough = false;
+						// }else if(android_typecek == 0){
+							// json_data.show_walkthrough = true;
+						// }
+					// }
 					// cek is still walkthrough //
 					
 					callback(null,json_data);
@@ -352,51 +382,74 @@ exports.index = function(req, res){
 exports.sync_countwalkthrough = function(req,res){
 	var post = req.body;
 	var fb_id = post.fb_id;
-	var tab = post.fb_id;
+	var tab = post.tab;
 	var device_id = post.device_id;
 	
-	customers_coll.findOne({fb_id:fb_id},function(err,r){
+	var cond = {
+		fb_id:fb_id,
+		"list_device.device_id":device_id
+	}
+	
+	customers_coll.findOne(cond,function(err,r){
 		if(err){
 			debug.log('error line 362')
 			res.json({code_error:403})
 		}else{
 			if(r == null){
-				debug.log('error line 366 => fb id null')
-				res.json({code_error:403})
-			}else{
-				if(r.list_device == null || typeof r.list_device == 'undefined' || r.list_device == '' || JSON.stringify(r.list_device) == '{}'){
-					var form_update = new Object();
-					form_update.event = 0;
-					form_update.social = 0;
-					form_update.chat = 0;
-					if(tab == 'event'){
-						form_update.event = 1;
-					}else if(tab == 'social'){
-						form_update.social = 1;
-					}else if(tab == 'chat'){
-						form_update.chat = 1;
-					}
-				}else{
-					var form_update = r.list_device;
-					if(tab == 'event'){
-						form_update.event = parseInt(r.list_device.event)+1;
-					}else if(tab == 'social'){
-						form_update.social = parseInt(r.list_device.social)+1;
-					}else if(tab == 'chat'){
-						form_update.chat = parseInt(r.list_device.chat)+1;
-					}
-					
+				debug.log('one')
+				var form_update = new Object();
+				form_update.device_id = device_id;
+				form_update.event = 0;
+				form_update.social = 0;
+				form_update.chat = 0;
+				if(tab == 'event'){
+					form_update.event = 1;
+				}else if(tab == 'social'){
+					form_update.social = 1;
+				}else if(tab == 'chat'){
+					form_update.chat = 1;
 				}
-				
-				customers_coll.update({fb_id:fb_id},{$set:{list_device:form_update}},function(err2,upd){
+				customers_coll.update({fb_id:fb_id},{$push:{list_device:form_update}},function(err2,upd){
 					if(err){
-						debug.log('line error 382');
+						debug.log('line error 383');
 						res.json({code_error:403});
 					}else{
 						res.json({success:true});
 					}
 				})
+			}else{
+				debug.log('two')
+				var form_update = new Object();
+				async.forEachOf(r.list_device,function(v,k,e){
+					if(v.device_id == device_id){
+						form_update = v;
+					}
+				})
+				if(tab == 'event'){
+					form_update.event = parseInt(form_update.event)+1;
+				}else if(tab == 'social'){
+					form_update.social = parseInt(form_update.social)+1;
+				}else if(tab == 'chat'){
+					form_update.chat = parseInt(form_update.chat)+1;
+				}
+				
+				var upd_form = {
+					$set:{"list_device.$":form_update}
+				}
+				customers_coll.update(cond,upd_form,function(err2,upd){
+					if(err){
+						debug.log('line error 404');
+						res.json({code_error:403});
+					}else{
+						res.json({success:true});
+					}
+				})
+				
+				
 			}
+			
+			
+			
 		}
 	})
 }
