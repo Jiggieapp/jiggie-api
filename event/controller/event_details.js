@@ -11,6 +11,7 @@ exports.index = function(req, res){
 	var event_details_id = req.params.event_id;
 	var fb_id = req.params.fb_id;
 	var gender_interest = req.params.gender_interest;
+	gender_interest = gender_interest.toLowerCase();
 	
 	events_detail_coll.findOne({_id:new ObjectId(event_details_id)},function(errs,cek_eventid){
 	customers_coll.findOne({fb_id:fb_id},function(errs,cek_fbid){
