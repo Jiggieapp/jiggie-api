@@ -112,3 +112,41 @@ exports.term = function(req,res){
 		// }
 	// });
 }
+
+exports.payment = function(req,res){
+	var head = req.headers;
+	var token = head.authorization;
+	
+	// jwt.verify(token,datakey,function(err,decode){
+		// if(err){
+			// if(err.name == 'JsonWebTokenError'){
+				// res.status(401).send({});
+			// }else if(err.name == 'TokenExpiredError'){
+				// res.status(410).send({});
+			// }
+		// }else{
+			var post = req.body;
+			var options = {
+				url : url+"/app/v3/product/payment",
+				form : post
+			}
+			curl.post(options,function(err,resp,body){
+				if (!err && resp.statusCode == 200) {
+					res.header("Content-type","application/json");
+					var json_data = JSON.parse(body);
+					if(typeof json_data.code_error != 'undefined'){
+						res.status(json_data.code_error).send({});
+					}else{
+						var rsp = {
+							response : 1,
+							msg : 'Success'
+						}
+						res.send(rsp);
+					}
+				}else{
+					res.send(err);
+				}
+			});
+		// }
+	// });
+}
