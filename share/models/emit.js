@@ -14,3 +14,10 @@ eventEmitter.on('database_connected',function(){
 		console.log("events_detail connected");
 	});
 });
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('customers',function(collection){
+		customers_coll = collection;
+		console.log("customers connected");
+	});
+});

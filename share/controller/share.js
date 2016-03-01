@@ -90,18 +90,21 @@ exports.lookuplink = function(req,res)
 		if(item)
 		{
 			data.success = true;
-			if(item.type != "general")
-			{
-				// data.url = trackdomain  + "/" + "id1047291489?pid=Event_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_sub2=" + item.event_id + "&af_ios_lp=true";
-				data.url = trackdomain  + "/" + "1630402100?pid=Event_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_sub2=" + item.event_id + "&af_force_dp=true";
-			}else{
-				// data.url = trackdomain + "/id1047291489?pid=App_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_ios_lp=true";
-				data.url = trackdomain + "/1630402100?pid=App_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_force_dp=true";
-			}
+			customers_coll.findOne({fb_id:item.from_fb_id},function(err2,r){
+				if(item.type != "general")
+				{
+					// data.url = trackdomain  + "/" + "id1047291489?pid=Event_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_sub2=" + item.event_id + "&af_ios_lp=true";
+					data.url = trackdomain  + "/" + "1630402100?pid=Event_Invite&c="+r.first_name+" "+r.last_name+"&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_sub2=" + item.event_id + "&af_force_dp=true";
+				}else{
+					// data.url = trackdomain + "/id1047291489?pid=App_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_ios_lp=true";
+					data.url = trackdomain + "/1630402100?pid=App_Invite&c="+r.first_name+" "+r.last_name+"&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_force_dp=true";
+				}
+				res.send(data.url);
+			})
 		}else{
 			data.success = false;
+			res.send('/');
 		}
-		res.send(data.url);
 	});
 }
 
