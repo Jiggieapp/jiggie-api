@@ -6,19 +6,152 @@ var ObjectId = require('mongodb').ObjectID;
 var ObjectIdM = require('mongoose').Types.ObjectId; 
 var curl = require('request');
 
-var comurl = 'https://commerce.jiggieapp.com/VT/examples/';
+var comurl = 'https://commerce.jiggieapp.com/VT/production/';
 // var comurl = 'http://127.0.0.1/VT/examples/';
 
 exports.index = function(req, res){
-	post_transaction_cc(req,function(dt){
-		if(dt == false){
-			res.json({code_error:403})
-		}else{
-			res.json(dt);
-		}
-	})
+	var type = req.body.type;
+	if(type == 'cc'){
+		post_transaction_cc(req,function(dt){
+			if(dt == false){
+				res.json({code_error:403})
+			}else{
+				res.json(dt);
+			}
+		})
+	}else if(type == 'va'){
+		
+	}else if(type == 'bp'){
+		
+	}
+	
 };
 
+function post_transaction_va(req,next){
+	var post = req.body;
+	var order_id = post.order_id;
+	var token_id = post.token_id;
+	var type = post.type;
+	
+	var schema = req.app.get('mongo_path');
+	var order = require(schema+'/order_product.js');
+	
+	async.waterfall([
+		function get_order(cb){
+			order.findOne({order_id:order_id},function(err,r){
+				if(err){
+					debug.log("error get order product data va")
+					cb(null,false,{code_error:401})
+				}else{
+					if(r == null){
+						debug.log("order product data null va")
+						cb(null,false,{code_error:403})
+					}else{
+						cb(null,true,r);
+					}
+				}
+			})
+		},
+		function get_customers(stat,dt,cb){
+			if(stat == false){
+				cb(null,false,dt,[])
+			}else if(stat == true){
+				customers_coll.findOne({fb_id:dt.fb_id},function(err,r){
+					if(err){
+						debug.log("error get customers data va")
+						cb(null,false,{code_error:401},[])
+					}else{
+						if(r == null){
+							debug.log("customers data null va");
+							cb(null,false,{code_error:403},[])
+						}else{
+							cb(null,true,dt,r);
+						}
+					}
+				})
+			}
+		},
+		function sync_data(stat,dt,dt2,cb){
+			if(stat == true){
+				var json_data = new Object();
+				
+				// s:transaction_details //
+				transaction_details = new Object();	
+				transaction_details.order_id = order_id;
+				transaction_details.gross_amount = parseFloat(dt.total_price);
+				json_data.transaction_details = transaction_details;
+				// e:transaction_details //
+				
+				// s:items //
+				var items = [];
+				var n = 0;
+				async.forEachOf(dt.product_list,function(v,k,e){
+					items[n] = new Object();
+					items[n].id = v.ticket_id;
+					items[n].price = parseInt(v.total_price);
+					items[n].quantity = parseInt(v.num_buy);
+					items[n].name = v.name;
+					n++;
+				})
+				json_data.items = items;
+				// e:items //
+				
+				// s:billing address //
+				
+				billing_address = new Object();
+				billing_address.first_name = dt2.user_first_name;
+				billing_address.last_name = dt2.user_last_name;
+				json_data.billing_address = billing_address;
+				
+				// e:billing address //
+				
+				// s:shipping_address //
+				
+				shipping_address = new Object();
+				shipping_address.first_name = dt2.user_first_name;
+				shipping_address.last_name = dt2.user_last_name;
+				json_data.shipping_address = shipping_address;
+				
+				// e:shipping_address //
+				
+				// s:customer_details //
+				var customer_details = new Object();
+				customer_details.first_name = dt2.user_first_name;
+				customer_details.last_name = dt2.user_last_name;
+				customer_details.email = dt2.email;
+				customer_details.phone = dt2.phone;
+				json_data.customer_details = customer_details;
+				// e:customer_details //
+				
+				json_data.token_id = token_id;
+				
+				var options = {
+					url : comurl+'vt-direct/transaction_va.php',
+					form : json_data
+				}
+				curl.post(options,function(err,resp,body){
+					if (!err && resp.statusCode == 200) {
+						cb(null,true,body)
+					}else{
+						cb(null,false,[]);
+					}
+				});
+			}else{
+				cb(null,dt);
+			}
+		},
+		function merge_data(stat,body,cb){
+			
+		}
+	],function(){
+		
+	})
+}
+
+/*End: Transaction Using VA*/
+
+
+/*Start:Transaction Using CC*/
 function post_transaction_cc(req,next){
 	var post = req.body;
 	var order_id = post.order_id;
@@ -148,24 +281,40 @@ function post_transaction_cc(req,next){
 				json_data.secure = parseInt(secure_cc);
 				
 				var options = {
-					url : comurl+'vt-direct/checkout-process2.php',
+					url : comurl+'transaction_cc.php',
 					form : json_data
 				}
 				curl.post(options,function(err,resp,body){
 					if (!err && resp.statusCode == 200) {
+						debug.log('transaction execute CC Successs');
 						cb(null,true,body)
 					}else{
+						debug.log('transaction execute CC Failed');
 						cb(null,false,[]);
 					}
 				});
 			}else{
+				debug.log('line 195 err');
 				cb(null,dt);
+			}
+		},
+		function cek_transaction_vt(stat,body,cb){
+			var vt = JSON.parse(body);
+			if(typeof vt.code_error == 'undefined'){
+				cb(null,true,body)	
+			}else{
+				debug.log("Error Code in VT Commerce");
+				debug.log(vt);
+				cb(null,false,[]);
 			}
 		},
 		function merge_data(stat,body,cb){
 			if(stat == true){
-				debug.log(body);
 				var vt = JSON.parse(body);
+				debug.log('Response VT');
+				debug.log(vt);
+				debug.log('#############3');
+				
 				if(type == 'cc'){
 					var is_new_card = post.is_new_card;
 					if(typeof is_new_card != 'undefined'){
@@ -348,6 +497,42 @@ function post_transaction_cc(req,next){
 											cb2(null,true);
 										}
 									})
+								},
+								function get_stock(stat,cb2){
+									if(stat == true){
+										order.findOne({order_id:order_id},function(err,r){
+											if(err){
+												debug.log('error line 203');
+												cb2(null,false,{code_error:403});
+											}else{
+												// update stock after success buy //
+												var num_buy = 0;
+												async.forEachOf(r.product_list,function(v,k,e){
+													num_buy = v.num_buy;
+													tickettypes_coll.findOne({_id:new ObjectId(v.ticket_id)},function(err2,r2){
+														if(err2){
+															debug.log('error updating stok');
+															cb2(null,false);
+														}else{
+															var quantity_old = r2.quantity;
+															var new_qty = parseInt(quantity_old)-parseInt(num_buy);
+															tickettypes_coll.update({_id:new ObjectId(v.ticket_id)},{$set:{quantity:new_qty}},function(err3,upd){
+																if(err3){
+																	debug.log('error update stock');
+																	cb2(null,false);
+																}else{
+																	cb2(null,true);
+																}
+															})
+														}
+													})
+												})
+											
+											}
+										})
+									}else if(stat == false){
+										cb2(null,false);
+									}
 								},
 								function upd_vt(stat,cb2){
 									if(stat == true){

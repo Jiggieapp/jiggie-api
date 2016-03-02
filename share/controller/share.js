@@ -10,8 +10,8 @@ var HashidsNPM = require("hashids");
 var Hashids = new HashidsNPM("bfdlkKjlKBKJBjkbk08y23h9hek",6,"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
 var basedomain = 'http://jigg.io';
-// var trackdomain = 'http://app.appflyer.com';
-var trackdomain = 'https://jiggieapp.onelink.me';
+var trackdomain = 'http://app.appsflyer.com';
+// var trackdomain = 'https://jiggieapp.onelink.me';
 
 exports.invitelink = function(req, res){
 	req.app.get("helpers").logging("request","get","",req);
@@ -94,10 +94,10 @@ exports.lookuplink = function(req,res)
 				if(item.type != "general")
 				{
 					// data.url = trackdomain  + "/" + "id1047291489?pid=Event_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_sub2=" + item.event_id + "&af_ios_lp=true";
-					data.url = trackdomain  + "/" + "1630402100?pid=Event_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_sub2=" + item.event_id + "&af_force_dp=true";
+					data.url = trackdomain  + "/" + "id1047291489?pid=Event_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_sub2=" + item.event_id + "&af_force_dp=true&af_ios_lp=true";
 				}else{
 					// data.url = trackdomain + "/id1047291489?pid=App_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_ios_lp=true";
-					data.url = trackdomain + "/1630402100?pid=App_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_force_dp=true";
+					data.url = trackdomain + "/id1047291489?pid=App_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_force_dp=true&af_ios_lp=true";
 				}
 				res.send(data.url);
 			})
