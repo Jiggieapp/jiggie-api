@@ -580,9 +580,12 @@ exports.sync_appsflyer = function(req,res){
 	var post = req.body;
 	var cond = {fb_id:post.fb_id}
 	var coll = "customers";
+	debug.log("APPSFLYER DATAAA");
+	debug.log(post);
 	
 	customers_coll.findOne(cond,function(err,rows){
 		if(JSON.stringify(rows.appsflyer) == "{}"){
+			debug.log('trying updating appsflyer data');
 			// if not exist updated
 			var json_data = new Object();
 			json_data.appsflyer = JSON.parse(post.appsflyer);
@@ -598,6 +601,7 @@ exports.sync_appsflyer = function(req,res){
 				}
 			});
 		}else{
+			debug.log('failed updated appsflyer data');
 			// if already exist not updated
 			res.json({"success":false,"reason":"query wrong"});
 		};
