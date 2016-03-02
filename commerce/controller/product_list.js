@@ -76,6 +76,7 @@ function get_data(req,next){
 								json_data.purchase[n].price = v.price;
 								json_data.purchase[n].total_price = v.total;
 								json_data.purchase[n].description = v.description;
+								json_data.purchase[n].max_purchase = v.guest;
 								n++;
 							}else if(v.ticket_type == 'reservation'){
 								json_data.reservation[m] = new Object();
@@ -91,6 +92,7 @@ function get_data(req,next){
 								json_data.reservation[m].price = v.price;
 								json_data.reservation[m].total_price = v.total;
 								json_data.reservation[m].description = v.description;
+								json_data.reservation[m].max_guests = v.guest;
 								m++;
 							}
 						})
@@ -280,15 +282,17 @@ function post_summary(req,next){
 				tickettypes_coll.find({_id:{$in:in_ticketid}}).toArray(function(err,dt){
 					if(err){
 						debug.log(err);
+						debug.log('error lone 285=>product list');
 						cb(null,[],false,false,false)
 					}else{
 						if(dt.length > 0){
 							async.forEachOf(dt,function(v,k,e){
-								if(v.quantity <= temp_quantity[v._id]){
+								if(v.quantity < temp_quantity[v._id]){
 									cek_quantity = false;
 								}
 							})
 						}else{
+							debug.log('error lone 296=>product list');
 							cek_exist = false;
 						}
 						
