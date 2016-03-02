@@ -57,6 +57,8 @@ function get_data(req,next){
 						var json_data = new Object();
 						json_data.event_id = event_id;
 						json_data.event_name = rows_event.title;
+						json_data.venue_name = rows_event.venue_name;
+						json_data.start_datetime = rows_event.start_datetime;
 						json_data.purchase = []
 						json_data.reservation = []
 						var n = 0;

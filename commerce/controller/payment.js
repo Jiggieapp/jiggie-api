@@ -27,6 +27,7 @@ exports.index = function(req, res){
 	
 };
 
+/*Start : Transaction Using VA*/
 function post_transaction_va(req,next){
 	var post = req.body;
 	var order_id = post.order_id;
