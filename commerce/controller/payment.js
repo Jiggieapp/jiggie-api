@@ -101,7 +101,7 @@ function post_transaction_va(req,next){
 				async.forEachOf(dt.product_list,function(v,k,e){
 					items[n] = new Object();
 					items[n].id = v.ticket_id;
-					items[n].price = parseInt(v.total_price);
+					items[n].price = parseFloat(v.total_price);
 					items[n].quantity = parseInt(v.num_buy);
 					items[n].name = v.name;
 					n++;
@@ -355,7 +355,7 @@ function post_transaction_cc(req,next){
 				async.forEachOf(dt.product_list,function(v,k,e){
 					items[n] = new Object();
 					items[n].id = v.ticket_id;
-					items[n].price = parseInt(v.total_price);
+					items[n].price = parseFloat(v.total_price);
 					items[n].quantity = parseInt(v.num_buy);
 					items[n].name = v.name;
 					n++;
