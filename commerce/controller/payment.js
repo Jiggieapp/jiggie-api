@@ -20,14 +20,26 @@ exports.index = function(req, res){
 			}
 		})
 	}else if(type == 'va'){
-		
+		post_transaction_va(req,function(dt){
+			if(dt == false){
+				res.json({code_error:403})
+			}else{
+				res.json(dt);
+			}
+		})
 	}else if(type == 'bp'){
-		
+		post_transaction_va(req,function(dt){
+			if(dt == false){
+				res.json({code_error:403})
+			}else{
+				res.json(dt);
+			}
+		})
 	}
 	
 };
 
-/*Start : Transaction Using VA*/
+/*Start : Transaction Using VA & BP*/
 function post_transaction_va(req,next){
 	var post = req.body;
 	var order_id = post.order_id;
@@ -126,8 +138,15 @@ function post_transaction_va(req,next){
 				
 				json_data.token_id = token_id;
 				
+				var url_execute = '';
+				if(type == 'va'){
+					url_execute = 'transaction_va.php';
+				}else if(type == 'bp'){
+					url_execute = 'transaction_bp.php';
+				}
+				
 				var options = {
-					url : comurl+'vt-direct/transaction_va.php',
+					url : comurl+url_execute,
 					form : json_data
 				}
 				curl.post(options,function(err,resp,body){
@@ -141,15 +160,135 @@ function post_transaction_va(req,next){
 				cb(null,dt);
 			}
 		},
+		function cek_transaction_vt(stat,body,cb){
+			var vt = JSON.parse(body);
+			debug.log(vt);
+			if(typeof vt.code_error == 'undefined'){
+				cb(null,true,body)	
+			}else{
+				debug.log("Error Code in VT Commerce VA");
+				cb(null,false,[]);
+			}
+		},
 		function merge_data(stat,body,cb){
-			
+			if(stat == true){
+				merge_data_va(req,body,function(dt){
+					if(dt == true){
+						cb(null,true,body);
+					}else{
+						debug.log('error line 160 => paymentjs');
+						cb(null,false,[])
+					}
+				})
+			}else{
+				debug.log('error line 165 => paymentjs');
+				cb(null,false,[]);
+			}
+		},
+		function upd_vt(stat,body,cb2){
+			if(stat == true){
+				var vt = JSON.parse(body);
+				order_coll.update({order_id:order_id},{$set:{vt_response:vt}},function(err,upd){
+					if(err){
+						debug.log('error line 180-> paymentjs');
+						cb2(null,false,[]);
+					}else{
+						cb2(null,true,vt);
+					}
+				})
+			}else{
+				debug.log('error line 187 => paymentjs');
+				cb2(null,false,[]);
+			}
 		}
-	],function(){
-		
+	],function(err,merge,vt){
+		if(merge == true){
+			var str = '';
+			if(type == 'bp'){
+				str = {success:true,status:'capture',bill_key:vt.bill_key,biller_code:vt.biller_code,method:'Mandiri Bill Payment'}
+			}else if(type == 'va'){
+				str = {success:true,status:'capture',va_number:vt.permata_va_number,method:'Virtual Account'}
+			}
+			next(str)
+		}else{
+			next(false);
+		}
 	})
 }
 
-/*End: Transaction Using VA*/
+function merge_data_va(req,body,next){
+	var post = req.body;
+	var order_id = post.order_id;
+	var token_id = post.token_id;
+	var type = post.type;
+	
+	var schema = req.app.get('mongo_path');
+	var order = require(schema+'/order_product.js');
+	
+	if(type == 'va' || type == 'bp'){
+		async.waterfall([
+			function get_stock(cb2){
+				order.findOne({order_id:order_id},function(err,r){
+					if(err){
+						debug.log('error line 182');
+						cb2(null,false,{code_error:403});
+					}else{
+						// update stock after success buy //
+						var num_buy = 0;
+						async.forEachOf(r.product_list,function(v,k,e){
+							num_buy = v.num_buy;
+							tickettypes_coll.findOne({_id:new ObjectId(v.ticket_id)},function(err2,r2){
+								var quantity_old = r2.quantity;
+								var new_qty = parseInt(quantity_old)-parseInt(num_buy);
+								
+								var form_update = {
+									$set:{quantity:new_qty},
+									$push:{qty_hold:{order_id:order_id,qty:num_buy}}
+								}
+								
+								tickettypes_coll.update({_id:new ObjectId(v.ticket_id)},form_update,function(err3,upd){
+									if(err3){
+										debug.log('error update stock va');
+										cb2(null,false);
+									}else{
+										cb2(null,true);
+									}
+								})
+							})
+						})
+					
+					}
+				})
+			},
+			function upd_order(stat,cb2){
+				if(stat == true){
+					var form_upd = {
+						$set:{
+							order_status:'pending_payment',
+							payment_status:'awaiting_payment'
+						}
+					}
+					order.update({order_id:order_id},form_upd,function(err,upd){
+						if(err){
+							debug.log('error line 222');
+							cb2(null,false);
+						}else{
+							cb2(null,true);
+						}
+					})
+				}else{
+					cb2(null,false);
+				}
+			},
+		],function(err,merge){
+			next(merge);
+		})
+	}
+	
+	
+}
+
+/*End: Transaction Using VA & BP*/
 
 
 /*Start:Transaction Using CC*/
@@ -301,11 +440,11 @@ function post_transaction_cc(req,next){
 		},
 		function cek_transaction_vt(stat,body,cb){
 			var vt = JSON.parse(body);
+			debug.log(vt);
 			if(typeof vt.code_error == 'undefined'){
 				cb(null,true,body)	
 			}else{
-				debug.log("Error Code in VT Commerce");
-				debug.log(vt);
+				debug.log("Error Code in VT Commerce CC");
 				cb(null,false,[]);
 			}
 		},
@@ -478,7 +617,8 @@ function post_transaction_cc(req,next){
 								})
 								
 							}else if(vt.transaction_status == 'deny'){
-								
+								debug.log("Transaction Deny From VT in CC");
+								cb(null,{code_error:403});
 							}
 						}else if(String(is_new_card) == '0' || String(is_new_card) == ''){
 							/*Using One Click Method*/

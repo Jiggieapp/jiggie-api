@@ -137,11 +137,7 @@ exports.payment = function(req,res){
 					if(typeof json_data.code_error != 'undefined'){
 						res.status(json_data.code_error).send({});
 					}else{
-						var rsp = {
-							response : 1,
-							msg : 'Success'
-						}
-						res.send(rsp);
+						res.send(json_data);
 					}
 				}else{
 					res.send(err);
