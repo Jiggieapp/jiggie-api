@@ -23,7 +23,7 @@ exports.apn = function(req,res){
 	debug.log(post);
 	
 	var message = post.message;
-	var lim_msg = message.trunc(50,true);
+	var lim_msg = message.trunc(144,true);
 	var post_type = post.type;
 	
 	customers_coll.find({}).toArray(function(err,rows){
@@ -50,53 +50,59 @@ exports.apn = function(req,res){
 			debug.log('GCM Token :'+gcm_token)
 			debug.log('FBID :'+ve.fb_id)
 			
-			async.parallel([
-				function push_gcm(cb){
-					if(typeof gcm_token != 'undefined'){
-						if(gcm_token != '' && gcm_token != 'empty' && gcm_token != 'undefined'){
-							sendGPN(post,ve.fb_id,'',alert,gcm_token,post_type);
+			
+			try{
+				var connection = new apn.Connection(optionsLive);
+				notification = new apn.Notification();
+				async.parallel([
+					function push_gcm(cb){
+						if(typeof gcm_token != 'undefined'){
+							if(gcm_token != '' && gcm_token != 'empty' && gcm_token != 'undefined'){
+								sendGPN(post,ve.fb_id,'',alert,gcm_token,post_type);
+							}else{
+								debug.log('GCM Token Empty')
+							}
 						}else{
-							debug.log('GCM Token Empty')
+							debug.log('GCM Token undefined')
 						}
-					}else{
-						debug.log('GCM Token undefined')
-					}
-					cb(null,'next');
-				},
-				function push_apn(cb){
-					if(typeof token != 'undefined' && token != 'empty'  && token != '' && token != 'undefined'){
-						var payload = new Object();
-						if(post_type == 'general'){
-							payload.type = 'general';
-						}else if(post_type == 'event'){
-							payload.type = "event";
-							payload.event_id = post.event_id;
-						}else{
-							payload.type = 'general';
-						}
-						
-						payload.message = message;
-						payload.hosting_id = "";
-						payload.badge = 1;
+						cb(null,'next');
+					},
+					function push_apn(cb){
+						if(typeof token != 'undefined' && token != 'empty'  && token != '' && token != 'undefined'){
+							var payload = new Object();
+							if(post_type == 'general'){
+								payload.type = 'general';
+							}else if(post_type == 'event'){
+								payload.type = "event";
+								payload.event_id = post.event_id;
+							}else{
+								payload.type = 'general';
+							}
+							
+							payload.message = message;
+							payload.hosting_id = "";
+							payload.badge = 1;
 
-						var connection = new apn.Connection(optionsLive);
-						notification = new apn.Notification();
-						notification.device = new apn.Device(token);
-						notification.alert = alert;
-						notification.payload = payload;
-						notification.badge = 1;
-						notification.sound = "default";
-						connection.sendNotification(notification);
-						debug.log('IOS TOKEN USING');
-					}else{
-						debug.log('APN token empty');
+							
+							notification.device = new apn.Device(token);
+							notification.alert = alert;
+							notification.payload = payload;
+							notification.badge = 1;
+							notification.sound = "default";
+							connection.sendNotification(notification);
+							debug.log('IOS TOKEN USING');
+						}else{
+							debug.log('APN token empty');
+						}
+						cb(null,'next');
 					}
-					cb(null,'next');
-				}
-			],function(err,ush){
-				debug.log(ush)
-			})
-			howtot++;
+				],function(err,ush){
+					debug.log(ush)
+				})
+				howtot++;
+			}catch(e){
+				debug.log(e);
+			}
 		})
 		debug.log(howtot);
 	});
