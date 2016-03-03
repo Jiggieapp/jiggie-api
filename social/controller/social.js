@@ -176,6 +176,8 @@ function get_data(req,fb_id,gender_interest,next){
 						return JSON.stringify(n) != '[{}]'
 					})
 					
+					json_data.length = 20;
+					
 					// debug.log(json_data);
 					if(JSON.stringify(json_data) == '[{}]'){
 						callback(null,[]);

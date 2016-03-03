@@ -482,6 +482,11 @@ exports.sync_membersettings = function(req,res){
 		customers_coll.update({fb_id:post.fb_id},{$set:dt},function(){});
 	}
 	
+	if(typeof post.gender != 'undefined'){
+		if(typeof post.gender != 'undefined'){dt.gender = post.gender;}
+		customers_coll.update({fb_id:post.fb_id},{$set:dt},function(){});
+	}
+	
 	
 	var json_data = new Object();
 	if(typeof post.fb_id != 'undefined'){json_data.fb_id = post.fb_id;}
