@@ -203,17 +203,42 @@ function post_summary(req,next){
 	var post = req.body;
 	
 	async.waterfall([
-		function get_event(cb){
-			events_detail_coll.findOne({_id:new ObjectId(post.event_id)},function(err,r){
-				if(r != null){
-					cb(null,1,r)
-				}else{
-					cb(null,0,[]);
-				}
-			});
+		function get_ticketdata(cb){
+			var in_ticketid = [];
+			var n = 0;
+			async.forEachOf(post.product_list,function(v,k,e){
+				in_ticketid[n] = new ObjectId(v.ticket_id);
+			})
+			tickettypes_coll.find({_id:{$in:in_ticketid}}).toArray(function(err,r){
+				async.forEachOf(r,function(v,k,e){
+					async.forEachOf(post.product_list,function(ve,ke,ee){
+						if(v._id == ve.ticket_id){
+							v.num_buy = ve.num_buy;
+							v.guest_detail = ve.guest_detail;
+							v.ticket_id = ve.ticket_id;
+						}
+					})
+				})
+				debug.log(r);
+				cb(null,true,r)
+			})
 		},
-		function syncdata(cek,rows_event,cb){
-			if(cek == 1){
+		function get_event(stat,rows_ticket,cb){
+			if(stat == true){
+				events_detail_coll.findOne({_id:new ObjectId(post.event_id)},function(err,r){
+					if(r != null){
+						cb(null,true,r,rows_ticket)
+					}else{
+						cb(null,false,[],[]);
+					}
+				});
+			}else{
+				cb(null,false,[],[])
+			}
+			
+		},
+		function syncdata(cek,rows_event,rows_ticket,cb){
+			if(cek == true){
 				var json_data = new Object();
 		
 				json_data.code = String(randomString.alphaNumUpper(6,new Date().getTime()));
@@ -230,49 +255,51 @@ function post_summary(req,next){
 				var totadminfee = 0;
 				var tottip = 0;
 				json_data.product_list = [];
-				async.forEachOf(post.product_list,function(v,k,e){
+				async.forEachOf(rows_ticket,function(v,k,e){
 					json_data.product_list[n] = new Object();
 					json_data.product_list[n].ticket_id = String(v.ticket_id);
 					json_data.product_list[n].name = String(v.name);
 					json_data.product_list[n].ticket_type = String(v.ticket_type);
+					json_data.product_list[n].max_buy = String(v.guest);
 					json_data.product_list[n].quantity = String(v.quantity);
 					json_data.product_list[n].admin_fee = String(v.admin_fee);
-					json_data.product_list[n].tax_percent = String(v.tax_percent);
+					json_data.product_list[n].tax_percent = String(v.tax);
 					json_data.product_list[n].tax_amount = String(v.tax_amount);
-					json_data.product_list[n].tip_percent = String(v.tip_percent);
+					json_data.product_list[n].tip_percent = String(v.tip);
 					json_data.product_list[n].tip_amount = String(v.tip_amount);
 					json_data.product_list[n].price = String(v.price);
-					json_data.product_list[n].total_price = String(v.total_price);
+					json_data.product_list[n].total_price = String(v.total);
 					json_data.product_list[n].num_buy = String(v.num_buy);
-					json_data.product_list[n].total_price_all = String(parseFloat(v.num_buy) * parseFloat(v.total_price));
+					json_data.product_list[n].total_price_all = String(parseFloat(v.num_buy) * parseFloat(v.total));
 					json_data.product_list[n].guest_detail = v.guest_detail;
 					
 					tottax += parseFloat(v.tax_amount);
 					totadminfee += parseFloat(v.admin_fee);
 					tottip += parseFloat(v.tip_amount);
-					totall += parseFloat(v.num_buy) * parseFloat(v.total_price);
+					totall += parseFloat(v.num_buy) * parseFloat(v.total);
 					n++;
 				})
 				json_data.total_tax_amount = String(tottax);
 				json_data.total_tip_amount = String(tottip);
 				json_data.total_adminfee = String(totadminfee);
 				json_data.total_price = String(totall);
-				cb(null,1,json_data);
+				cb(null,true,json_data,rows_ticket);
 			}else{
-				cb(null,0,[]);
+				cb(null,false,[],[]);
 			}
 		},
-		function cek(cek,json_data,cb){
-			if(cek == 1){
+		function cek(cek,json_data,rows_ticket,cb){
+			if(cek == true){
 				var cek_exist = true;
 				var cek_quantity = true;
 				var cek_type = true;
+				var cek_max = true;
 				
 				var n = 0;
 				var in_ticketid = [];
-				var temp_type = post.product_list[0].ticket_type;
+				var temp_type = rows_ticket[0].ticket_type;
 				var temp_quantity = [];
-				async.forEachOf(post.product_list,function(v,k,e){
+				async.forEachOf(rows_ticket,function(v,k,e){
 					if(temp_type != v.ticket_type){
 						cek_type = false
 					}

@@ -11,6 +11,7 @@ var varScheme = new Schema({
 	payment_status : {type:String, enum:['awaiting_payment','paid','refund'],required:true},
 	product_list : [{
 		ticket_type : {type:String, enum:['purchase','reservation'],required:true},
+		max_buy : {type:String, required:true},
 		num_buy : {type:String, required:true},
 		total_price : {type:String, required:true},
 		name:{type:String,required:true},
