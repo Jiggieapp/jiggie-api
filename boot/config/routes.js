@@ -51,6 +51,9 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/xmpp/:user',xmpp.index);
   app.get('/ltx/:user',xmpp.ltx);
   
+  var cron = require(path_controller+'cron');
+  app.get('/start_autoschedule',cron.index)
+  
   
   
   // Notif //
