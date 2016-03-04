@@ -58,23 +58,27 @@ function doall(event_details_id,fb_id,gender_interest,next){
 		},
 		function updating(callback){
 			upd_data(event_details_id,fb_id,function(upd){
-				callback(null,'next');
+				
 			});
+			callback(null,'next');
 		},
 		function update_socialfeed(callback){
 			upd_socialfeed(event_details_id,fb_id,function(upd){
-				callback(null,'next');
+				
 			});
+			callback(null,'next');
 		},
 		function clean_data(cb){
 			cleaning_data(event_details_id,function(dt){
-				cb(null,'next')
+				
 			})
+			cb(null,'next')
 		},
 		function clean_socialfeed(cb){
 			cleansocfed(fb_id,function(dt){
-				cb(null,'next');
+				
 			})
+			cb(null,'next');
 		}
 	],function(err,merge){
 		try{
@@ -262,12 +266,31 @@ function getdata(event_details_id,fb_id,gender_interest,next){
 				callback(null,[],[]);
 			}
 		},
-		function get_eventdetail(socfed_users,rows_cust,callback){
-			var cond = {_id:new ObjectId(event_details_id)}
-			events_detail_coll.findOne(cond,function(err,rows){
-				if(err){
-					debug.log(err);
-				}else{
+		function get_eventdetail_or_cache(socfed_users,rows_cust,callback){
+			// cache.get("event_"+event_details_id,function(err,val){
+				// if(typeof val == "undefined"){
+					var cond = {_id:new ObjectId(event_details_id)}
+					events_detail_coll.findOne(cond,function(err,rows){
+						// cache.set("event_"+fb_id+"_"+event_details_id,rows,function(err,suc){
+							// if(suc == true){
+								// debug.log("not cached");
+								callback(null,socfed_users,rows_cust,rows);
+							// }else{
+								// debug.log("Data Not Cached");
+							// }
+						// });
+					});
+				// }else{
+					// callback(null,socfed_users,rows_cust,val);
+				// }
+			// });
+		},
+		function get_eventdetail(socfed_users,rows_cust,rows,callback){
+			// var cond = {_id:new ObjectId(event_details_id)}
+			// events_detail_coll.findOne(cond,function(err,rows){
+				// if(err){
+					// debug.log(err);
+				// }else{
 					if(socfed_users.length > 0){
 						async.forEachOf(rows_cust,function(v,k,e){
 							async.forEachOf(rows.guests_viewed,function(v2,k2,e2){
@@ -334,8 +357,8 @@ function getdata(event_details_id,fb_id,gender_interest,next){
 					}
 					
 					callback(null,rows);
-				}
-			});
+				// }
+			// });
 		},
 		function get_venue(event_item,callback){
 			var cond = {_id:new ObjectId(event_item.venue_id)}
@@ -599,11 +622,12 @@ function updsocialfeed_async(guests_viewed,fb_id,next){
 						async.forEachOf(guests_viewed,function(v,k,e){
 							
 							var cond2 = {
-								fb_id:v.fb_id,
-								"users.event_id":v.event_id
+								fb_id:fb_id,
+								"users.fb_id":v.fb_id
 							}
-							socialfeed_coll.findOne(cond2,function(err,rother){
-								if(rother != null){
+							socialfeed_coll.findOne(cond2,function(err,rself){
+								if(rself != null){
+									// update other socialfeed in self
 									var cond3 = {
 										fb_id:fb_id,
 										"users.fb_id":v.fb_id
@@ -623,6 +647,28 @@ function updsocialfeed_async(guests_viewed,fb_id,next){
 										}else{
 											debug.log('updating self data socfed');
 										}
+									})
+								}else{
+									// push new socialfeed in self
+									customers_coll.findOne({fb_id:v.fb_id},function(err,rcs){
+										var json_data = new Object();
+										json_data.fb_id = v.fb_id;
+										json_data.first_name = rcs.first_name;
+										json_data.gender = rcs.gender;
+										json_data.last_viewed = new Date();
+										json_data.event_id = guests_viewed[0].event_id;
+										json_data.event_name = guests_viewed[0].event_name;
+										json_data.didMatch = false;
+										json_data.from_state = "viewed";
+										json_data.to_state = "viewed";
+										
+										socialfeed_coll.update({fb_id:fb_id},{$push:{users:json_data}},function(err,upd){
+											if(err){
+												debug.log("Err code:323213");
+												debug.log(err);
+											}
+										})
+										debug.log("push baru self");
 									})
 								}
 							})
