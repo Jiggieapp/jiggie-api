@@ -427,28 +427,28 @@ function post_transaction_cc(req,next){
 				curl.post(options,function(err,resp,body){
 					if (!err && resp.statusCode == 200) {
 						debug.log('transaction execute CC Successs');
-						cb(null,true,body)
+						cb(null,true,dt,dt2,body)
 					}else{
 						debug.log('transaction execute CC Failed');
-						cb(null,false,[]);
+						cb(null,false,[],[],[]);
 					}
 				});
 			}else{
 				debug.log('line 195 err');
-				cb(null,dt);
+				cb(null,false,[],[],[]);
 			}
 		},
-		function cek_transaction_vt(stat,body,cb){
+		function cek_transaction_vt(stat,dt,dt2,body,cb){
 			var vt = JSON.parse(body);
 			debug.log(vt);
 			if(typeof vt.code_error == 'undefined'){
-				cb(null,true,body)	
+				cb(null,true,dt,dt2,body)	
 			}else{
 				debug.log("Error Code in VT Commerce CC");
-				cb(null,false,[]);
+				cb(null,false,[],[],[]);
 			}
 		},
-		function merge_data(stat,body,cb){
+		function merge_data(stat,dt,dt2,body,cb){
 			if(stat == true){
 				var vt = JSON.parse(body);
 				debug.log('Response VT');
