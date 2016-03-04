@@ -13,5 +13,5 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/notif-handle',notif.index);
   
   var other = require(path_controller+'other');
-  app.get('/credit_card',other.cc_info);
+  app.get('/credit_card/:fb_id',other.cc_info);
 }
