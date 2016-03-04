@@ -595,6 +595,41 @@ function updsocialfeed_async(guests_viewed,fb_id,next){
 					})
 					cb(null,"Adding Self SocialFeed");
 				}else{
+					if(guests_viewed.length > 0){
+						async.forEachOf(guests_viewed,function(v,k,e){
+							
+							var cond2 = {
+								fb_id:v.fb_id,
+								"users.event_id":v.event_id
+							}
+							socialfeed_coll.findOne(cond2,function(err,rother){
+								if(rother != null){
+									var cond3 = {
+										fb_id:fb_id,
+										"users.fb_id":v.fb_id
+									}
+									var form_upd3 = {
+										$set:{
+											"users.$.last_viewed":new Date(),
+											"users.$.event_id":guests_viewed[0].event_id,
+											"users.$.event_name":guests_viewed[0].event_name
+										}
+									}
+									// debug.log(guests_viewed[0].event_name);
+									// debug.log(fb_id);
+									socialfeed_coll.update(cond3,form_upd3,function(err,upd){
+										if(err){
+											debug.log(err);
+										}else{
+											debug.log('updating self data socfed');
+										}
+									})
+								}
+							})
+						
+						})
+						
+					}
 					cb(null,"SocialFeed Already Exist");
 				}
 			})

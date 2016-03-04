@@ -175,8 +175,14 @@ function get_data(req,fb_id,gender_interest,next){
 					json_data = json_data.filter(function(n){
 						return JSON.stringify(n) != '[{}]'
 					})
+					json_data = json_data.filter(function(n){
+						return typeof n.fb_id != 'undefined';
+					})
 					
-					json_data.length = 20;
+					if(json_data.length > 20){
+						json_data.length = 20;
+					}
+					
 					
 					// debug.log(json_data);
 					if(JSON.stringify(json_data) == '[{}]'){
