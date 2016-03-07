@@ -17,8 +17,7 @@ exports.cc_info = function(req,res){
 }
 
 function get_ccinfo(req,next){
-	var post = req.body;
-	var fb_id = post.fb_id;
+	var fb_id = req.params.fb_id;
 	
 	async.waterfall([
 		function get_customers(cb){

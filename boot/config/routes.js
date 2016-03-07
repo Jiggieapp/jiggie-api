@@ -47,6 +47,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/app/v3/product/term/:codeid',commerce.term);
   app.post('/app/v3/product/payment',commerce.payment);
   app.get('/app/v3/product/credit_card/:fb_id',commerce.cc_info);
+  app.get('/notif_handle',commerce.notifications_handler);
   
   var xmpp = require(path_controller+'xmpp');
   app.get('/xmpp/:user',xmpp.index);
