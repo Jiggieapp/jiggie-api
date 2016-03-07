@@ -76,6 +76,7 @@ function get_data(req,next){
 								json_data.purchase[n].tip_percent = v.tip;
 								json_data.purchase[n].tip_amount = v.tip_amount;
 								json_data.purchase[n].price = v.price;
+								json_data.purchase[n].currency = v.currency;
 								json_data.purchase[n].total_price = v.total;
 								json_data.purchase[n].description = v.description;
 								json_data.purchase[n].max_purchase = v.guest;
@@ -92,6 +93,7 @@ function get_data(req,next){
 								json_data.reservation[m].tip_percent = v.tip;
 								json_data.reservation[m].tip_amount = v.tip_amount;
 								json_data.reservation[m].price = v.price;
+								json_data.reservation[m].currency = v.currency;
 								json_data.reservation[m].total_price = v.total;
 								json_data.reservation[m].description = v.description;
 								json_data.reservation[m].max_guests = v.guest;
@@ -268,10 +270,11 @@ function post_summary(req,next){
 					json_data.product_list[n].tip_percent = String(v.tip);
 					json_data.product_list[n].tip_amount = String(v.tip_amount);
 					json_data.product_list[n].price = String(v.price);
+					json_data.product_list[n].currency = String(v.currency);
 					json_data.product_list[n].total_price = String(v.total);
 					json_data.product_list[n].num_buy = String(v.num_buy);
 					json_data.product_list[n].total_price_all = String(parseFloat(v.num_buy) * parseFloat(v.total));
-					json_data.product_list[n].guest_detail = v.guest_detail;
+					json_data.product_list[n].terms = v.purchase_confirmations;
 					
 					tottax += parseFloat(v.tax_amount);
 					totadminfee += parseFloat(v.admin_fee);
@@ -279,6 +282,7 @@ function post_summary(req,next){
 					totall += parseFloat(v.num_buy) * parseFloat(v.total);
 					n++;
 				})
+				json_data.guest_detail = post.guest_detail;
 				json_data.total_tax_amount = String(tottax);
 				json_data.total_tip_amount = String(tottip);
 				json_data.total_adminfee = String(totadminfee);

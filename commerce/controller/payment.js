@@ -129,10 +129,17 @@ function post_transaction_va(req,next){
 				
 				// s:customer_details //
 				var customer_details = new Object();
-				customer_details.first_name = dt2.user_first_name;
-				customer_details.last_name = dt2.user_last_name;
-				customer_details.email = dt2.email;
-				customer_details.phone = dt2.phone;
+				var fname = dt.guest_detail.name.split(' ');
+				if(typeof fname[0] == 'undefined' || typeof fname[0] == ''){
+					fname[0] = '';
+				}
+				if(typeof fname[1] == 'undefined' || typeof fname[1] == ''){
+					fname[1] = '';
+				}
+				customer_details.first_name = fname[0];
+				customer_details.last_name = fname[1];
+				customer_details.email = dt.guest_detail.email;
+				customer_details.phone = dt.guest_detail.phone;
 				json_data.customer_details = customer_details;
 				// e:customer_details //
 				
@@ -303,6 +310,9 @@ function post_transaction_cc(req,next){
 	var schema = req.app.get('mongo_path');
 	var order = require(schema+'/order_product.js');
 	
+	debug.log('post data ######');
+	debug.log(post);
+	
 	async.waterfall([
 		function get_order(cb){
 			order.findOne({order_id:order_id},function(err,r){
@@ -368,11 +378,6 @@ function post_transaction_cc(req,next){
 				billing_address = new Object();
 				billing_address.first_name = dt2.user_first_name;
 				billing_address.last_name = dt2.user_last_name;
-				// json_data.billing_address.address = dt2.user_first_name;
-				// json_data.billing_address.city = dt2.user_first_name;
-				// json_data.billing_address.postal_code = dt2.user_first_name;
-				// json_data.billing_address.phone = dt2.user_first_name;
-				// json_data.billing_address.country_code = dt2.user_first_name;
 				json_data.billing_address = billing_address;
 				
 				// e:billing address //
@@ -382,38 +387,25 @@ function post_transaction_cc(req,next){
 				shipping_address = new Object();
 				shipping_address.first_name = dt2.user_first_name;
 				shipping_address.last_name = dt2.user_last_name;
-				// json_data.shipping_address.address = dt2.user_first_name;
-				// json_data.shipping_address.city = dt2.user_first_name;
-				// json_data.shipping_address.postal_code = dt2.user_first_name;
-				// json_data.shipping_address.phone = dt2.user_first_name;
-				// json_data.shipping_address.country_code = dt2.user_first_name;
 				json_data.shipping_address = shipping_address;
 				
 				// e:shipping_address //
 				
 				// s:customer_details //
 				var customer_details = new Object();
-				customer_details.first_name = dt2.user_first_name;
-				customer_details.last_name = dt2.user_last_name;
-				customer_details.email = dt2.email;
-				customer_details.phone = dt2.phone;
-				// customer_details.billing_address = billing_address;
-				// customer_details.shipping_address = shipping_address;
+				var fname = dt.guest_detail.name.split(' ');
+				if(typeof fname[0] == 'undefined' || typeof fname[0] == ''){
+					fname[0] = '';
+				}
+				if(typeof fname[1] == 'undefined' || typeof fname[1] == ''){
+					fname[1] = '';
+				}
+				customer_details.first_name = fname[0];
+				customer_details.last_name = fname[1];
+				customer_details.email = dt.guest_detail.email;
+				customer_details.phone = dt.guest_detail.phone;
 				json_data.customer_details = customer_details;
-				
 				// e:customer_details //
-				
-				// s:transaction_data //
-				// json_data.transaction_data = new Object();
-				// json_data.transaction_data.payment_type = 'credit_card';
-				// json_data.transaction_data.credit_card = new Object();
-				// json_data.transaction_data.credit_card.token_id = token_id;
-				// json_data.transaction_data.credit_card.bank = 'bni';
-				// json_data.transaction_data.credit_card.save_token_id = save_cc;
-				// json_data.transaction_data.transaction_details = transaction_details;
-				// json_data.transaction_data.item_details = items;
-				// json_data.transaction_data.customer_details = customer_details;
-				// e:transaction_data //
 				
 				json_data.token_id = token_id;
 				
@@ -471,7 +463,7 @@ function post_transaction_cc(req,next){
 												form : form_post
 											}
 											curl.post(options,function(err2,response,dt){
-												if (!err2 && response.statusCode == 200) {
+												if (!err2) {
 													var dt = JSON.parse(dt);
 													if(typeof dt.code_error != 'undefined'){
 														debug.log('error push api approve challange');
@@ -486,7 +478,7 @@ function post_transaction_cc(req,next){
 											});
 										}else{
 											debug.log('fraud status accepted');
-											cb(null,true);
+											cb2(null,true);
 										}
 									},
 									function get_stock(stat,cb2){
@@ -508,6 +500,7 @@ function post_transaction_cc(req,next){
 																	debug.log('error update stock');
 																	cb2(null,false);
 																}else{
+																	debug.log('updated stock');
 																	cb2(null,true);
 																}
 															})
@@ -552,43 +545,15 @@ function post_transaction_cc(req,next){
 												saved_token_id_expired_at : saved_token_id_expired_at,
 												payment_type : payment_type
 											}
-											customers_coll.findOne({fb_id:dt2.fb_id},function(err,r){
-												if(r.ccinfo != null || r.ccinfo != undefined){
-													if(r.length > 0){
-														customers_coll.update({fb_id:dt2.fb_id},{$push:{ccinfo:data_push}},function(err2,upd){
-															if(err2){
-																debug.log("error update line 172");
-																cb2(null,false);
-															}else{
-																debug.log("updated cc info");
-															}
-														})
-													}else{
-														var data_ins = [];
-														data_ins[0] = data_push;
-														customers_coll.update({fb_id:dt2.fb_id},{$set:{ccinfo:data_ins}},function(err2,upd){
-															if(err2){
-																debug.log("error update line 181");
-																cb2(null,false);
-															}else{
-																debug.log("updated cc info");
-															}
-														})
-													}
+											customers_coll.update({fb_id:dt2.fb_id},{$push:{ccinfo:data_push}},function(err2,upd){
+												if(err2){
+													debug.log("error update line 172");
+													cb2(null,false);
 												}else{
-													var data_ins = [];
-													data_ins[0] = data_push;
-													customers_coll.update({fb_id:dt2.fb_id},{$set:{ccinfo:data_ins}},function(err2,upd){
-														if(err2){
-															debug.log("error update line 192");
-															cb2(null,false);
-														}else{
-															debug.log("updated cc info");
-														}
-													})
+													debug.log("updated cc info");
+													cb2(null,true);
 												}
 											})
-											cb2(null,true);
 										}else{
 											cb2(null,false);
 										}

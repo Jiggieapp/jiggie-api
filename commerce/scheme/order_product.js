@@ -22,16 +22,21 @@ var varScheme = new Schema({
 		tax_amount:{type:String,required:true},
 		tip_percent:{type:String,required:true},
 		tip_amount:{type:String,required:true},
+		currency:{type:String,required:true},
 		price:{type:String,required:true},
 		total_price_all:{type:String,required:true},
-		guest_detail:{
-			name:{type:String,required:true},
-			email:{type:String,required:true},
-			phone:{type:String,default:''}
-		}
+		terms:[{
+			label:{type:String,default:''},
+			body:{type:String,default:''}
+		}]
 	}],
 	fb_id:{type:String,required:true},
 	event_id:{type:String,required:true},
+	guest_detail:{
+		name:{type:String,required:true},
+		email:{type:String,required:true},
+		phone:{type:String,default:''}
+	},
 	total_tax_amount:{type:String,required:true},
 	total_tip_amount:{type:String,required:true},
 	total_adminfee:{type:String,required:true},
