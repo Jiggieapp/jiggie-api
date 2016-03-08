@@ -9,6 +9,13 @@ exports.environ = function(app,express,helmet,path,compression,bodyParser){
 	app.set('path_public','/../');
 	app.set('helpers',require('./helpers'));
 	app.use(express.logger('dev'));
+	
+	/*mail env*/
+	app.set('mail_host','smtp.mandrillapp.com');
+	app.set('mail_port',587);
+	app.set('mail_user','cto@jiggieapp.com');
+	app.set('mail_pass','4HilaY1jFATpOsjOXgUXoQ');
+	/*mail env*/
 
 	app.use(express.json());
 	app.use(express.urlencoded());

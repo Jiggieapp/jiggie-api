@@ -116,10 +116,10 @@ function get_status(req,next){
 
 
 function send_mail(req,dt,vt,next){
-	var host = 'smtp.mandrillapp.com';
-	var port = 587;
-	var user = 'cto@jiggieapp.com';
-	var pass = '4HilaY1jFATpOsjOXgUXoQ';
+	var host = req.app.get('mail_host');
+	var port = req.app.get('mail_port');
+	var user = req.app.get('mail_user');
+	var pass = req.app.get('mail_pass');
 	
 	var from = 'cto@jiggieapp.com';
 	var to = dt.guest_detail.email;
@@ -127,14 +127,26 @@ function send_mail(req,dt,vt,next){
 	var html = '';
 	
 	if(vt.payment_type == 'credit_card'){
-		subject = 'Thanks For Yout Credit Card Payment';
-		html = '<html><strong>Testing Sukses Pembayaran Menggunakan Credit Card</strong></html>';
+		if(vt.transaction_status == 'settlement'){
+			subject = 'Thanks For Yout Credit Card Payment';
+			html = '<html><strong>Testing Sukses Pembayaran Menggunakan Credit Card</strong></html>';
+		}
 	}else if(vt.payment_type == 'bank_transfer'){
-		subject = 'Your VA Payment Already Success';
-		html = '<html><strong>Testing Success Pembayaran Menggunakan Bank Transfer</strong></html>';
+		if(vt.transaction_status == 'settlement'){
+			subject = 'Your VA Payment Already Success';
+			html = '<html><strong>Testing Success Pembayaran Menggunakan Bank Transfer</strong></html>';
+		}else if(vt.transaction_status == 'pending'){
+			subject = 'Your VA Payment Pending';
+			html = '<html><strong>Testing Pending Pembayaran Menggunakan Bank Transfer</strong></html>';
+		}
 	}else if(vt.payment_type == 'echannel'){
-		subject = 'Your BP Payment Already Success';
-		html = '<html><strong>Testing Success Pembayaran Menggunakan Echannel</strong></html>';
+		if(vt.transaction_status == 'settlement'){
+			subject = 'Your BP Payment Already Success';
+			html = '<html><strong>Testing Success Pembayaran Menggunakan Echannel</strong></html>';
+		}else if(vt.transaction_status == 'pending'){
+			subject = 'Your BP Payment Pending';
+			html = '<html><strong>Testing Pending Pembayaran Menggunakan Echannel</strong></html>';
+		}
 	}
 	
 	var nodemailer = require('nodemailer');
@@ -162,4 +174,18 @@ function send_mail(req,dt,vt,next){
 			next(true);
 		}
 	});
+}
+
+exports.sendnotif = function(req,res){
+	var post = req.body;
+	var dt_order = post.dt_order;
+	var vt = post.vt;
+	
+	send_mail(req,dt,vt,function(mail_stat){
+		if(mail_stat == true){
+			res.json({mail:true})
+		}else{
+			res.json({mail:false})
+		}
+	})
 }

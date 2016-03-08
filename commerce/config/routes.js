@@ -11,6 +11,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   
   var notif = require(path_controller+'notifications-handler');
   app.get('/notif_handle',notif.index);
+  app.post('/sendnotif',notif.sendnotif)
   
   var other = require(path_controller+'other');
   app.get('/credit_card/:fb_id',other.cc_info);
