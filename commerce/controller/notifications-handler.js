@@ -81,7 +81,8 @@ function get_status(req,next){
 														mail_status:true,
 														order_status:'completed',
 														payment_status:'paid',
-														vt_response:results
+														vt_response:results,
+														qty_hold:0
 													}
 												}
 												order_coll.update({order_id:v.order_id},form_upd,function(err,upd){

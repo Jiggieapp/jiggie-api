@@ -63,3 +63,68 @@ function get_ccinfo(req,next){
 	})
 	
 }
+
+exports.order_list = function(req,res){
+	orderlist(req,function(stat,data){
+		if(stat == false){
+			res.json({code_error:403});
+		}else{
+			res.json(data);
+		}
+	})
+}
+
+function orderlist(req,next){
+	var fb_id = req.params.fb_id;
+	async.waterfall([
+		function get_order(cb){
+			order_coll.find({fb_id:fb_id}).toArray(function(err,r){
+				if(err){
+					debug.log('error otherjs commerce line 71');
+					debug.log(err);
+					cb(null,false,[]);
+				}else{
+					cb(null,true,r)
+				}
+			})
+		},
+		function get_event(stat,dt_order,cb){
+			if(stat == true){
+				events_detail_coll.findOne({_id:new ObjectId(dt_order.event_id)},function(err,r){
+					if(err){
+						debug.log('error line 89 other commrce');
+						debug.log(err);
+						cb(null,false,[],[]);
+					}else{
+						cb(null,true,dt_order,r);
+					}
+				})
+			}else{
+				cb(null,false,[],[]);
+			}
+		},
+		function sync_data(stat,dt_order,dt_event,cb){
+			if(stat == true){
+				delete dt_order.vt_response;
+				var json_data = new Object();
+				json_data.event = dt_event;
+				json_data.order = dt_order;
+				cb(null,true,json_data);
+			}else{
+				cb(null,false,[]);
+			}
+		}
+	],function(err,stat,data){
+		try{
+			if(stat == true){
+				next(true,data);
+			}else{
+				next(false,[]);
+			}
+		}catch(e){
+			debug.log('error lone 115 commerce other')
+			debug.log(e);
+			next(false,[]);
+		}
+	})
+}

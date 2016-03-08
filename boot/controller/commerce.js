@@ -217,3 +217,38 @@ exports.notifications_handler = function(req,res){
 		// }
 	// });
 }
+
+exports.order_list = function(req,res){
+	var head = req.headers;
+	var token = head.authorization;
+	
+	// jwt.verify(token,datakey,function(err,decode){
+		// if(err){
+			// if(err.name == 'JsonWebTokenError'){
+				// res.status(401).send({});
+			// }else if(err.name == 'TokenExpiredError'){
+				// res.status(410).send({});
+			// }
+		// }else{
+			var post = req.body;
+			var options = {
+				url : url+"/order_list/"+req.params.fb_id,
+			}
+			curl.get(options,function(err,resp,body){
+				if (!err && resp.statusCode == 200) {
+					res.header("Content-type","application/json");
+					var json_data = JSON.parse(body);
+					if(typeof json_data.code_error != 'undefined'){
+						res.status(json_data.code_error).send({});
+					}else{
+						hr.data = new Object();
+						hr.data.order_lists = JSON.parse(body);
+						res.send(hr);
+					}
+				}else{
+					res.send(err);
+				}
+			});
+		// }
+	// });
+}
