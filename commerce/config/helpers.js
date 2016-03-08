@@ -37,6 +37,12 @@ var helpers = {
 				// debug.log(err);
 			}
 		})
+	},
+	addHours : function(time,minute){
+		var moment = require('moment');
+		var dateString = moment(time).format('YYYY-MM-DD HH:mm:ss');
+		var timeAdd = moment(dateString).add(minute,'minute');
+		return new Date(timeAdd);
 	}
 }
 

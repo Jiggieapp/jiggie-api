@@ -152,17 +152,35 @@ function post_transaction_va(req,next){
 					url_execute = 'transaction_bp.php';
 				}
 				
-				var options = {
-					url : comurl+url_execute,
-					form : json_data
-				}
-				curl.post(options,function(err,resp,body){
-					if (!err && resp.statusCode == 200) {
-						cb(null,true,dt,body)
+				// get timelimit
+				tickettypes_coll.findOne({_id:new ObjectId(dt.product_list[0].ticket_id)},function(err,rr){
+					if(err){
+						cb(null,false,[],[])
 					}else{
-						cb(null,false,[],[]);
+						var timelimit;
+						if(typeof rr.payment_timelimit == 'undefined'){
+							timelimit = 180;
+						}else{
+							timelimit = rr.payment_timelimit;
+						}
+						
+						json_data.timelimit = timelimit;
+						var options = {
+							url : comurl+url_execute,
+							form : json_data
+						}
+						curl.post(options,function(err,resp,body){
+							if (!err && resp.statusCode == 200) {
+								cb(null,true,dt,body)
+							}else{
+								cb(null,false,[],[]);
+							}
+						});
 					}
-				});
+				})
+				
+				
+				
 			}else{
 				cb(null,false);
 			}

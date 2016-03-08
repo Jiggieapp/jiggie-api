@@ -12,24 +12,210 @@ var cron = require('cron').CronJob;
 var crypto = require('crypto');
 
 exports.index = function(req, res){
-	handling_va_paid(req,function(data){
-		res.json(data);
+	handling(req,function(stat){
+		if(stat == true){
+			res.json({cron:true})
+		}else{
+			res.json({code_error:403});
+		}
 	})
 };
 
-function handling_va_paid(req,next){
-	var job = new cron({
-	  cronTime: '*/10 * * * * *',
-	  onTick: function() {
-		get_status(req,function(dt){
-			debug.log(dt);
-		})
-	  },
-	  start: true,
-	  timeZone: 'Asia/Jakarta'
-	});
-	job.start();
-	next(true)
+function handling(req,next){
+	async.parallel([
+		// cron for handle notifications transaction has been paid
+		function handle_va_bp(cb){
+			var job = new cron({
+			  cronTime: '*/10 * * * * *',
+			  onTick: function() {
+				get_status(req,function(dt){
+					debug.log(dt);
+				})
+			  },
+			  start: true,
+			  timeZone: 'Asia/Jakarta'
+			});
+			job.start();
+			cb(null,true)
+		},
+		// cron for handle payment timelimit
+		function handle_payment_timelimit(cb){
+			var job = new cron({
+			  cronTime: '1 * * * * *',
+			  onTick: function() {
+				payment_timelimit(req,function(dt){
+					debug.log(dt);
+				})
+			  },
+			  start: true,
+			  timeZone: 'Asia/Jakarta'
+			});
+			job.start();
+			cb(null,true)
+		}
+	],function(err,merge){
+		try{
+			next(true);
+		}catch(e){
+			next(false);
+		}
+	})	
+}
+
+function payment_timelimit(req,next){
+	async.waterfall([
+		function get_order(cb){
+			var cond = {
+				$or:[
+					{"vt_response.payment_type":'echannel'},
+					{"vt_response.payment_type":'bank_transfer'}
+				],
+				"vt_response.transaction_status":'pending'
+			}
+			order_coll.find(cond).toArray(function(err,r){
+				if(err){
+					debug.log('line error 59 commerce other');
+					debug.log(err);
+					cb(null,false,[]);
+				}else{
+					if(r == null){
+						debug.log('error lone 70 commerce other data null');
+						cb(null,false,[]);
+					}else{
+						cb(null,true,r);
+					}
+				}
+			})
+		},
+		function get_ticket(stat,dt_order,cb){
+			if(stat == true){
+				var ticketid_in = [];
+				var n = 0;
+				async.forEachOf(dt_order,function(v,k,e){
+					ticketid_in[n] = new ObjectId(v.product_list[0].ticket_id);
+				})
+				
+				tickettypes_coll.find({_id:{$in:ticketid_in}}).toArray(function(err,r){
+					if(err){
+						debug.log(err);
+						debug.log('line error 89 commerce other');
+						cb(null,false,[],[])
+					}else{
+						if(r == null){
+							debug.log('line error 92 data null commerce other');
+							cb(null,false,[],[])
+						}else{
+							cb(null,true,dt_order,r);
+						}
+					}
+				})
+				
+			}else{
+				cb(null,false,[],[]);
+			}
+		},
+		function sync_data(stat,dt_order,dt_ticket,cb){
+			if(stat == true){
+				try{
+					var timelimit;
+					async.forEachOf(dt_order,function(v,k,e){
+						async.forEachOf(dt_ticket,function(ve,ke,ee){
+							if(v.product_list[0].ticket_id == ve._id){
+								if(typeof ve.payment_timelimit == 'undefined' || ve.payment_timelimit == ''){
+									timelimit = 180;
+								}else{
+									timelimit = ve.payment_timelimit;
+								}
+								
+							}
+						})
+						
+						var created_at_plus = req.app.get('helpers').addHours(new Date(v.created_at).getTime(),timelimit);					
+						var now = new Date();
+						
+						debug.log('TimeLimit : '+timelimit);
+						debug.log('Time From DB :'+String(v.created_at));
+						debug.log('Time From DB add hours :'+created_at_plus)
+						debug.log('Time Now :'+now);
+							
+						if(now > created_at_plus){
+							debug.log('udah lewat');
+							cancel_transaction(v,function(dtrt){})
+						}else{
+							debug.log('blum lewat');
+						}
+						cb(null,true);
+					})
+				}catch(e){
+					debug.log(e);
+					cb(null,false);
+				}
+			}else{
+				cb(null,false);
+			}
+		}
+	],function(err,merge){
+		next(merge)
+	})
+}
+
+function cancel_transaction(rows_order,next){
+	async.parallel([
+		function cancel_vt(cb){
+			var options = {
+				url:'https://commerce.jiggieapp.com/VT/production/cancel.php',
+				form:{
+					order_id:rows_order.order_id
+				}
+			}
+			curl.post(options,function(err,resp,body){
+				if(!err){
+					cb(null,true);
+				}else{
+					cb(null,false);
+				}
+			})
+		},
+		function update_order(stat,cb){
+			var cond = {order_id:rows_order.order_id}
+			var form_upd = {
+				$set:{
+					order_status:'cancel'
+				}
+			}
+			order_coll.update(cond,form_upd,function(err,upd){
+				if(!err){
+					cb(null,true);
+				}else{
+					cb(null,false);
+				}
+			})
+		},
+		function update_ticket(cb){
+			var cond = {order_id:rows_order.order_id}
+			tickettypes_coll.findOne(cond,function(err,r){
+				if(!err){
+					var new_qty = parseInt(r.quantity) + parseInt(r.qty_hold);
+					var form_upd = {
+						$set:{
+							quantity:new_qty,
+							qty_hold:0
+						}
+					}
+					tickettypes_coll.update(cond,form_upd,function(err2,upd){
+						if(err2){
+							debug.log(err);
+						}
+					})
+					cb(null,true)
+				}else{
+					cb(null,false);
+				}
+			})
+		}
+	],function(err,merge){
+		next(true);
+	})
 }
 
 function get_status(req,next){
