@@ -90,13 +90,19 @@ function orderlist(req,next){
 		},
 		function get_event(stat,dt_order,cb){
 			if(stat == true){
-				events_detail_coll.findOne({_id:new ObjectId(dt_order.event_id)},function(err,r){
+				var in_eventid = [];
+				var n = 0;
+				async.forEachOf(dt_order,function(v,k,e){
+					in_eventid[n] = new ObjectId(v.event_id);
+					n++;
+				})
+				events_detail_coll.find({_id:{$in:in_eventid}}).toArray(function(err,r){
 					if(err){
-						debug.log('error line 89 other commrce');
+						debug.log('err lone 101 commerce other');
 						debug.log(err);
 						cb(null,false,[],[]);
 					}else{
-						cb(null,true,dt_order,r);
+						cb(null,true,dt_order,r)
 					}
 				})
 			}else{
@@ -105,10 +111,23 @@ function orderlist(req,next){
 		},
 		function sync_data(stat,dt_order,dt_event,cb){
 			if(stat == true){
-				delete dt_order.vt_response;
-				var json_data = new Object();
-				json_data.event = dt_event;
-				json_data.order = dt_order;
+				var json_data = [];
+				var n = 0;
+				async.forEachOf(dt_order,function(v,k,e){
+					delete v.vt_response;
+					delete v.__v;
+					delete v.mail_status;
+					async.forEachOf(dt_event,function(ve,ke,ee){
+						delete ve.guests_viewed;
+						delete ve.viewed;
+						if(v.event_id == ve._id){
+							json_data[n] = new Object();
+							json_data[n].order = v;
+							json_data[n].event = ve;
+							n++;
+						}
+					})
+				})
 				cb(null,true,json_data);
 			}else{
 				cb(null,false,[]);
