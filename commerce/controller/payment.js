@@ -158,33 +158,33 @@ function post_transaction_va(req,next){
 				}
 				curl.post(options,function(err,resp,body){
 					if (!err && resp.statusCode == 200) {
-						cb(null,true,body)
+						cb(null,true,dt,body)
 					}else{
-						cb(null,false,[]);
+						cb(null,false,[],[]);
 					}
 				});
 			}else{
-				cb(null,dt);
+				cb(null,false);
 			}
 		},
-		function cek_transaction_vt(stat,body,cb){
+		function cek_transaction_vt(stat,dtorder,body,cb){
 			var vt = JSON.parse(body);
 			debug.log(vt);
 			if(typeof vt.code_error == 'undefined'){
-				cb(null,true,body)	
+				cb(null,true,dtorder,body)	
 			}else{
 				debug.log("Error Code in VT Commerce VA");
-				cb(null,false,[]);
+				cb(null,false,[],[]);
 			}
 		},
-		function merge_data(stat,body,cb){
+		function merge_data(stat,dtorder,body,cb){
 			if(stat == true){
 				merge_data_va(req,body,function(dt){
 					if(dt == true){
-						cb(null,true,body);
+						cb(null,true,dtorder,body);
 					}else{
 						debug.log('error line 160 => paymentjs');
-						cb(null,false,[])
+						cb(null,false,[],[])
 					}
 				})
 			}else{
@@ -192,19 +192,40 @@ function post_transaction_va(req,next){
 				cb(null,false,[]);
 			}
 		},
-		function upd_vt(stat,body,cb2){
+		function upd_vt(stat,dtorder,body,cb2){
 			if(stat == true){
 				var vt = JSON.parse(body);
 				order_coll.update({order_id:order_id},{$set:{vt_response:vt}},function(err,upd){
 					if(err){
 						debug.log('error line 180-> paymentjs');
-						cb2(null,false,[]);
+						cb2(null,false,[],[]);
 					}else{
-						cb2(null,true,vt);
+						cb2(null,true,dtorder,vt);
 					}
 				})
 			}else{
 				debug.log('error line 187 => paymentjs');
+				cb2(null,false,[],[]);
+			}
+		},
+		function send_notif(stat,dtorder,vt,cb2){
+			if(stat == true){
+				var form_post = {
+					vt:vt,
+					dtorder:dtorder
+				}
+				var options = {
+					url:'http://127.0.0.1:24534/sendnotif',
+					form:form_post
+				}
+				curl.post(options,function(err,resp,body){
+					if(!err){
+						cb2(null,true,vt)
+					}else{
+						cb2(null,false,[]);
+					}
+				})
+			}else{
 				cb2(null,false,[]);
 			}
 		}
@@ -571,6 +592,27 @@ function post_transaction_cc(req,next){
 										}else{
 											cb2(null,false);
 										}
+									},
+									function send_notif(stat,cb2){
+										if(stat == true){
+											var form_post = {
+												vt:vt,
+												dtorder:dt
+											}
+											var options = {
+												url:'http://127.0.0.1:24534/sendnotif',
+												form:form_post
+											}
+											curl.post(options,function(err,resp,body){
+												if(!err){
+													cb2(null,true)
+												}else{
+													cb2(null,false);
+												}
+											})
+										}else{
+											cb2(null,false)
+										}
 									}
 								],function(err,merge2){
 									if(merge2 == true){
@@ -652,6 +694,27 @@ function post_transaction_cc(req,next){
 										})
 									}else{
 										cb2(null,false);
+									}
+								},
+								function send_notif(stat,cb2){
+									if(stat == true){
+										var form_post = {
+											vt:vt,
+											dtorder:dt
+										}
+										var options = {
+											url:'http://127.0.0.1:24534/sendnotif',
+											form:form_post
+										}
+										curl.post(options,function(err,resp,body){
+											if(!err){
+												cb2(null,true)
+											}else{
+												cb2(null,false);
+											}
+										})
+									}else{
+										cb2(null,false)
 									}
 								}
 							],function(err,merge){
