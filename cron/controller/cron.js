@@ -77,6 +77,19 @@ function start_jobs(req,next){
 				  timeZone: 'Asia/Jakarta'
 				});
 				job.start();
+			}else if(v.type == 'commerce'){
+				var job = new cron({
+				  cronTime: v.schedule,
+				  onTick: function() {
+					commerce_startnotif(req,function(dt){
+						debug.log('START COMMERCE NOTIF');
+						debug.log(dt);
+					})
+				  },
+				  start: true,
+				  timeZone: 'Asia/Jakarta'
+				});
+				job.start();
 			}
 		})
 		next();
@@ -381,3 +394,19 @@ function flush_socfed(req,next){
 	})
 }
 /*End : Flush Social Feed Data*/
+
+
+/*Start : commerce*/
+function commerce_startnotif(req,next){
+	var options = {
+		url:'http://127.0.0.1:24534/notif_handle'
+	}
+	request.get(options,function(err,resp,body){
+		if(!err){
+			next(true);
+		}else{
+			next(false);
+		}
+	})
+}
+/*End : commerce*/
