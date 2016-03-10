@@ -200,9 +200,10 @@ function get_success_screen(req,next){
 	
 }
 
-function template_success_screen(type,next){
+function template_success_screen(rorder,type,next){
 	var json_data = new Object();
 	if(type == 'va_pending'){
+		json_data.order_id = rorder.order_id;
 		
 	}
 }

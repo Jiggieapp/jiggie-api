@@ -28,7 +28,8 @@ var varScheme = new Schema({
 		terms:[{
 			label:{type:String,default:''},
 			body:{type:String,default:''}
-		}]
+		}],
+		payment_timelimit:{type:String,required:true},
 	}],
 	fb_id:{type:String,required:true},
 	event_id:{type:String,required:true},
