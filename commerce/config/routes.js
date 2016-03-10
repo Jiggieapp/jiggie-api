@@ -15,5 +15,6 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   
   var other = require(path_controller+'other');
   app.get('/credit_card/:fb_id',other.cc_info);
-  app.get('/order_list/:fb_id',other.order_list)
+  app.get('/order_list/:fb_id',other.order_list);
+  app.get('/success_screen/:order_id',other.success_screen);
 }

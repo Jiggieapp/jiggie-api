@@ -62,7 +62,7 @@ function get_data(req,next){
 						json_data.purchase = []
 						json_data.reservation = []
 						var n = 0;
-						var m = 0
+						var m = 0;
 						async.forEachOf(r,function(v,k,e){
 							if(v.ticket_type == 'purchase'){
 								json_data.purchase[n] = new Object();
@@ -80,6 +80,11 @@ function get_data(req,next){
 								json_data.purchase[n].total_price = v.total;
 								json_data.purchase[n].description = v.description;
 								json_data.purchase[n].max_purchase = v.guest;
+								if(typeof v.payment_timelimit == 'undefined'){
+									json_data.purchase[n].payment_timelimit = 180;
+								}else{
+									json_data.purchase[n].payment_timelimit = v.payment_timelimit;
+								}
 								n++;
 							}else if(v.ticket_type == 'reservation'){
 								json_data.reservation[m] = new Object();
@@ -97,6 +102,11 @@ function get_data(req,next){
 								json_data.reservation[m].total_price = v.total;
 								json_data.reservation[m].description = v.description;
 								json_data.reservation[m].max_guests = v.guest;
+								if(typeof v.payment_timelimit == 'undefined'){
+									json_data.reservation[m].payment_timelimit = 180;
+								}else{
+									json_data.reservation[m].payment_timelimit = v.payment_timelimit;
+								}
 								m++;
 							}
 						})
@@ -275,6 +285,12 @@ function post_summary(req,next){
 					json_data.product_list[n].num_buy = String(v.num_buy);
 					json_data.product_list[n].total_price_all = String(parseFloat(v.num_buy) * parseFloat(v.total));
 					json_data.product_list[n].terms = v.purchase_confirmations;
+					if(typeof v.payment_timelimit == 'undefined'){
+						json_data.product_list[n].payment_timelimit = 180;
+					}else{
+						json_data.product_list[n].payment_timelimit = v.payment_timelimit;
+					}
+					
 					
 					tottax += parseFloat(v.tax_amount);
 					totadminfee += parseFloat(v.admin_fee);
