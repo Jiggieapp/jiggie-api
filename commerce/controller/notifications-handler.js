@@ -29,7 +29,8 @@ function handling(req,next){
 			  cronTime: '*/10 * * * * *',
 			  onTick: function() {
 				get_status(req,function(dt){
-					debug.log(dt);
+					debug.log('listener va bp has been paid running');
+					// debug.log(dt);
 				})
 			  },
 			  start: true,
@@ -41,10 +42,11 @@ function handling(req,next){
 		// cron for handle payment timelimit
 		function handle_payment_timelimit(cb){
 			var job = new cron({
-			  cronTime: '1 * * * * *',
+			  cronTime: '*/10 * * * * *',
 			  onTick: function() {
 				payment_timelimit(req,function(dt){
-					debug.log(dt);
+					debug.log('listener payment timelimit running');
+					// debug.log(dt);
 				})
 			  },
 			  start: true,
@@ -66,6 +68,7 @@ function payment_timelimit(req,next){
 	async.waterfall([
 		function get_order(cb){
 			var cond = {
+				order_status:{$ne:'cancel'},
 				$or:[
 					{"vt_response.payment_type":'echannel'},
 					{"vt_response.payment_type":'bank_transfer'}
@@ -140,7 +143,7 @@ function payment_timelimit(req,next){
 							
 						if(now > created_at_plus){
 							debug.log('udah lewat');
-							cancel_transaction(v,function(dtrt){})
+							cancel_transaction(req,v,function(dtrt){})
 						}else{
 							debug.log('blum lewat');
 						}
@@ -159,7 +162,7 @@ function payment_timelimit(req,next){
 	})
 }
 
-function cancel_transaction(rows_order,next){
+function cancel_transaction(req,rows_order,next){
 	async.parallel([
 		function cancel_vt(cb){
 			var options = {
@@ -176,7 +179,7 @@ function cancel_transaction(rows_order,next){
 				}
 			})
 		},
-		function update_order(stat,cb){
+		function update_order(cb){
 			var cond = {order_id:rows_order.order_id}
 			var form_upd = {
 				$set:{
@@ -193,25 +196,53 @@ function cancel_transaction(rows_order,next){
 		},
 		function update_ticket(cb){
 			var cond = {order_id:rows_order.order_id}
-			tickettypes_coll.findOne(cond,function(err,r){
-				if(!err){
-					var new_qty = parseInt(r.quantity) + parseInt(r.qty_hold);
-					var form_upd = {
-						$set:{
-							quantity:new_qty,
-							qty_hold:0
+			order_coll.findOne(cond,function(err,rt){
+				var ticket_id = rt.product_list[0].ticket_id;
+				var cond2 = {
+					_id:new ObjectId(ticket_id),
+					"qty_hold.order_id":rows_order.order_id
+				}
+				tickettypes_coll.findOne(cond2,function(err,r){
+					if(!err && r != null){
+						var qty_hold = 0;
+						async.forEachOf(r.qty_hold,function(v,k,e){
+							if(v.order_id == rows_order.order_id){
+								qty_hold = v.qty;
+							}
+						})
+						var new_qty = parseInt(r.quantity) + parseInt(qty_hold);
+						debug.log('order_id : '+rows_order.order_id);
+						debug.log('qtyhold : '+qty_hold);
+						debug.log('old qty : '+r.quantity);
+						debug.log('new qty : '+new_qty);
+						var form_upd = {
+							$set:{quantity:new_qty},
+							$pull:{qty_hold:{order_id:rows_order.order_id}}
 						}
+						tickettypes_coll.update(cond2,form_upd,function(err2,upd){
+							if(err2){
+								debug.log(err);
+							}
+						})
+						cb(null,true)
+					}else{
+						cb(null,false);
 					}
-					tickettypes_coll.update(cond,form_upd,function(err2,upd){
-						if(err2){
-							debug.log(err);
-						}
-					})
-					cb(null,true)
+				})
+			})
+		},
+		function sendmail_cancel(cb){
+			var cond = {order_id:rows_order.order_id}
+			order_coll.findOne(cond,function(err,r){
+				if(!err && r != null){
+					var vt = new Object();
+					vt.payment_type = 'cancel';
+					send_mail(req,r.guest_detail.email,vt,function(dt){debug.log(dt)});
 				}else{
 					cb(null,false);
 				}
 			})
+			
 		}
 	],function(err,merge){
 		next(true);
@@ -258,9 +289,9 @@ function get_status(req,next){
 								}else{
 									var json_data = JSON.parse(body);
 									var results = json_data.results;
-									debug.log(results);
+									// debug.log(results);
 									if(results.transaction_status == 'settlement'){
-										send_mail(req,v,results,function(mail_stat){
+										send_mail(req,v.guest_detail.email,results,function(mail_stat){
 											if(mail_stat == true){
 												var form_upd = {
 													$set:{
@@ -302,14 +333,14 @@ function get_status(req,next){
 }
 
 
-function send_mail(req,dt,vt,next){
+function send_mail(req,email_to,vt,next){
 	var host = req.app.get('mail_host');
 	var port = req.app.get('mail_port');
 	var user = req.app.get('mail_user');
 	var pass = req.app.get('mail_pass');
 	
 	var from = 'cto@jiggieapp.com';
-	var to = dt.guest_detail.email;
+	var to = email_to;
 	var subject = '';
 	var html = '';
 	
@@ -334,6 +365,9 @@ function send_mail(req,dt,vt,next){
 			subject = 'Your BP Payment Pending';
 			html = '<html><strong>Testing Pending Pembayaran Menggunakan Echannel</strong></html>';
 		}
+	}else if(vt.payment_type == 'cancel'){
+		subject = 'Your Payment Cancel';
+		html = '<html><strong>Testing Cancel Pembayaran</strong></html>';
 	}
 	
 	var nodemailer = require('nodemailer');
@@ -365,10 +399,10 @@ function send_mail(req,dt,vt,next){
 
 exports.sendnotif = function(req,res){
 	var post = req.body;
-	var dt_order = post.dt_order;
+	var email_to = post.email_to;
 	var vt = post.vt;
 	
-	send_mail(req,dt,vt,function(mail_stat){
+	send_mail(req,email_to,vt,function(mail_stat){
 		if(mail_stat == true){
 			res.json({mail:true})
 		}else{

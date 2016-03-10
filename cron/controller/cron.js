@@ -371,7 +371,7 @@ function flush_socfed(req,next){
 		}
 	}
 	
-	socialfeed_coll.update({},form_upd,function(err,upd){
+	socialfeed_coll.update({},form_upd,{multi:true},function(err,upd){
 		if(err){
 			debug.log(err);
 			next(false);
