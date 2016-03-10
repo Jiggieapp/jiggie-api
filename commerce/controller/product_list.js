@@ -266,8 +266,19 @@ function post_summary(req,next){
 				var tottax = 0;
 				var totadminfee = 0;
 				var tottip = 0;
+				
+				var tot_tax = 0;
+				var tot_tip = 0;
+				var tot_price = 0;
+				var tot_price_all = 0;
 				json_data.product_list = [];
 				async.forEachOf(rows_ticket,function(v,k,e){
+					tot_tax = parseFloat(v.tax_amount)*parseInt(v.num_buy);
+					tot_tip = parseFloat(v.tip_amount)*parseInt(v.num_buy);
+					var mata_uang;(typeof v.currency == 'undefined') ? mata_uang = 'IDR' : mata_uang = v.currency;
+					tot_price = parseFloat(v.price)*parseInt(v.num_buy);
+					tot_price_all = tot_price + tot_tax + tot_tip + parseFloat(v.admin_fee);
+					
 					json_data.product_list[n] = new Object();
 					json_data.product_list[n].ticket_id = String(v.ticket_id);
 					json_data.product_list[n].name = String(v.name);
@@ -276,14 +287,14 @@ function post_summary(req,next){
 					json_data.product_list[n].quantity = String(v.quantity);
 					json_data.product_list[n].admin_fee = String(v.admin_fee);
 					json_data.product_list[n].tax_percent = String(v.tax);
-					json_data.product_list[n].tax_amount = String(v.tax_amount);
+					json_data.product_list[n].tax_amount = String(tot_tax);
 					json_data.product_list[n].tip_percent = String(v.tip);
-					json_data.product_list[n].tip_amount = String(v.tip_amount);
+					json_data.product_list[n].tip_amount = String(tot_tip);
 					json_data.product_list[n].price = String(v.price);
-					json_data.product_list[n].currency = String(v.currency);
-					json_data.product_list[n].total_price = String(v.total);
+					json_data.product_list[n].currency = String(mata_uang);
+					json_data.product_list[n].total_price = String(tot_price);
 					json_data.product_list[n].num_buy = String(v.num_buy);
-					json_data.product_list[n].total_price_all = String(parseFloat(v.num_buy) * parseFloat(v.total));
+					json_data.product_list[n].total_price_all = String(tot_price_all);
 					json_data.product_list[n].terms = v.purchase_confirmations;
 					if(typeof v.payment_timelimit == 'undefined'){
 						json_data.product_list[n].payment_timelimit = 180;
@@ -292,10 +303,10 @@ function post_summary(req,next){
 					}
 					
 					
-					tottax += parseFloat(v.tax_amount);
+					tottax += tot_tax;
 					totadminfee += parseFloat(v.admin_fee);
-					tottip += parseFloat(v.tip_amount);
-					totall += parseFloat(v.num_buy) * parseFloat(v.total);
+					tottip += tot_tip;
+					totall += tot_price_all;
 					n++;
 				})
 				json_data.guest_detail = post.guest_detail;
