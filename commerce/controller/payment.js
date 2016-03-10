@@ -582,21 +582,49 @@ function post_transaction_cc(req,next){
 											var saved_token_id = vt.saved_token_id;
 											var payment_type = vt.payment_type;
 											var saved_token_id_expired_at = vt.saved_token_id_expired_at;
-											var data_push = {
-												masked_card : masked_card,
-												saved_token_id : saved_token_id,
-												saved_token_id_expired_at : saved_token_id_expired_at,
-												payment_type : payment_type
+											var cond = {
+												fb_id:dt2.fb_id,
+												"ccinfo.masked_card":masked_card
 											}
-											customers_coll.update({fb_id:dt2.fb_id},{$push:{ccinfo:data_push}},function(err2,upd){
-												if(err2){
-													debug.log("error update line 172");
+											customers_coll.findOne(cond,function(ers,rs){
+												if(ers){
 													cb2(null,false);
 												}else{
-													debug.log("updated cc info");
-													cb2(null,true);
+													if(rs != null){
+														var form_updst = {
+															$set:{
+																"ccinfo.$.saved_token_id":saved_token_id,
+																"ccinfo.$.saved_token_id_expired_at":saved_token_id_expired_at
+															}
+														}
+														customers_coll.update(cond,form_updst,function(ers2,upds2){
+															if(ers2){
+																cb2(null,false);
+															}else{
+																cb2(null,true);
+															}
+														})
+													}else{
+														var data_push = {
+															masked_card : masked_card,
+															saved_token_id : saved_token_id,
+															saved_token_id_expired_at : saved_token_id_expired_at,
+															payment_type : payment_type
+														}
+														customers_coll.update({fb_id:dt2.fb_id},{$push:{ccinfo:data_push}},function(err2,upd){
+															if(err2){
+																debug.log("error update line 172");
+																cb2(null,false);
+															}else{
+																debug.log("updated cc info");
+																cb2(null,true);
+															}
+														})
+													}
 												}
 											})
+											
+											
 										}else{
 											cb2(null,false);
 										}
