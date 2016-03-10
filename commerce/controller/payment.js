@@ -187,6 +187,7 @@ function post_transaction_va(req,next){
 		},
 		function cek_transaction_vt(stat,dtorder,body,cb){
 			var vt = JSON.parse(body);
+			debug.log('cek VT');
 			debug.log(vt);
 			if(typeof vt.code_error == 'undefined'){
 				cb(null,true,dtorder,body)	
@@ -196,6 +197,7 @@ function post_transaction_va(req,next){
 			}
 		},
 		function merge_data(stat,dtorder,body,cb){
+			debug.log('merging data payment')
 			if(stat == true){
 				merge_data_va(req,body,function(dt){
 					if(dt == true){
@@ -211,6 +213,7 @@ function post_transaction_va(req,next){
 			}
 		},
 		function upd_vt(stat,dtorder,body,cb2){
+			debug.log('updating vt');
 			if(stat == true){
 				var vt = JSON.parse(body);
 				order_coll.update({order_id:order_id},{$set:{vt_response:vt}},function(err,upd){
@@ -228,17 +231,18 @@ function post_transaction_va(req,next){
 		},
 		function send_notif(stat,dtorder,vt,cb2){
 			if(stat == true){
-				var form_post = {
-					vt:vt,
-					dtorder:dtorder
-				}
+				curl.get({url:'http://127.0.0.1:24534/notif_handle'},function(err,resp,body){})
+				
+				var form_post = new Object();
+				form_post.vt = vt;
+				form_post.email_to = dtorder.guest_detail.email;
 				var options = {
 					url:'http://127.0.0.1:24534/sendnotif',
 					form:form_post
 				}
 				curl.post(options,function(err,resp,body){
 					if(!err){
-						cb2(null,true,vt)
+						cb2(null,true,vt);
 					}else{
 						cb2(null,false,[]);
 					}
@@ -613,10 +617,11 @@ function post_transaction_cc(req,next){
 									},
 									function send_notif(stat,cb2){
 										if(stat == true){
-											var form_post = {
-												vt:vt,
-												dtorder:dt
-											}
+											curl.get({url:'http://127.0.0.1:24534/notif_handle'},function(err,resp,body){})
+											
+											var form_post = new Object();
+											form_post.vt = vt;
+											form_post.email_to = dtorder.guest_detail.email;
 											var options = {
 												url:'http://127.0.0.1:24534/sendnotif',
 												form:form_post
@@ -716,10 +721,11 @@ function post_transaction_cc(req,next){
 								},
 								function send_notif(stat,cb2){
 									if(stat == true){
-										var form_post = {
-											vt:vt,
-											dtorder:dt
-										}
+										curl.get({url:'http://127.0.0.1:24534/notif_handle'},function(err,resp,body){})
+										
+										var form_post = new Object();
+										form_post.vt = vt;
+										form_post.email_to = dtorder.guest_detail.email;
 										var options = {
 											url:'http://127.0.0.1:24534/sendnotif',
 											form:form_post

@@ -57,39 +57,27 @@ function doall(event_details_id,fb_id,gender_interest,next){
 			})
 		},
 		function updating(callback){
-			upd_data(event_details_id,fb_id,function(upd){
-				
-			});
+			upd_data(event_details_id,fb_id,function(upd){});
 			callback(null,'next');
 		},
 		function update_socialfeed(callback){
-			upd_socialfeed(event_details_id,fb_id,function(upd){
-				
-			});
+			upd_socialfeed(event_details_id,fb_id,function(upd){});
 			callback(null,'next');
 		},
 		function clean_data(cb){
 			cleaning_data(event_details_id,function(dt){
-				
+				cb(null,'next')
 			})
-			cb(null,'next')
+			
 		},
 		function clean_socialfeed(cb){
 			cleansocfed(fb_id,function(dt){
-				
+				cb(null,'next');
 			})
-			cb(null,'next');
+			
 		}
 	],function(err,merge){
-		try{
-			if(err){
-				throw err;
-			}else{
-				next(merge[0]);
-			}
-		}catch(e){
-			debug.log(e);
-		}
+		next(merge[0]);
 	})
 }
 
@@ -154,6 +142,7 @@ function cleansocfed(fb_id,next){
 						debug.log(mgg)
 					})
 				})
+				debug.log('cl socfed');
 				next('cleaning socfed')
 			}else{
 				next('no data');
@@ -218,6 +207,7 @@ function cleaning_data(event_details_id,next){
 						debug.log(mgg)
 					})
 				})
+				debug.log('cl guests_viewed');
 				next('cleaning guests_viewed')
 			}else{
 				next('no data guests_viewed');
