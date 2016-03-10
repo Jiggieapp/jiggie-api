@@ -14,6 +14,7 @@ var varScheme = new Schema({
 		max_buy : {type:String, required:true},
 		num_buy : {type:String, required:true},
 		total_price : {type:String, required:true},
+		total_price_aftertax : {type:String, required:true},
 		name:{type:String,required:true},
 		ticket_id:{type:String,required:true},
 		quantity:{type:String,required:true},

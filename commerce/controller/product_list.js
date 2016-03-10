@@ -270,6 +270,7 @@ function post_summary(req,next){
 				var tot_tax = 0;
 				var tot_tip = 0;
 				var tot_price = 0;
+				var total_price_aftertax = 0;
 				var tot_price_all = 0;
 				json_data.product_list = [];
 				async.forEachOf(rows_ticket,function(v,k,e){
@@ -277,6 +278,7 @@ function post_summary(req,next){
 					tot_tip = parseFloat(v.tip_amount)*parseInt(v.num_buy);
 					var mata_uang;(typeof v.currency == 'undefined') ? mata_uang = 'IDR' : mata_uang = v.currency;
 					tot_price = parseFloat(v.price)*parseInt(v.num_buy);
+					total_price_aftertax = parseFloat(v.price)+parseFloat(v.tax_amount)+(parseFloat(v.admin_fee)/parseFloat(v.num_buy))+parseFloat(v.tip_amount);
 					tot_price_all = tot_price + tot_tax + tot_tip + parseFloat(v.admin_fee);
 					
 					json_data.product_list[n] = new Object();
@@ -293,6 +295,7 @@ function post_summary(req,next){
 					json_data.product_list[n].price = String(v.price);
 					json_data.product_list[n].currency = String(mata_uang);
 					json_data.product_list[n].total_price = String(tot_price);
+					json_data.product_list[n].total_price_aftertax = String(total_price_aftertax);
 					json_data.product_list[n].num_buy = String(v.num_buy);
 					json_data.product_list[n].total_price_all = String(tot_price_all);
 					json_data.product_list[n].terms = v.purchase_confirmations;
