@@ -147,3 +147,62 @@ function orderlist(req,next){
 		}
 	})
 }
+
+exports.success_screen = function(req,res){
+
+}
+
+function get_success_screen(req,next){
+	var order_id = req.params.order_id;
+	var cond = {order_id:order_id}
+	async.waterfall([
+		function get_order(cb){
+			order_coll.findOne(cond,function(err,r){
+				if(!err && r != null){
+					cb(null,true,r)
+				}else{
+					cb(null,false,[])
+				}
+			})
+		},
+		function sync_data(stat,rorder,cb){
+			if(stat == true){
+				if(typeof rorder.vt_response == 'undefined' || rorder.vt_response == null || rorder.vt_response == ''){
+					debug.log('data vt null line 171 other commerce')
+					cb(null,false);
+				}else{
+					if(rorder.vt_response.payment_type == 'bank_transfer'){
+						if(rorder.vt_response.transaction_status == 'pending'){
+							
+						}else if(rorder.vt_response.transaction_status == 'settlement'){
+							
+						}else if(rorder.order_status == 'cancel'){
+							
+						}
+					}else if(rorder.vt_response.payment_type == 'echannel'){
+						if(rorder.vt_response.transaction_status == 'pending'){
+							
+						}else if(rorder.vt_response.transaction_status == 'settlement'){
+							
+						}else if(rorder.order_status == 'cancel'){
+							
+						}
+					}else if(rorder.vt_response.payment_type == 'credit_card'){
+						
+					}
+				}
+			}else{
+				debug.log('error line 195 other commerce');
+				cb(null,false)
+			}
+		}
+	])
+	
+}
+
+function template_success_screen(type,next){
+	var json_data = new Object();
+	if(type == 'va_pending'){
+		
+	}
+}
