@@ -165,6 +165,8 @@ function get_success_screen(req,next){
 		function get_order(cb){
 			order_coll.findOne(cond,function(err,r){
 				if(!err && r != null){
+					delete r.__v;
+					delete r.mail_status;
 					cb(null,true,r)
 				}else{
 					cb(null,false,[])
@@ -173,8 +175,11 @@ function get_success_screen(req,next){
 		},
 		function get_event(stat,rorder,cb){
 			if(stat == true){
-				events_detail_coll.findOne({_id:new ObjectId(rorder.product_list[0].ticket_id)},function(err,r){
+				events_detail_coll.findOne({_id:new ObjectId(rorder.event_id)},function(err,r){
 					if(!err && r != null){
+						delete r.photos;
+						delete r.viewed;
+						delete r.guests_viewed;
 						cb(null,true,rorder,r);
 					}else{
 						debug.log('error line 174 other commerce');
@@ -212,7 +217,7 @@ function get_success_screen(req,next){
 					}else if(rorder.vt_response.payment_type == 'credit_card'){
 						type = 'cc';
 					}
-					template_success_screen(rorder,revent,function(template){
+					template_success_screen(req,rorder,revent,type,function(template){
 						cb(null,true,template);
 					})
 				}
@@ -235,7 +240,7 @@ function get_success_screen(req,next){
 	})
 }
 
-function template_success_screen(rorder,revent,type,next){
+function template_success_screen(req,rorder,revent,type,next){
 	var json_data = new Object();
 	json_data.order_id = rorder.order_id;
 	json_data.order_number = rorder.code;
@@ -252,7 +257,7 @@ function template_success_screen(rorder,revent,type,next){
 		
 		json_data.virtual_number = rorder.vt_response.permata_va_number;
 		
-		json_data.step_payment = []
+		json_data.step_payment = new Object();
 		json_data.step_payment.bca = new Object();
 		json_data.step_payment.bca.header = 'Cara Pembayaran lewat ATM BCA/Jaringan ATM PRIMA';
 		json_data.step_payment.bca.step = [];
@@ -296,7 +301,7 @@ function template_success_screen(rorder,revent,type,next){
 		
 		json_data.bill_key = rorder.vt_response.bill_key;
 		
-		json_data.step_payment = []
+		json_data.step_payment = new Object();
 		json_data.step_payment.atm_mandiri = new Object();
 		json_data.step_payment.atm_mandiri.header = 'Pembayaran melalui ATM Mandiri:';
 		json_data.step_payment.atm_mandiri.step = [];
