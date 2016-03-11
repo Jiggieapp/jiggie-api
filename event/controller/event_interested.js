@@ -34,7 +34,8 @@ exports.index = function(req, res){
 						t++;
 					}
 				})
-				res.json(dt);
+				var filter_dt = req.app.get('helpers').getUniqueArray(dt);
+				res.json(filter_dt);
 			});
 		}
 	})	

@@ -1,6 +1,7 @@
 var crypto = require('crypto'),
     algorithm = 'aes-256-ctr',
     key = 'jannessantoso_1234567890_Admin123!';
+var async = require('async');
 
 var helpers = {
 	encrypt : function(pass){
@@ -44,6 +45,25 @@ var helpers = {
 				// debug.log(err);
 			}
 		})
+	},
+	getUniqueArray : function(array){
+		var fb_id = array.map(function(obj) { return obj.fb_id; });
+		fb_id = fb_id.filter(function(v,i) {
+			return fb_id.indexOf(v) == i; 
+		});
+		
+		var new_arr = [];
+		var n = 0;
+		async.forEachOf(fb_id,function(v,k,e){
+			async.forEachOf(array,function(ve,ke,ee){
+				if(v == ve.fb_id){
+					new_arr[n] = ve;
+				}
+			})
+			n++;
+		})
+		
+		return new_arr;
 	}
 }
 
