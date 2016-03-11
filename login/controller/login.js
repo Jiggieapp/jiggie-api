@@ -182,6 +182,8 @@ exports.index = function(req, res){
 						set_customers.gcm_token = post.apn_token;
 						delete set_customers.apn_token;
 					}
+					
+					subscribe_mailchimp(set_customers,function(){});
 			
 					
 					customers_coll.insert(set_customers,function(err,ins){
@@ -710,4 +712,42 @@ exports.sync_apntoken = function(req,res){
 			res.json({success:true});
 		}
 	})
+}
+
+function subscribe_mailchimp(user_item,callback){
+	var util = require('util');
+	var apiKey = "c1d7049153ed19e8424505abc495f565-us12";
+
+	var mcapi = require('mailchimp-api')
+	var MC = new mcapi.Mailchimp('c1d7049153ed19e8424505abc495f565-us12');
+	var listIDMale = "0ca7cb8453";
+	var listIDFemale = "eb9f283bf6";
+
+	var listID = "8310248493";
+	
+	MC.lists.subscribe({
+		id:listID, 
+		email:{email:user_item.email},
+		merge_vars:
+			{
+				FNAME:user_item.first_name,
+				LNAME 	: user_item.last_name,
+				MMERGE3 : user_item.fb_id,
+				MMERGE4 : user_item.gender,
+				MMERGE5 : user_item.birthday,
+				MMERGE6 : user_item.location,
+				MMERGE7 : user_item.created_at,
+				MMERGE8 :user_item.about
+			},
+			update_existing:true,
+			double_optin:false
+	}, function(data)
+	{
+		callback()
+		console.log("mailchimp====success=== " + util.inspect(data))
+	},function(error)
+	{
+		callback()
+		console.log("mailchimp====error=== " + error)
+	});
 }
