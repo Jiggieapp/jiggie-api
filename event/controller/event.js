@@ -12,7 +12,6 @@ exports.index = function(req, res){
 	var from_date = new Date();
 	var to_date = req.app.get("helpers").intervalDate(days);
 	
-	
 	debug.log(from_date);
 	debug.log(to_date);
 	
