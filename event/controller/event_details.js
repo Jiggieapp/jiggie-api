@@ -5,6 +5,9 @@ var async = require('async');
 var ObjectId = require('mongodb').ObjectID;
 var request = require('request');
 
+var redis   = require("redis");
+var client  = redis.createClient(6379,"jiggieappsredis.futsnq.0001.apse1.cache.amazonaws.com");
+
 exports.index = function(req, res){
 	req.app.get("helpers").logging("request","get","",req);
 	
@@ -38,12 +41,13 @@ function doall(event_details_id,fb_id,gender_interest,next){
 	gender_interest = gender_interest.toLowerCase();
 	async.parallel([
 		function getalldata(callback){
-			cache.get("event_"+gender_interest+"_"+event_details_id,function(err,val){
-				if(typeof val == "undefined"){
+			client.get("event_"+gender_interest+"_"+event_details_id,function(err,val){
+				if(val == null){
 					getdata(event_details_id,fb_id,gender_interest,function(rows){
-						cache.set("event_"+gender_interest+"_"+event_details_id,rows,function(err,suc){
-							if(suc == true){
+						client.set("event_"+gender_interest+"_"+event_details_id,JSON.stringify(rows),function(err,suc){
+							if(!err){
 								debug.log("not cached");
+								client.expire("event_"+gender_interest+"_"+event_details_id,120);
 								callback(null,rows);
 							}else{
 								debug.log("Data Not Cached");
@@ -52,7 +56,7 @@ function doall(event_details_id,fb_id,gender_interest,next){
 					})
 				}else{
 					debug.log("cached")
-					callback(null,val);
+					callback(null,JSON.parse(val));
 				}
 			})
 		},
