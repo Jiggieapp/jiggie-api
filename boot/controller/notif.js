@@ -33,3 +33,31 @@ exports.all = function(req,res){
 		}
 	})
 }
+
+exports.th = function(req,res){
+	var options = {
+		url : 'http://127.0.0.1:42314/tribehired'
+	}
+	curl.get(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.send(body);
+		}else{
+			res.send(err);
+		}
+	})
+}
+
+exports.th_nextround = function(req,res){
+	var post = req.body;
+	var options = {
+		url : 'http://127.0.0.1:42314/do_roll',
+		form : post
+	}
+	curl.post(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.send(body);
+		}else{
+			res.send(err);
+		}
+	})
+}

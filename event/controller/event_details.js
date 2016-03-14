@@ -9,14 +9,12 @@ var redis   = require("redis");
 var client  = redis.createClient(6379,"jiggieappsredis.futsnq.0001.apse1.cache.amazonaws.com");
 
 exports.index = function(req, res){
-	req.app.get("helpers").logging("request","get","",req);
-	
 	var event_details_id = req.params.event_id;
 	var fb_id = req.params.fb_id;
 	var gender_interest = req.params.gender_interest;
 	gender_interest = gender_interest.toLowerCase();
 	
-	events_detail_coll.findOne({_id:new ObjectId(event_details_id)},function(errs,cek_eventid){
+	/*events_detail_coll.findOne({_id:new ObjectId(event_details_id)},function(errs,cek_eventid){
 	customers_coll.findOne({fb_id:fb_id},function(errs,cek_fbid){
 		if(cek_eventid == undefined){
 			// 204 => No Content
@@ -27,27 +25,27 @@ exports.index = function(req, res){
 		}else if(['male','female','both'].indexOf(gender_interest) == -1){
 			// 403 => Invalid ID
 			res.json({code_error:403})
-		}else{
-			doall(event_details_id,fb_id,gender_interest,function(rows){
+		}else{*/
+			doall(req,event_details_id,fb_id,gender_interest,function(rows){
 				req.app.get("helpers").logging("response","get",JSON.stringify(rows),req);
 				res.json(rows);
 			});
-		}
+		/*}
 	})	
-	})
+	})*/
 };
 
-function doall(event_details_id,fb_id,gender_interest,next){
+function doall(req,event_details_id,fb_id,gender_interest,next){
 	gender_interest = gender_interest.toLowerCase();
-	async.parallel([
+	async.series([
 		function getalldata(callback){
-			client.get("event_"+gender_interest+"_"+event_details_id,function(err,val){
+			client.get("event_"+gender_interest+"_"+fb_id+'_'+event_details_id,function(err,val){
 				if(val == null){
-					getdata(event_details_id,fb_id,gender_interest,function(rows){
-						client.set("event_"+gender_interest+"_"+event_details_id,JSON.stringify(rows),function(err,suc){
+					getdata(req,event_details_id,fb_id,gender_interest,function(rows){
+						client.set("event_"+gender_interest+"_"+fb_id+'_'+event_details_id,JSON.stringify(rows),function(err,suc){
 							if(!err){
 								debug.log("not cached");
-								client.expire("event_"+gender_interest+"_"+event_details_id,120);
+								client.expire("event_"+gender_interest+"_"+fb_id+'_'+event_details_id,120);
 								callback(null,rows);
 							}else{
 								debug.log("Data Not Cached");
@@ -69,16 +67,18 @@ function doall(event_details_id,fb_id,gender_interest,next){
 			callback(null,'next');
 		},
 		function clean_data(cb){
-			cleaning_data(event_details_id,function(dt){
-				cb(null,'next')
+			async.parallel([
+				function cl(cbc){
+					cleaning_data(event_details_id,function(dt){});
+					cbc(null,'next');
+				},
+				function sf(cbc){
+					cleansocfed(fb_id,function(dt){})
+					cbc(null,'next');
+				}
+			],function(err,dtss){
+				cb(null,dtss)
 			})
-			
-		},
-		function clean_socialfeed(cb){
-			cleansocfed(fb_id,function(dt){
-				cb(null,'next');
-			})
-			
 		}
 	],function(err,merge){
 		next(merge[0]);
@@ -222,26 +222,76 @@ function cleaning_data(event_details_id,next){
 	})
 }
 
-function getdata(event_details_id,fb_id,gender_interest,next){
+function getdata(req,event_details_id,fb_id,gender_interest,next){
 	async.waterfall([
-		function get_socialfeed(callback){
-			socialfeed_coll.findOne({fb_id:fb_id},function(err,rows){
+		function get_eventdetail_or_cache(callback){
+			var cond = {_id:new ObjectId(event_details_id)}
+			events_detail_coll.find(cond).limit(1).toArray(function(err,rows){
+				if(err){debug.log(err);}
+				callback(null,rows[0]);
+			});
+		},
+		function get_socialfeed(rows_event,callback){
+			var in_usersfbid = [];
+			var n = 0;
+			async.forEachOf(rows_event.guests_viewed,function(v,k,e){
+				in_usersfbid[n] = v.fb_id;
+				n++;
+			})
+			
+			var cond_aggregate = [
+				{$unwind:'$users'},
+				{
+					$match:{
+						$and:[
+							{fb_id:fb_id},
+							{'users.fb_id':{$in:in_usersfbid}}
+						]
+					}
+				}
+			]
+			socialfeed_coll.aggregate(cond_aggregate).toArray(function(err,rows){
 				if(err){
-					debug.log(err);
+					debug.log(err)
 				}else{
-					if(rows != null){
-						if(rows.users != null){
-							callback(null,rows.users);
-						}else{
-							callback(null,[]);
-						}
-					}else{
-						callback(null,[]);
+					if(rows.length != 0 || typeof rows != 'undefined'){
+						var users_rows = new Object();
+						// users_rows._id = rows[0]._id;
+						// users_rows.fb_id = rows[0].fb_id;
+						// users_rows.created_at = rows[0].created_at;
+						users_rows.users = []
+						var x = 0;
+						async.forEachOf(rows,function(v,k,e){
+							users_rows.users[x] = v.users;
+							x++;
+						})
+						async.setImmediate(function () {
+							callback(null,rows_event,users_rows.users);
+						});
 					}
 				}
 			})
+			
+			// socialfeed_coll.findOne({fb_id:fb_id},function(err,rows){
+				// if(err){
+					// debug.log(err);
+				// }else{
+					// if(rows != null){
+						// if(rows.users != null){
+							// debug.log(rows);
+							// async.setImmediate(function () {
+								// callback(null,rows_event,rows.users);
+							// });
+						// }else{
+							// callback(null,[],[]);
+						// }
+					// }else{
+						// callback(null,[],[]);
+					// }
+				// }
+			// })
 		},
-		function get_matche(socfed_users,callback){
+		function get_matche(rows_event,socfed_users,callback){
 			if(socfed_users.length > 0){
 				var in_fbid = [];
 				var n = 0;
@@ -254,105 +304,82 @@ function getdata(event_details_id,fb_id,gender_interest,next){
 					fb_id:{$in:in_fbid}
 				}
 				customers_coll.find(cond_cust).toArray(function(err,rows){
-					callback(null,socfed_users,rows);
+					callback(null,socfed_users,rows,rows_event);
 				})
 			}else{
-				callback(null,[],[]);
+				callback(null,[],[],[]);
 			}
 		},
-		function get_eventdetail_or_cache(socfed_users,rows_cust,callback){
-			// cache.get("event_"+event_details_id,function(err,val){
-				// if(typeof val == "undefined"){
-					var cond = {_id:new ObjectId(event_details_id)}
-					events_detail_coll.findOne(cond,function(err,rows){
-						// cache.set("event_"+fb_id+"_"+event_details_id,rows,function(err,suc){
-							// if(suc == true){
-								// debug.log("not cached");
-								callback(null,socfed_users,rows_cust,rows);
-							// }else{
-								// debug.log("Data Not Cached");
-							// }
-						// });
-					});
-				// }else{
-					// callback(null,socfed_users,rows_cust,val);
-				// }
-			// });
-		},
 		function get_eventdetail(socfed_users,rows_cust,rows,callback){
-			// var cond = {_id:new ObjectId(event_details_id)}
-			// events_detail_coll.findOne(cond,function(err,rows){
-				// if(err){
-					// debug.log(err);
-				// }else{
-					if(socfed_users.length > 0){
-						async.forEachOf(rows_cust,function(v,k,e){
-							async.forEachOf(rows.guests_viewed,function(v2,k2,e2){
-								if(v.fb_id == v2.fb_id){
-									if(v.matchme == undefined || v.matchme == true){
-										rows.guests_viewed[k2].matchme = true;
-									}else{
-										rows.guests_viewed[k2].matchme = false;
+			if(socfed_users.length > 0){
+				async.forEachOf(rows_cust,function(v,k,e){
+					async.forEachOf(rows.guests_viewed,function(v2,k2,e2){
+						if(v.fb_id == v2.fb_id){
+							if(v.matchme == undefined || v.matchme == true){
+								rows.guests_viewed[k2].matchme = true;
+							}else{
+								rows.guests_viewed[k2].matchme = false;
+							}
+						}
+					})
+				})
+				
+				var new_guestviewed = [];
+				var x = 0;
+				async.forEachOf(rows.guests_viewed,function(v,k,e){
+					if(v.matchme == true){
+						if(v.fb_id != fb_id){
+							if(gender_interest == "both"){
+								async.forEachOf(socfed_users,function(ve,ke,ee){
+									if(v.fb_id == ve.fb_id){
+										if(ve.from_state != 'denied' && ve.to_state != 'denied'){
+											new_guestviewed[x] = new Object();
+											new_guestviewed[x].fb_id = v.fb_id;
+											new_guestviewed[x].first_name = v.first_name;
+											new_guestviewed[x].gender = v.gender;
+											x++;
+										}
 									}
-								}
-							})
-						})
-						
-						var new_guestviewed = [];
-						var x = 0;
-						async.forEachOf(rows.guests_viewed,function(v,k,e){
-							if(v.matchme == true){
-								if(v.fb_id != fb_id){
-									if(gender_interest == "both"){
-										async.forEachOf(socfed_users,function(ve,ke,ee){
-											if(v.fb_id == ve.fb_id){
-												if(ve.from_state != 'denied' && ve.to_state != 'denied'){
-													new_guestviewed[x] = new Object();
-													new_guestviewed[x].fb_id = v.fb_id;
-													new_guestviewed[x].first_name = v.first_name;
-													new_guestviewed[x].gender = v.gender;
-													x++;
-												}
+								})
+							}else if(gender_interest == "female"){
+								if(v.gender == "female"){
+									async.forEachOf(socfed_users,function(ve,ke,ee){
+										if(v.fb_id == ve.fb_id){
+											if(ve.from_state != 'denied' && ve.to_state != 'denied'){
+												new_guestviewed[x] = new Object();
+												new_guestviewed[x].fb_id = v.fb_id;
+												new_guestviewed[x].first_name = v.first_name;
+												new_guestviewed[x].gender = v.gender;
+												x++;
 											}
-										})
-									}else if(gender_interest == "female"){
-										if(v.gender == "female"){
-											async.forEachOf(socfed_users,function(ve,ke,ee){
-												if(v.fb_id == ve.fb_id){
-													if(ve.from_state != 'denied' && ve.to_state != 'denied'){
-														new_guestviewed[x] = new Object();
-														new_guestviewed[x].fb_id = v.fb_id;
-														new_guestviewed[x].first_name = v.first_name;
-														new_guestviewed[x].gender = v.gender;
-														x++;
-													}
-												}
-											})
 										}
-									}else if(gender_interest == "male"){
-										if(v.gender == "male"){
-											async.forEachOf(socfed_users,function(ve,ke,ee){
-												if(v.fb_id == ve.fb_id){
-													if(ve.from_state != 'denied' && ve.to_state != 'denied'){
-														new_guestviewed[x] = new Object();
-														new_guestviewed[x].fb_id = v.fb_id;
-														new_guestviewed[x].first_name = v.first_name;
-														new_guestviewed[x].gender = v.gender;
-														x++;
-													}
-												}
-											})
+									})
+								}
+							}else if(gender_interest == "male"){
+								if(v.gender == "male"){
+									async.forEachOf(socfed_users,function(ve,ke,ee){
+										if(v.fb_id == ve.fb_id){
+											if(ve.from_state != 'denied' && ve.to_state != 'denied'){
+												new_guestviewed[x] = new Object();
+												new_guestviewed[x].fb_id = v.fb_id;
+												new_guestviewed[x].first_name = v.first_name;
+												new_guestviewed[x].gender = v.gender;
+												x++;
+											}
 										}
-									}
+									})
 								}
 							}
-						})
-						rows.guests_viewed = new_guestviewed;
+						}
 					}
-					
-					callback(null,rows);
-				// }
-			// });
+				})
+				var filter_guestviewed = req.app.get('helpers').getUniqueArray(new_guestviewed);
+				rows.guests_viewed = filter_guestviewed;
+			}
+			debug.log(rows);
+			
+			callback(null,rows);
+				
 		},
 		function get_venue(event_item,callback){
 			var cond = {_id:new ObjectId(event_item.venue_id)}
@@ -544,7 +571,7 @@ function updsocialfeed_async(guests_viewed,fb_id,next){
 										debug.log(err);
 									}
 								})
-								debug.log("update aja");
+								// debug.log("update aja");
 							
 							
 							}else if(cek_exist == 0){
@@ -566,7 +593,7 @@ function updsocialfeed_async(guests_viewed,fb_id,next){
 										debug.log(err);
 									}
 								})
-								debug.log("push baru");
+								// debug.log("push baru");
 
 							}
 							
@@ -639,7 +666,7 @@ function updsocialfeed_async(guests_viewed,fb_id,next){
 										if(err){
 											debug.log(err);
 										}else{
-											debug.log('updating self data socfed');
+											// debug.log('updating self data socfed');
 										}
 									})
 								}else{
@@ -662,7 +689,7 @@ function updsocialfeed_async(guests_viewed,fb_id,next){
 												debug.log(err);
 											}
 										})
-										debug.log("push baru self");
+										// debug.log("push baru self");
 									})
 								}
 							})

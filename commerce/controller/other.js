@@ -64,6 +64,60 @@ function get_ccinfo(req,next){
 	
 }
 
+exports.post_cc = function(req,res){
+	var fb_id = req.post.fb_id;
+	var token_id = req.post.token_id;
+	var card_id = req.post.card_id;
+	
+	async.waterfall([
+		function get_cc(cb){
+			var cond = {
+				fb_id:fb_id,
+				"cc_info.card_id":card_id
+			}
+			
+			customers_coll.findOne(cond,function(err,r){
+				if(err){
+					cb(null,false)
+				}else{
+					if(r == null){
+						cb(null,true)
+					}else{
+						cb(null,false)
+					}
+				}
+			})
+		},
+		function updating(stat,cb){
+			if(stat == true){
+				var cond2 = {fb_id:fb_id}
+				var data_push = {
+					card_id:card_id,
+					token_id:token_id,
+					is_verified:false,
+					created_at:new Date()
+				} 
+				customers_coll.update(cond2,data_push,function(err,upd){
+					if(err){
+						cb(null,true)
+					}else{
+						cb(null,false)
+					}
+				})
+			}else{
+				cb(null,false)
+			}
+		}
+	],function(err,merge){
+		if(merge == false){
+			res.json({code_error:403})
+		}else{
+			res.json(success:true)
+		}
+		
+	})
+}
+
 exports.order_list = function(req,res){
 	orderlist(req,function(stat,data){
 		if(stat == false){

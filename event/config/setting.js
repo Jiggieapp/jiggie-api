@@ -2,7 +2,11 @@ exports.setting = function(app,express,helmet,hpp,xssFilters,validator,http,http
 	// router //
 	app.use(app.router);
 	// router //
+	
+	var compression = require('compression');
 
+	app.use(compression());
+	
 	app.use(function(req, res, next){
 	  res.status(404);
 	  if (req.accepts('html')) {

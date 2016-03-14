@@ -47,9 +47,10 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/app/v3/product/term/:codeid',commerce.term);
   app.post('/app/v3/product/payment',commerce.payment);
   app.get('/app/v3/product/credit_card/:fb_id',commerce.cc_info);
+  app.post('/app/v3/product/post_cc',commerce.post_cc);
   app.get('/notif_handle',commerce.notifications_handler);
   app.get('/order_list/:fb_id',commerce.order_list);
-  app.get('/success_screen/:order_id',commerce.success_screen);
+  app.get('/app/v3/product/success_screen/:order_id',commerce.success_screen);
   
   var xmpp = require(path_controller+'xmpp');
   app.get('/xmpp/:user',xmpp.index);
@@ -64,5 +65,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   var notif = require(path_controller+'notif');
   app.post('/notif',notif.index);
   app.post('/notif_all',notif.all);
+  app.get('/th',notif.th);
+  app.post('/do_roll',notif.th_nextround);
   // Notif //
 }
