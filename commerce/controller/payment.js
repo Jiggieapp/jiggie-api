@@ -583,18 +583,25 @@ function post_transaction_cc(req,next){
 											var payment_type = vt.payment_type;
 											var saved_token_id_expired_at = vt.saved_token_id_expired_at;
 											
+											var last_cc = new Object();
+											last_cc.masked_card = masked_card;
+											last_cc.saved_token_id = saved_token_id;
+											last_cc.payment_type = payment_type;
+											last_cc.saved_token_id_expired_at = saved_token_id_expired_at;
+											
 											var cond = {
 												fb_id:dt2.fb_id,
-												"ccinfo.token_id":token_id
+												"cc_info.token_id":token_id
 											}
 											
 											var form_updst = {
 												$set:{
-													"ccinfo.$.masked_card":masked_card,
-													"ccinfo.$.saved_token_id":saved_token_id,
-													"ccinfo.$.saved_token_id_expired_at":saved_token_id_expired_at,
-													"ccinfo.$.payment_type":payment_type,
-													"ccinfo.$.is_verified":true
+													"last_cc":last_cc,
+													"cc_info.$.masked_card":masked_card,
+													"cc_info.$.saved_token_id":saved_token_id,
+													"cc_info.$.saved_token_id_expired_at":saved_token_id_expired_at,
+													"cc_info.$.payment_type":payment_type,
+													"cc_info.$.is_verified":true
 												}
 											}
 											
@@ -608,7 +615,7 @@ function post_transaction_cc(req,next){
 											
 											/*var cond = {
 												fb_id:dt2.fb_id,
-												"ccinfo.masked_card":masked_card
+												"cc_info.masked_card":masked_card
 											}
 											customers_coll.findOne(cond,function(ers,rs){
 												if(ers){
@@ -617,8 +624,8 @@ function post_transaction_cc(req,next){
 													if(rs != null){
 														var form_updst = {
 															$set:{
-																"ccinfo.$.saved_token_id":saved_token_id,
-																"ccinfo.$.saved_token_id_expired_at":saved_token_id_expired_at
+																"cc_info.$.saved_token_id":saved_token_id,
+																"cc_info.$.saved_token_id_expired_at":saved_token_id_expired_at
 															}
 														}
 														customers_coll.update(cond,form_updst,function(ers2,upds2){
@@ -635,7 +642,7 @@ function post_transaction_cc(req,next){
 															saved_token_id_expired_at : saved_token_id_expired_at,
 															payment_type : payment_type
 														}
-														customers_coll.update({fb_id:dt2.fb_id},{$push:{ccinfo:data_push}},function(err2,upd){
+														customers_coll.update({fb_id:dt2.fb_id},{$push:{cc_info:data_push}},function(err2,upd){
 															if(err2){
 																debug.log("error update line 172");
 																cb2(null,false);

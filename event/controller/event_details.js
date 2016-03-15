@@ -14,7 +14,7 @@ exports.index = function(req, res){
 	var gender_interest = req.params.gender_interest;
 	gender_interest = gender_interest.toLowerCase();
 	
-	/*events_detail_coll.findOne({_id:new ObjectId(event_details_id)},function(errs,cek_eventid){
+	events_detail_coll.findOne({_id:new ObjectId(event_details_id)},function(errs,cek_eventid){
 	customers_coll.findOne({fb_id:fb_id},function(errs,cek_fbid){
 		if(cek_eventid == undefined){
 			// 204 => No Content
@@ -25,12 +25,12 @@ exports.index = function(req, res){
 		}else if(['male','female','both'].indexOf(gender_interest) == -1){
 			// 403 => Invalid ID
 			res.json({code_error:403})
-		}else{*/
+		}else{
 			doall(req,event_details_id,fb_id,gender_interest,function(rows){
 				req.app.get("helpers").logging("response","get",JSON.stringify(rows),req);
 				res.json(rows);
 			});
-		/*}
+		}
 	})	
 	})*/
 };
@@ -227,50 +227,59 @@ function getdata(req,event_details_id,fb_id,gender_interest,next){
 		function get_eventdetail_or_cache(callback){
 			var cond = {_id:new ObjectId(event_details_id)}
 			events_detail_coll.find(cond).limit(1).toArray(function(err,rows){
-				if(err){debug.log(err);}
-				callback(null,rows[0]);
+				if(err){
+					debug.log('error line 231 event details')
+					debug.log(err);
+				}else{
+					callback(null,rows[0]);
+				}
 			});
 		},
 		function get_socialfeed(rows_event,callback){
 			var in_usersfbid = [];
 			var n = 0;
-			async.forEachOf(rows_event.guests_viewed,function(v,k,e){
-				in_usersfbid[n] = v.fb_id;
-				n++;
-			})
-			
-			var cond_aggregate = [
-				{$unwind:'$users'},
-				{
-					$match:{
-						$and:[
-							{fb_id:fb_id},
-							{'users.fb_id':{$in:in_usersfbid}}
-						]
+			if(rows_event.guests_viewed.length > 0){
+				async.forEachOf(rows_event.guests_viewed,function(v,k,e){
+					in_usersfbid[n] = v.fb_id;
+					n++;
+				})
+				
+				var cond_aggregate = [
+					{$unwind:'$users'},
+					{
+						$match:{
+							$and:[
+								{fb_id:fb_id},
+								{'users.fb_id':{$in:in_usersfbid}}
+							]
+						}
 					}
-				}
-			]
-			socialfeed_coll.aggregate(cond_aggregate).toArray(function(err,rows){
-				if(err){
-					debug.log(err)
-				}else{
-					if(rows.length != 0 || typeof rows != 'undefined'){
-						var users_rows = new Object();
-						// users_rows._id = rows[0]._id;
-						// users_rows.fb_id = rows[0].fb_id;
-						// users_rows.created_at = rows[0].created_at;
-						users_rows.users = []
-						var x = 0;
-						async.forEachOf(rows,function(v,k,e){
-							users_rows.users[x] = v.users;
-							x++;
-						})
-						async.setImmediate(function () {
-							callback(null,rows_event,users_rows.users);
-						});
+				]
+				socialfeed_coll.aggregate(cond_aggregate).toArray(function(err,rows){
+					if(err){
+						debug.log('error line 259 event details')
+						debug.log(err)
+					}else{
+						if(rows.length != 0 || typeof rows != 'undefined'){
+							var users_rows = new Object();
+							// users_rows._id = rows[0]._id;
+							// users_rows.fb_id = rows[0].fb_id;
+							// users_rows.created_at = rows[0].created_at;
+							users_rows.users = []
+							var x = 0;
+							async.forEachOf(rows,function(v,k,e){
+								users_rows.users[x] = v.users;
+								x++;
+							})
+							async.setImmediate(function () {
+								callback(null,rows_event,users_rows.users);
+							});
+						}
 					}
-				}
-			})
+				})
+			}else{
+				callback(null,rows_event,[]);
+			}
 			
 			// socialfeed_coll.findOne({fb_id:fb_id},function(err,rows){
 				// if(err){
@@ -307,7 +316,7 @@ function getdata(req,event_details_id,fb_id,gender_interest,next){
 					callback(null,socfed_users,rows,rows_event);
 				})
 			}else{
-				callback(null,[],[],[]);
+				callback(null,[],[],rows_event);
 			}
 		},
 		function get_eventdetail(socfed_users,rows_cust,rows,callback){
@@ -376,7 +385,6 @@ function getdata(req,event_details_id,fb_id,gender_interest,next){
 				var filter_guestviewed = req.app.get('helpers').getUniqueArray(new_guestviewed);
 				rows.guests_viewed = filter_guestviewed;
 			}
-			debug.log(rows);
 			
 			callback(null,rows);
 				

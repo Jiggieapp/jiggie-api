@@ -65,9 +65,9 @@ function get_ccinfo(req,next){
 }
 
 exports.post_cc = function(req,res){
-	var fb_id = req.post.fb_id;
-	var token_id = req.post.token_id;
-	var card_id = req.post.card_id;
+	var fb_id = req.body.fb_id;
+	var token_id = req.body.token_id;
+	var card_id = req.body.card_id;
 	
 	async.waterfall([
 		function get_cc(cb){
@@ -78,11 +78,15 @@ exports.post_cc = function(req,res){
 			
 			customers_coll.findOne(cond,function(err,r){
 				if(err){
+					debug.log('error line 81 commerce other')
+					debug.log(err)
 					cb(null,false)
 				}else{
+					debug.log(r);
 					if(r == null){
 						cb(null,true)
 					}else{
+						debug.log('data cc already exist')
 						cb(null,false)
 					}
 				}
@@ -97,14 +101,17 @@ exports.post_cc = function(req,res){
 					is_verified:false,
 					created_at:new Date()
 				} 
-				customers_coll.update(cond2,data_push,function(err,upd){
+				customers_coll.update(cond2,{$push:{cc_info:data_push}},function(err,upd){
 					if(err){
-						cb(null,true)
-					}else{
+						debug.log('error line 105 commerce other')
+						debug.log(err);
 						cb(null,false)
+					}else{
+						cb(null,true)
 					}
 				})
 			}else{
+				debug.log('error line 113 other commerce js')
 				cb(null,false)
 			}
 		}
@@ -112,9 +119,31 @@ exports.post_cc = function(req,res){
 		if(merge == false){
 			res.json({code_error:403})
 		}else{
-			res.json(success:true)
+			res.json({success:true})
 		}
 		
+	})
+}
+
+exports.delete_cc = function(req,res){
+	var fb_id = req.body.fb_id;
+	var token_id = req.body.token_id;
+	var card_id = req.body.card_id;
+	
+	customers_coll.update(
+	{
+		fb_id:fb_id,
+		cc_info.card_id:card_id
+	},{
+		$pull:{
+			cc_info:{card_id:card_id}
+		}
+	},function(err,upd){
+		if(err){
+			res.json({code_error:403})
+		}else{
+			res.json({success:true});
+		}
 	})
 }
 

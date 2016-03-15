@@ -18,6 +18,9 @@ var optionsLive = {
    debug:true
 };
 
+var connection = new apn.Connection(optionsLive);
+notification = new apn.Notification();
+
 exports.apn = function(req,res){
 	var post = req.body;
 	debug.log(post);
@@ -158,8 +161,7 @@ exports.apn = function(req,res){
 										debug.log(payload);
 										
 										try{
-											var connection = new apn.Connection(optionsLive);
-											notification = new apn.Notification();
+											
 											notification.device = new apn.Device(token);
 											notification.alert = alert;
 											notification.payload = payload;

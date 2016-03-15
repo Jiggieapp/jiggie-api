@@ -194,10 +194,10 @@ function get_summary(req,next){
 						debug.log('error fbid');
 						cb(null,{code_error:403})
 					}else{
-						if(r.credit_card_vt == null){
-							dt.credit_card = [];
+						if(r.last_cc == null){
+							dt.credit_card = {};
 						}else{
-							dt.credit_card = r.credit_card_vt
+							dt.credit_card = r.last_cc
 						}
 						cb(null,dt);
 					}

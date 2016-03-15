@@ -8,8 +8,6 @@ var util = require("util");
 var apn = require('apn');
 var gcm = require('node-gcm');
 
-
-// START : APN //
 var optionsLive = {
    cert : path.join(__dirname, 'livecerts') + "/PushChatLiveCert.pem",
    key : path.join(__dirname, 'livecerts') + "/PushChatLiveKey.pem",
@@ -18,6 +16,10 @@ var optionsLive = {
    debug:true
 };
 
+var connection = new apn.Connection(optionsLive);
+notification = new apn.Notification();
+
+// START : APN //
 exports.apn = function(req,res){
 	var post = req.body;
 	debug.log(post);
@@ -49,11 +51,11 @@ exports.apn = function(req,res){
 			debug.log('APN Token :'+token)
 			debug.log('GCM Token :'+gcm_token)
 			debug.log('FBID :'+ve.fb_id)
-			
-			
+		
+		
 			try{
-				var connection = new apn.Connection(optionsLive);
-				notification = new apn.Notification();
+				// var connection = new apn.Connection(optionsLive);
+				// notification = new apn.Notification();
 				async.parallel([
 					function push_gcm(cb){
 						if(typeof gcm_token != 'undefined'){

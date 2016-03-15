@@ -48,6 +48,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.post('/app/v3/product/payment',commerce.payment);
   app.get('/app/v3/product/credit_card/:fb_id',commerce.cc_info);
   app.post('/app/v3/product/post_cc',commerce.post_cc);
+  app.post('/app/v3/product/delete_cc',commerce.delete_cc);
   app.get('/notif_handle',commerce.notifications_handler);
   app.get('/order_list/:fb_id',commerce.order_list);
   app.get('/app/v3/product/success_screen/:order_id',commerce.success_screen);
