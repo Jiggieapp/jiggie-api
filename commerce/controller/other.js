@@ -11,7 +11,7 @@ exports.cc_info = function(req,res){
 		if(stat == true){
 			res.json(data);
 		}else{
-			res.json({code_error:403});
+			res.json(data);
 		}
 	})
 }
@@ -28,7 +28,7 @@ function get_ccinfo(req,next){
 				}else{
 					if(r == null){
 						debug.log('data customers null=>others commerce');
-						cb(null,false,[]);
+						cb(null,false,{code_error:204});
 					}else{
 						cb(null,true,r);
 					}
@@ -39,13 +39,13 @@ function get_ccinfo(req,next){
 			if(stat == true){
 				if(rc.cc_info == null || typeof rc.cc_info == 'undefined'){
 					debug.log('Error Data 36=>other.js=>commerce');
-					cb(null,false,[]);
+					cb(null,false,{code_error:204});
 				}else{
 					cb(null,true,rc.cc_info);
 				}
 			}else{
 				debug.log('Error Data 42=>other.js=>commerce');
-				cb(null,false,[]);
+				cb(null,false,rc);
 			}
 		}
 	],function(err,stat,data){
@@ -54,11 +54,11 @@ function get_ccinfo(req,next){
 				next(true,data)
 			}else{
 				debug.log('error line 51-> otherjs->commerce')
-				next(false,[]);
+				next(false,data);
 			}
 		}catch(e){
 			debug.log(e);
-			next(false,[]);
+			next(false,{code_error:403});
 		}
 	})
 	

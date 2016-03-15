@@ -145,6 +145,7 @@ function get_data(req,fb_id,from_date,to_date,next){
 				json_data[k].end_datetime = v.end_datetime;
 				json_data[k].special_type = "Trending";
 				json_data[k].tags = v.tags;
+				json_data[k].description = v.description;
 				
 				if(v.source == 'featured'){
 					json_data[k].date_day = 'Featured Events';

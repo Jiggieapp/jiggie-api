@@ -349,6 +349,8 @@ function post_transaction_cc(req,next){
 	var type = post.type;
 	var save_cc = post.is_new_card;
 	var secure_cc = 1;
+	var first_name_cc = post.first_name_cc;
+	var last_name_cc = post.last_name_cc;
 	
 	var schema = req.app.get('mongo_path');
 	var order = require(schema+'/order_product.js');
@@ -419,8 +421,8 @@ function post_transaction_cc(req,next){
 				// s:billing address //
 				
 				billing_address = new Object();
-				billing_address.first_name = dt2.user_first_name;
-				billing_address.last_name = dt2.user_last_name;
+				billing_address.first_name = first_name_cc;
+				billing_address.last_name = last_name_cc;
 				json_data.billing_address = billing_address;
 				
 				// e:billing address //
@@ -428,8 +430,8 @@ function post_transaction_cc(req,next){
 				// s:shipping_address //
 				
 				shipping_address = new Object();
-				shipping_address.first_name = dt2.user_first_name;
-				shipping_address.last_name = dt2.user_last_name;
+				// shipping_address.first_name = dt2.user_first_name;
+				// shipping_address.last_name = dt2.user_last_name;
 				json_data.shipping_address = shipping_address;
 				
 				// e:shipping_address //
