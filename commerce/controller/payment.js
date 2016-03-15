@@ -589,7 +589,7 @@ function post_transaction_cc(req,next){
 											last_cc.payment_type = payment_type;
 											last_cc.saved_token_id_expired_at = saved_token_id_expired_at;
 											
-											var cond = {
+											/*var cond = {
 												fb_id:dt2.fb_id,
 												"cc_info.token_id":token_id
 											}
@@ -611,9 +611,9 @@ function post_transaction_cc(req,next){
 												}else{
 													cb2(null,true);
 												}
-											})
+											})*/
 											
-											/*var cond = {
+											var cond = {
 												fb_id:dt2.fb_id,
 												"cc_info.masked_card":masked_card
 											}
@@ -624,6 +624,7 @@ function post_transaction_cc(req,next){
 													if(rs != null){
 														var form_updst = {
 															$set:{
+																"last_cc":last_cc,
 																"cc_info.$.saved_token_id":saved_token_id,
 																"cc_info.$.saved_token_id_expired_at":saved_token_id_expired_at
 															}
@@ -642,7 +643,11 @@ function post_transaction_cc(req,next){
 															saved_token_id_expired_at : saved_token_id_expired_at,
 															payment_type : payment_type
 														}
-														customers_coll.update({fb_id:dt2.fb_id},{$push:{cc_info:data_push}},function(err2,upd){
+														var form_upd = {
+															$push:{cc_info:data_push},
+															$set:{"last_cc":last_cc}
+														}
+														customers_coll.update({fb_id:dt2.fb_id},form_upd,function(err2,upd){
 															if(err2){
 																debug.log("error update line 172");
 																cb2(null,false);
@@ -653,7 +658,7 @@ function post_transaction_cc(req,next){
 														})
 													}
 												}
-											})*/
+											})
 											
 											
 										}else{
