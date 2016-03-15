@@ -111,19 +111,19 @@ function post_transaction_va(req,next){
 				
 				// s:billing address //
 				
-				billing_address = new Object();
-				billing_address.first_name = dt2.user_first_name;
-				billing_address.last_name = dt2.user_last_name;
-				json_data.billing_address = billing_address;
+				// billing_address = new Object();
+				// billing_address.first_name = dt2.user_first_name;
+				// billing_address.last_name = dt2.user_last_name;
+				// json_data.billing_address = billing_address;
 				
 				// e:billing address //
 				
 				// s:shipping_address //
 				
-				shipping_address = new Object();
-				shipping_address.first_name = dt2.user_first_name;
-				shipping_address.last_name = dt2.user_last_name;
-				json_data.shipping_address = shipping_address;
+				// shipping_address = new Object();
+				// shipping_address.first_name = dt2.user_first_name;
+				// shipping_address.last_name = dt2.user_last_name;
+				// json_data.shipping_address = shipping_address;
 				
 				// e:shipping_address //
 				
@@ -349,8 +349,22 @@ function post_transaction_cc(req,next){
 	var type = post.type;
 	var save_cc = post.is_new_card;
 	var secure_cc = 1;
-	var first_name_cc = post.first_name_cc;
-	var last_name_cc = post.last_name_cc;
+	
+	var first_name_cc = ""
+	var last_name_cc = ""
+	var name_cc = post.name_cc;
+	var ex_name = name_cc.split(' ');
+	if(typeof ex_name != 'undefined'){
+		first_name_cc = ex_name[0];
+		async.forEachOf(ex_name,function(v,k,e){
+			if(k != 0){
+				last_name_cc += v+' ';
+			}
+		})
+	}else{
+		first_name_cc = name_cc;
+		last_name_cc = '';
+	}
 	
 	var schema = req.app.get('mongo_path');
 	var order = require(schema+'/order_product.js');
@@ -396,6 +410,7 @@ function post_transaction_cc(req,next){
 		function sync_data(stat,dt,dt2,cb){
 			if(stat == true){
 				var json_data = new Object();
+				var customer_details = new Object();
 				
 				// s:transaction_details //
 				transaction_details = new Object();	
@@ -419,26 +434,35 @@ function post_transaction_cc(req,next){
 				// e:items //
 				
 				// s:billing address //
-				billing_address = new Object();
 				if(String(is_new_card) == '1'){
+					billing_address = new Object();
 					billing_address.first_name = first_name_cc;
 					billing_address.last_name = last_name_cc;
+					customer_details.billing_address = billing_address;
+				}else if(String(is_new_card) == '0'){
+					billing_address = new Object();
+					async.forEachOf(dt.cc_info,function(v,k,e){
+						if(v.saved_token_id == token_id){
+							billing_address.first_name = v.first_name;
+							billing_address.last_name = v.last_name;
+						}
+					})
+					customer_details.billing_address = billing_address;
 				}
 				
-				json_data.billing_address = billing_address;
 				// e:billing address //
 				
 				// s:shipping_address //
 				
-				shipping_address = new Object();
+				// shipping_address = new Object();
 				// shipping_address.first_name = dt2.user_first_name;
 				// shipping_address.last_name = dt2.user_last_name;
-				json_data.shipping_address = shipping_address;
+				// json_data.shipping_address = shipping_address;
 				
 				// e:shipping_address //
 				
 				// s:customer_details //
-				var customer_details = new Object();
+				
 				var fname = dt.guest_detail.name.split(' ');
 				if(typeof fname[0] == 'undefined' || typeof fname[0] == ''){
 					fname[0] = '';
