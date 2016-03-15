@@ -97,7 +97,6 @@ function start_jobs(req,next){
 }
 
 /*Start: Push Event*/
-
 function push_new_event(req,next){
 	async.parallel([
 		function new_event(cb){
@@ -136,8 +135,6 @@ function push_new_event(req,next){
 	})
 	
 }
-
-
 
 function count_event(req,next){
 	var days = 8; // Interval Data for Events
@@ -212,7 +209,6 @@ function count_event(req,next){
 		}
 	})
 }
-
 /*End:Push Event*/
 
 /*Start: Push new Segested and Chat
