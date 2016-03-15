@@ -127,13 +127,12 @@ exports.post_cc = function(req,res){
 
 exports.delete_cc = function(req,res){
 	var fb_id = req.body.fb_id;
-	var token_id = req.body.token_id;
 	var card_id = req.body.card_id;
 	
 	customers_coll.update(
 	{
 		fb_id:fb_id,
-		cc_info.card_id:card_id
+		"cc_info.card_id":card_id
 	},{
 		$pull:{
 			cc_info:{card_id:card_id}
@@ -142,7 +141,13 @@ exports.delete_cc = function(req,res){
 		if(err){
 			res.json({code_error:403})
 		}else{
-			res.json({success:true});
+			debug.log(upd);
+			if(upd){
+				res.json({success:true});
+			}else{
+				res.json({code_error:403})
+			}
+			
 		}
 	})
 }

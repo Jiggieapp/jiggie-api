@@ -32,7 +32,7 @@ exports.index = function(req, res){
 			});
 		}
 	})	
-	})*/
+	})
 };
 
 function doall(req,event_details_id,fb_id,gender_interest,next){
