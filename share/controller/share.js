@@ -94,10 +94,10 @@ exports.lookuplink = function(req,res)
 				if(item.type != "general")
 				{
 					// data.url = trackdomain  + "/" + "id1047291489?pid=Event_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_sub2=" + item.event_id + "&af_ios_lp=true";
-					data.url = trackdomain  + "/" + "1630402100?pid=Event_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_sub2=" + item.event_id + "&af_force_dp=true&af_ios_lp=true";
+					data.url = trackdomain  + "/" + "1630402100?pid=Event_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_sub2=" + item.event_id + "&af_force_dp=true&af_ios_lp=true&af_chrome_lp=true";
 				}else{
 					// data.url = trackdomain + "/id1047291489?pid=App_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_ios_lp=true";
-					data.url = trackdomain + "/1630402100?pid=App_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_force_dp=true&af_ios_lp=true";
+					data.url = trackdomain + "/1630402100?pid=App_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_force_dp=true&af_ios_lp=true&af_chrome_lp=true";
 				}
 				res.send(data.url);
 			})
