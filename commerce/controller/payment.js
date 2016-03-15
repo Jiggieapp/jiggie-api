@@ -96,7 +96,7 @@ function post_transaction_va(req,next){
 				// e:transaction_details //
 				
 				// s:items //
-				var items = [];
+				var items = []
 				var n = 0;
 				async.forEachOf(dt.product_list,function(v,k,e){
 					items[n] = new Object();
@@ -419,12 +419,10 @@ function post_transaction_cc(req,next){
 				// e:items //
 				
 				// s:billing address //
-				
 				billing_address = new Object();
 				billing_address.first_name = first_name_cc;
 				billing_address.last_name = last_name_cc;
 				json_data.billing_address = billing_address;
-				
 				// e:billing address //
 				
 				// s:shipping_address //
@@ -640,6 +638,8 @@ function post_transaction_cc(req,next){
 														})
 													}else{
 														var data_push = {
+															first_name:first_name_cc,
+															last_name:last_name_cc,
 															masked_card : masked_card,
 															saved_token_id : saved_token_id,
 															saved_token_id_expired_at : saved_token_id_expired_at,
