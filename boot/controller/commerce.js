@@ -218,6 +218,41 @@ exports.post_cc = function(req,res){
 	// });
 }
 
+exports.delete_cc = function(req,res){
+	var head = req.headers;
+	var token = head.authorization;
+	
+	// jwt.verify(token,datakey,function(err,decode){
+		// if(err){
+			// if(err.name == 'JsonWebTokenError'){
+				// res.status(401).send({});
+			// }else if(err.name == 'TokenExpiredError'){
+				// res.status(410).send({});
+			// }
+		// }else{
+			var options = {
+				url : url+"/delete_cc/",
+				form:req.body
+			}
+			curl.post(options,function(err,resp,body){
+				if (!err && resp.statusCode == 200) {
+					res.header("Content-type","application/json");
+					var json_data = JSON.parse(body);
+					if(typeof json_data.code_error != 'undefined'){
+						res.status(json_data.code_error).send({});
+					}else{
+						hr.data = new Object();
+						hr.data.delete_cc = JSON.parse(body);
+						res.send(hr);
+					}
+				}else{
+					res.send(err);
+				}
+			});
+		// }
+	// });
+}
+
 exports.notifications_handler = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
