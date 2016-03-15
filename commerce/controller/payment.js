@@ -420,8 +420,11 @@ function post_transaction_cc(req,next){
 				
 				// s:billing address //
 				billing_address = new Object();
-				billing_address.first_name = first_name_cc;
-				billing_address.last_name = last_name_cc;
+				if(String(is_new_card) == '1'){
+					billing_address.first_name = first_name_cc;
+					billing_address.last_name = last_name_cc;
+				}
+				
 				json_data.billing_address = billing_address;
 				// e:billing address //
 				
