@@ -186,9 +186,9 @@ function post_transaction_va(req,next){
 			}
 		},
 		function cek_transaction_vt(stat,dtorder,body,cb){
-			var vt = JSON.parse(body);
 			debug.log('cek VT');
-			debug.log(vt);
+			debug.log(body);
+			var vt = JSON.parse(body);
 			if(typeof vt.code_error == 'undefined'){
 				cb(null,true,dtorder,body)	
 			}else{
@@ -226,6 +226,19 @@ function post_transaction_va(req,next){
 				})
 			}else{
 				debug.log('error line 187 => paymentjs');
+				cb2(null,false,[],[]);
+			}
+		},
+		function update_customers(stat,dtorder,vt,cb2){
+			if(stat == true){
+				customers_coll.update({fb_id:dtorder.fb_id},{
+					$set:{last_cc:{payment_type:type}}
+				},function(err,upd){
+					if(upd){
+						cb2(null,true,dtorder,vt);
+					}
+				})
+			}else{
 				cb2(null,false,[],[]);
 			}
 		},
@@ -347,7 +360,7 @@ function post_transaction_cc(req,next){
 	var order_id = post.order_id;
 	var token_id = post.token_id;
 	var type = post.type;
-	var save_cc = post.is_new_card;
+	var is_new_card = post.is_new_card;
 	var secure_cc = 1;
 	
 	var first_name_cc = ""
@@ -425,7 +438,7 @@ function post_transaction_cc(req,next){
 				async.forEachOf(dt.product_list,function(v,k,e){
 					items[n] = new Object();
 					items[n].id = v.ticket_id;
-					items[n].price = parseFloat(v.total_price);
+					items[n].price = parseFloat(v.total_price_aftertax);
 					items[n].quantity = parseInt(v.num_buy);
 					items[n].name = v.name;
 					n++;
@@ -479,7 +492,7 @@ function post_transaction_cc(req,next){
 				
 				json_data.token_id = token_id;
 				
-				json_data.save_cc = parseInt(save_cc);
+				json_data.save_cc = parseInt(1);
 				json_data.secure = parseInt(secure_cc);
 				
 				var options = {
@@ -587,7 +600,7 @@ function post_transaction_cc(req,next){
 										if(stat == true){
 											var form_upd = {
 												$set:{
-													order_status:'pending_shipment',
+													order_status:'completed',
 													payment_status:'paid'
 												}
 											}
@@ -613,7 +626,7 @@ function post_transaction_cc(req,next){
 											var last_cc = new Object();
 											last_cc.masked_card = masked_card;
 											last_cc.saved_token_id = saved_token_id;
-											last_cc.payment_type = payment_type;
+											last_cc.payment_type = 'cc';
 											last_cc.saved_token_id_expired_at = saved_token_id_expired_at;
 											
 											/*var cond = {
@@ -670,7 +683,7 @@ function post_transaction_cc(req,next){
 															masked_card : masked_card,
 															saved_token_id : saved_token_id,
 															saved_token_id_expired_at : saved_token_id_expired_at,
-															payment_type : payment_type
+															payment_type : 'cc'
 														}
 														var form_upd = {
 															$push:{cc_info:data_push},
@@ -714,7 +727,7 @@ function post_transaction_cc(req,next){
 											
 											var form_post = new Object();
 											form_post.vt = vt;
-											form_post.email_to = dtorder.guest_detail.email;
+											form_post.email_to = dt.guest_detail.email;
 											var options = {
 												url:'http://127.0.0.1:24534/sendnotif',
 												form:form_post
@@ -812,13 +825,46 @@ function post_transaction_cc(req,next){
 										cb2(null,false);
 									}
 								},
+								function upd_customers(stat,cb2){
+									if(stat == true){
+										order.findOne({order_id:order_id},function(err,rt){
+											if(err){
+												debug.log('error line 832');
+												cb2(null,false,{code_error:403});
+											}else{
+												customers_coll.findOne({fb_id:rt.fb_id},function(err,rcust){
+													if(typeof rcust.cc_info != 'undefined'){
+														var new_lastcc = new Object();
+														async.forEachOf(rcust.cc_info,function(v,k,e){
+															debug.log(token_id+'=='+v.saved_token_id);
+															if(v.saved_token_id == token_id){
+																new_lastcc = v;
+															}
+														})
+														debug.log(new_lastcc);
+														customers_coll.update({fb_id:rt.fb_id},{$set:{last_cc:new_lastcc}},function(ers,upd){
+															if(!err){
+																cb2(null,true);
+															}else{
+																cb2(null,false)
+															}
+														})
+													}
+													
+												})
+											}
+										})
+									}else{
+										cb2(null,false);
+									}
+								},
 								function send_notif(stat,cb2){
 									if(stat == true){
 										curl.get({url:'http://127.0.0.1:24534/notif_handle'},function(err,resp,body){})
 										
 										var form_post = new Object();
 										form_post.vt = vt;
-										form_post.email_to = dtorder.guest_detail.email;
+										form_post.email_to = dt.guest_detail.email;
 										var options = {
 											url:'http://127.0.0.1:24534/sendnotif',
 											form:form_post

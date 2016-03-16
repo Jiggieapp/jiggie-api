@@ -54,6 +54,22 @@ function handling(req,next){
 			});
 			job.start();
 			cb(null,true)
+		},
+		// cron for handle cancel payment from VT
+		function handle_cancel_payment_fromVT(cb){
+			var job = new cron({
+			  cronTime: '*/10 * * * * *',
+			  onTick: function() {
+				sync_cancel(req,function(dt){
+					debug.log('listener handle_cancel_payment_fromVT running');
+					// debug.log(dt);
+				})
+			  },
+			  start: true,
+			  timeZone: 'Asia/Jakarta'
+			});
+			job.start();
+			cb(null,true)
 		}
 	],function(err,merge){
 		try{
@@ -183,7 +199,8 @@ function cancel_transaction(req,rows_order,next){
 			var cond = {order_id:rows_order.order_id}
 			var form_upd = {
 				$set:{
-					order_status:'cancel'
+					order_status:'cancel',
+					payment_status:'expire'
 				}
 			}
 			order_coll.update(cond,form_upd,function(err,upd){
@@ -345,7 +362,7 @@ function send_mail(req,email_to,vt,next){
 	var html = '';
 	
 	if(vt.payment_type == 'credit_card'){
-		if(vt.transaction_status == 'settlement'){
+		if(vt.transaction_status == 'capture'){
 			subject = 'Thanks For Yout Credit Card Payment';
 			html = '<html><strong>Testing Sukses Pembayaran Menggunakan Credit Card</strong></html>';
 		}
@@ -409,4 +426,156 @@ exports.sendnotif = function(req,res){
 			res.json({mail:false})
 		}
 	})
+}
+
+function sync_cancel(req,next){
+	async.waterfall([
+		function getall_order(cb){
+			var cond = {
+				order_status:{$ne:'cancel'},
+				$or:[
+					{"vt_response.payment_type":'bank_transfer'},
+					{"vt_response.payment_type":'echannel'}
+				]
+			}
+			order_coll.find(cond).toArray(function(err,r){
+				if(err){
+					debug.log("error line 425 function sync cancel notif handler commerce");
+					cb(null,false,[]);
+				}else{
+					var orderid_arr = [];
+					var n = 0;
+					async.forEachOf(r,function(v,k,e){
+						orderid_arr[n] = v.order_id;
+						n++;
+					})
+					cb(null,true,orderid_arr);
+				}
+			})
+		},
+		function get_status_vt(stat,orderid_arr,cb){
+			if(stat == true){
+				var options = {
+					url:'https://commerce.jiggieapp.com/VT/production/status_all.php',
+					form:{
+						order_id:orderid_arr
+					}
+				}
+				curl.post(options,function(err,resp,body){
+					if(!err){
+						var all_statusdata = JSON.parse(body);
+						cb(null,true,all_statusdata);
+					}
+				})
+			}else{
+				cb(null,false,[]);
+			}
+		},
+		function cek_status(stat,all_statusdata,cb){
+			if(stat == true){
+				var orderid_cancel = [];
+				var n = 0;
+				async.forEachOf(all_statusdata,function(v,k,e){
+					if(v.transaction_status == 'cancel'){
+						orderid_cancel[n] = v.order_id;
+						n++;
+					}
+				})
+				if(orderid_cancel.length > 0){
+					cb(null,true,orderid_cancel);
+				}else{
+					debug.log('No Data to Void From Sync Cancel');
+					cb(null,false,[]);
+				}
+			}else{
+				cb(null,false,[]);
+			}
+		},
+		function update_tocancel(stat,orderid_cancel,cb){
+			if(stat == true){
+				updating_tocancel(orderid_cancel,function(li){
+					if(li == true){
+						cb(null,true);
+					}else{
+						cb(null,false);
+					}
+				})
+			}else{
+				cb(null,false);
+			}
+		},
+		
+	],function(err,stat){
+		next(stat);
+	})
+	
+}
+
+function updating_tocancel(orderid_cancel,next){
+	async.waterfall([
+		function getall_order(cb){
+			var cond = {
+				order_id:{$in:orderid_cancel}
+			}
+			order_coll.find(cond).toArray(function(err,r){
+				if(err){
+					debug.log('error line 517 commerce notif');
+					debug.log(err);
+				}else{
+					cb(null,true,r);
+				}
+			})
+		},
+		function updating(stat,dtorder,cb){
+			if(stat == true){
+				var ticket_id = '';
+				async.forEachOf(dtorder,function(v,k,e){
+					order_coll.update({_id:new ObjectId(v._id)},{
+						$set:{
+							order_status:'cancel',
+							payment_status:'void'
+						}
+					},function(err,upd){
+						if(!err){
+							ticket_id = v.product_list[0].ticket_id;
+							var cond2 = {
+								_id:new ObjectId(ticket_id),
+								"qty_hold.order_id":v.order_id
+							}
+							tickettypes_coll.findOne(cond2,function(err,r){
+								if(!err && r != null){
+									var qty_hold = 0;
+									async.forEachOf(r.qty_hold,function(ve,ke,ee){
+										if(ve.order_id == v.order_id){
+											qty_hold = ve.qty;
+										}
+									})
+									var new_qty = parseInt(r.quantity) + parseInt(qty_hold);
+									debug.log('order_id : '+v.order_id);
+									debug.log('qtyhold : '+qty_hold);
+									debug.log('old qty : '+r.quantity);
+									debug.log('new qty : '+new_qty);
+									var form_upd = {
+										$set:{quantity:new_qty},
+										$pull:{qty_hold:{order_id:v.order_id}}
+									}
+									tickettypes_coll.update(cond2,form_upd,function(err2,upd){
+										if(err2){
+											debug.log(err);
+										}
+									})	
+								}
+							})
+						}
+					})
+				})
+				cb(null,true);
+			}else{
+				cb(null,false);
+			}
+		}
+	],function(err,stat){
+		next(stat);
+	})
+	
 }

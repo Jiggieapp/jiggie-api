@@ -127,15 +127,15 @@ exports.post_cc = function(req,res){
 
 exports.delete_cc = function(req,res){
 	var fb_id = req.body.fb_id;
-	var card_id = req.body.card_id;
+	var masked_card = req.body.masked_card;
 	
 	customers_coll.update(
 	{
 		fb_id:fb_id,
-		"cc_info.card_id":card_id
+		"cc_info.masked_card":masked_card
 	},{
 		$pull:{
-			cc_info:{card_id:card_id}
+			cc_info:{masked_card:masked_card}
 		}
 	},function(err,upd){
 		if(err){
