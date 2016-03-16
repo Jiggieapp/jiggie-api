@@ -195,9 +195,9 @@ function get_summary(req,next){
 						cb(null,{code_error:403})
 					}else{
 						if(r.last_cc == null){
-							dt.credit_card = {};
+							dt.last_payment = {};
 						}else{
-							dt.credit_card = r.last_cc
+							dt.last_payment = r.last_cc
 						}
 						cb(null,dt);
 					}
@@ -302,7 +302,7 @@ function post_summary(req,next){
 					if(typeof v.payment_timelimit == 'undefined'){
 						json_data.product_list[n].payment_timelimit = 180;
 					}else{
-						json_data.product_list[n].payment_timelimit = v.payment_timelimit;
+						json_data.product_list[n].payment_timelimit = String(v.payment_timelimit);
 					}
 					
 					
