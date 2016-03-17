@@ -570,7 +570,8 @@ function updsocialfeed_async(guests_viewed,fb_id,next){
 									$set:{
 										"users.$.last_viewed":new Date(),
 										"users.$.event_id":guests_viewed[0].event_id,
-										"users.$.event_name":guests_viewed[0].event_name
+										"users.$.event_name":guests_viewed[0].event_name,
+										"users.$.points":v.points
 									}
 								}
 								socialfeed_coll.update(cond2,form2,function(err,upd){
@@ -591,6 +592,7 @@ function updsocialfeed_async(guests_viewed,fb_id,next){
 								json_data.last_viewed = new Date();
 								json_data.event_id = guests_viewed[0].event_id;
 								json_data.event_name = guests_viewed[0].event_name;
+								json_data.points = v.points;
 								json_data.didMatch = false;
 								json_data.from_state = "viewed";
 								json_data.to_state = "viewed";

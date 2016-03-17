@@ -6,6 +6,10 @@ var ObjectId = require('mongodb').ObjectID;
 var request = require('request');
 var cron = require('cron').CronJob;
 
+var redis   = require("redis");
+var rclient  = redis.createClient(6379,"jiggieappsredis.futsnq.0001.apse1.cache.amazonaws.com");
+
+
 /*
 Cron Jobs
 1. new_event => Push to Everyone latest 7 days events,
@@ -406,9 +410,9 @@ function flush_socfed(req,next){
 									tot_yes :tot_yes,
 									tot_no:tot_no,
 									uv:uv,
-									maturity:maturity,
-									points:points
-								}
+									maturity:maturity
+								},
+								points:points
 							}
 						},function(err,upd){})
 					})
