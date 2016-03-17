@@ -6,6 +6,7 @@ var ObjectId = require('mongodb').ObjectID;
 var request = require('request');
 var cron = require('cron').CronJob;
 
+
 /*
 Cron Jobs
 1. new_event => Push to Everyone latest 7 days events,
@@ -90,7 +91,21 @@ function start_jobs(req,next){
 				  timeZone: 'Asia/Jakarta'
 				});
 				job.start();
+			}else if(v.type == 'event'){
+				var job = new cron({
+				  cronTime: v.schedule,
+				  onTick: function() {
+					eventdetails_startnotif(req,function(dt){
+						debug.log('START EVENT NOTIF');
+						debug.log(dt);
+					})
+				  },
+				  start: true,
+				  timeZone: 'Asia/Jakarta'
+				});
+				job.start();
 			}
+			
 		})
 		next();
 	})
@@ -368,25 +383,86 @@ function push_expire(req,next){
 
 /*Start : Flush Social Feed Data*/
 function flush_socfed(req,next){
-	var form_upd = {
-		$pull:{
-			users:{
-				$or:[
-					{from_state:'viewed',to_state:'viewed'},
-					{from_state:'approved',to_state:'viewed'},
-					{from_state:'viewed',to_state:'approved'}
-				]
+	async.waterfall([
+		function algorithm_points(cb){
+			socialfeed_coll.find({}).toArray(function(err,r){
+				if(err){
+					debug.log(err);
+					cb(null,false)
+				}else{
+					async.forEachOf(r,function(v,k,e){
+						var tot_yes = 0;
+						var tot_no = 0;
+						var uv = 0;
+						var maturity = 0;
+						var treshold_maturity = 20;
+						var points = 0;
+						async.forEachOf(v.users,function(ve,ke,ee){
+							if(ve.to_state == 'approved'){
+								tot_yes++;
+							}
+							if(ve.to_state == 'denied'){
+								tot_no++;
+							}
+						})
+						uv = parseInt(v.users.length) - (parseInt(tot_yes) + parseInt(tot_no));
+						
+						if(uv < treshold_maturity){
+							maturity = parseFloat(uv)/parseFloat(treshold_maturity);
+						}else if(uv >= treshold_maturity){
+							maturity = 1;
+						}
+						
+						// social algoritm
+						var alpha = parseFloat(tot_yes)/(parseFloat(tot_yes)+parseFloat(tot_no));
+						if(String(alpha) == 'NaN'){alpha = 0;}
+						points = (alpha)*parseFloat(maturity);
+						if(String(points) == 'NaN'){points = 0;}
+						
+						socialfeed_coll.update({fb_id:v.fb_id},{
+							$set:{
+								points_data:{
+									tot_yes :String(tot_yes),
+									tot_no:String(tot_no),
+									uv:String(uv),
+									maturity:String(maturity)
+								},
+								points:String(points)
+							}
+						},function(err,upd){})
+					})
+					cb(null,true);
+				}
+			})
+		},
+		function flushing(stat,cb){
+			if(stat == true){
+				var form_upd = {
+					$pull:{
+						users:{
+							$or:[
+								{from_state:'viewed',to_state:'viewed'},
+								{from_state:'approved',to_state:'viewed'},
+								{from_state:'viewed',to_state:'approved'}
+							]
+						}
+					}
+				}
+				
+				socialfeed_coll.update({},form_upd,{multi:true},function(err,upd){
+					if(err){
+						debug.log(err);
+						cb(null,false);
+					}else{
+						cb(null,true);
+					}
+				})
+			}else{
+				cb(null,false)
 			}
 		}
-	}
-	
-	socialfeed_coll.update({},form_upd,{multi:true},function(err,upd){
-		if(err){
-			debug.log(err);
-			next(false);
-		}else{
-			next(true);
-		}
+	],function(err,data){
+		next(data);
 	})
 }
 /*End : Flush Social Feed Data*/
@@ -406,3 +482,50 @@ function commerce_startnotif(req,next){
 	})
 }
 /*End : commerce*/
+
+/*Start: event_details*/
+function eventdetails_startnotif(req,next){
+	async.waterfall([
+		function get_autonotif(cb){
+			autonotif_coll.findOne({type:'event'},function(err,r){
+				if(err){
+					debug.log('data event empty');
+					cb(null,false,[])
+				}else{
+					cb(null,true,r)
+				}
+			});
+		},
+		function push_notif(stat,rows,cb){
+			if(stat == true){
+				var msg = rows.text;
+				var event_id = rows.event_id;
+				if(typeof msg != 'undefined' && msg != null && msg != '' && typeof event_id != 'undefined' && event_id != null && event_id != ''){
+					var options = {
+						url:'http://127.0.0.1:16523/apn_all',
+						form:{
+							message:msg,
+							type:'event',
+							event_id:event_id
+						}
+					}
+					request.post(options,function(err,resp,body){
+						if (!err && resp.statusCode == 200) {
+							cb2(null,true)
+						}else{
+							debug.log('Failed Push Notif');
+							cb2(null,false);
+						}
+					})
+				}else{
+					cb(null,false)
+				}
+			}else{
+				cb(null,false);
+			}
+		}
+	],function(err,data){
+		next(data);
+	})
+}
+/*End: event_details*/

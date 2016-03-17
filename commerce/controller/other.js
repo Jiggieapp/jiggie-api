@@ -129,26 +129,46 @@ exports.delete_cc = function(req,res){
 	var fb_id = req.body.fb_id;
 	var masked_card = req.body.masked_card;
 	
-	customers_coll.update(
-	{
-		fb_id:fb_id,
-		"cc_info.masked_card":masked_card
-	},{
-		$pull:{
-			cc_info:{masked_card:masked_card}
-		}
-	},function(err,upd){
-		if(err){
-			res.json({code_error:403})
-		}else{
-			debug.log(upd);
-			if(upd){
-				res.json({success:true});
+	async.waterfall([
+		function upd_ccinfo(cb){
+			customers_coll.update(
+			{
+				fb_id:fb_id,
+				"cc_info.masked_card":masked_card
+			},{
+				$pull:{
+					cc_info:{masked_card:masked_card}
+				}
+			},function(err,upd){
+				if(err){
+					cb(null,false);
+				}else{
+					if(upd){
+						cb(null,true);
+						// res.json({success:true});
+					}else{
+						cb(null,false);
+						// res.json({code_error:403})
+					}
+				}
+			})
+		},
+		function pull_lastpayment(stat,cb){
+			if(stat == true){
+				customers_coll.findOne({fb_id:fb_id},function(err,r){
+					if(r.last_cc != null && typeof r.last_cc != 'undefined'){
+						if(r.last_cc.masked_card == masked_card){
+							customers_coll.update({fb_id:fb_id},{$set:{last_cc:{}}},function(){})
+						}
+					}
+					cb(null,true);
+				})
 			}else{
-				res.json({code_error:403})
+				cb(null,false);
 			}
-			
 		}
+	],function(err,data){
+		next(data);
 	})
 }
 
@@ -305,9 +325,8 @@ function get_success_screen(req,next){
 					}else if(rorder.vt_response.payment_type == 'credit_card'){
 						type = 'cc';
 					}
-					template_success_screen(req,rorder,revent,type,function(template){
-						cb(null,true,template);
-					})
+					var template = template_success_screen(req,rorder,revent,type,'success');
+					cb(null,true,template);
 				}
 			}else{
 				debug.log('error line 195 other commerce');
@@ -328,22 +347,35 @@ function get_success_screen(req,next){
 	})
 }
 
-function template_success_screen(req,rorder,revent,type,next){
+exports.walkthrough_payment = function(req,res){
+	var va_step = template_success_screen(req,[],'','va_pending','walkthrough_payment');
+	var bp_step = template_success_screen(req,[],'','bp_pending','walkthrough_payment');
 	var json_data = new Object();
-	json_data.order_id = rorder.order_id;
-	json_data.order_number = rorder.code;
-	json_data.order_status = rorder.order_status;
-	json_data.payment_status = rorder.payment_status;
+	json_data.va_step = va_step;
+	json_data.bp_step = bp_step;
+	res.json(json_data);
+}
+
+function template_success_screen(req,rorder,revent,type,stat){
+	var json_data = new Object();
+	if(stat == 'success'){
+		json_data.order_id = rorder.order_id;
+		json_data.order_number = rorder.code;
+		json_data.order_status = rorder.order_status;
+		json_data.payment_status = rorder.payment_status;
+	}
 	json_data.type = type;
 	
 	if(type == 'va_pending'){
-		json_data.payment_timelimit = rorder.payment_timelimit;
-		json_data.created_at = rorder.created_at;
-		json_data.timelimit = req.app.get('helpers').addHours(new Date(rorder.created_at).getTime(),rorder.payment_timelimit);
-		
-		json_data.amount = rorder.total_price;
-		
-		json_data.virtual_number = rorder.vt_response.permata_va_number;
+		if(stat == 'success'){
+			json_data.payment_timelimit = rorder.product_list[0].payment_timelimit;
+			json_data.created_at = rorder.created_at;
+			json_data.timelimit = req.app.get('helpers').addHours(new Date(rorder.created_at).getTime(),rorder.product_list[0].payment_timelimit);
+			
+			json_data.amount = rorder.total_price;
+			
+			json_data.virtual_number = rorder.vt_response.permata_va_number;
+		}
 		
 		json_data.step_payment = new Object();
 		json_data.step_payment.bca = new Object();
@@ -354,7 +386,11 @@ function template_success_screen(req,rorder,revent,type,next){
 		json_data.step_payment.bca.step[2] = 'Pilih Ke Rek Bank Lain.';
 		json_data.step_payment.bca.step[3] = 'Masukkan kode 013 untuk Bank Permata lalu tekan Benar.';
 		json_data.step_payment.bca.step[4] = 'Masukkan jumlah tagihan yang akan Anda bayar secara lengkap. Pembayaran dengan jumlah yang tidak sesuai akan otomatis ditolak.';
-		json_data.step_payment.bca.step[5] = 'Masukkan '+rorder.vt_response.permata_va_number+' (16 digit no. virtual account pembayaran) lalu tekan Benar.';
+		if(stat == 'success'){
+			json_data.step_payment.bca.step[5] = 'Masukkan '+rorder.vt_response.permata_va_number+' (16 digit no. virtual account pembayaran) lalu tekan Benar.';
+		}else{
+			json_data.step_payment.bca.step[5] = 'Masukkan (16 digit no. virtual account pembayaran) lalu tekan Benar.';
+		}
 		json_data.step_payment.bca.step[6] = 'Pada halaman konfirmasi transfer akan muncul jumlah yang dibayarkan & nomor rekening tujuan. Jika informasinya telah sesuai tekan Benar.';
 		
 		json_data.step_payment.mandiri = new Object();
@@ -363,7 +399,11 @@ function template_success_screen(req,rorder,revent,type,next){
 		json_data.step_payment.mandiri.step[0] = 'Pada Menu utama, pilih Transaksi Lainnya.';
 		json_data.step_payment.mandiri.step[1] = 'Pilih Transfer.';
 		json_data.step_payment.mandiri.step[2] = 'Pilih Antar Bank Online.';
-		json_data.step_payment.mandiri.step[3] = 'Masukkan nomor 013 '+rorder.vt_response.permata_va_number+' (kode 013 dan 16 digit Virtual account).';
+		if(stat == 'success'){
+			json_data.step_payment.mandiri.step[3] = 'Masukkan nomor 013 '+rorder.vt_response.permata_va_number+' (kode 013 dan 16 digit Virtual account).';
+		}else{
+			json_data.step_payment.mandiri.step[3] = 'Masukkan nomor 013 (kode 013 dan 16 digit Virtual account).';
+		}
 		json_data.step_payment.mandiri.step[4] = 'Masukkan jumlah tagihan yang akan Anda bayar secara lengkap. Pembayaran dengan jumlah yang tidak sesuai akan otomatis ditolak.';
 		json_data.step_payment.mandiri.step[5] = 'Pada halaman konfirmasi transfer akan muncul jumlah yang dibayarkan & nomor rekening tujuan. Jika informasinya telah sesuai tekan Benar.';
 		
@@ -374,21 +414,26 @@ function template_success_screen(req,rorder,revent,type,next){
 		json_data.step_payment.permata.step[1] = 'Pilih Transaksi Pembayaran.';
 		json_data.step_payment.permata.step[2] = 'Pilih Lain-lain.';
 		json_data.step_payment.permata.step[3] = 'Pilih Pembayaran Virtual Account.';
-		json_data.step_payment.permata.step[4] = 'Masukkan 16 digit no. Virtual Account '+rorder.vt_response.permata_va_number;
+		if(stat == 'success'){
+			json_data.step_payment.permata.step[4] = 'Masukkan 16 digit no. Virtual Account '+rorder.vt_response.permata_va_number;
+		}else{
+			json_data.step_payment.permata.step[4] = 'Masukkan 16 digit no. Virtual Account ';
+		}
 		json_data.step_payment.permata.step[5] = 'Di halaman konfirmasi akan muncul no. virtual account dan jumlah tagihan, lalu tekan Benar.';
 		json_data.step_payment.permata.step[6] = 'Pilih rekening pembayaran Anda dan tekan Benar.';
 	}else if(type == 'va_success'){
 		json_data.event = revent;
 		json_data.summary = rorder;
 	}else if(type == 'bp_pending'){
-		json_data.payment_timelimit = rorder.payment_timelimit;
-		json_data.created_at = rorder.created_at;
-		json_data.timelimit = req.app.get('helpers').addHours(new Date(rorder.created_at).getTime(),rorder.payment_timelimit);
-		
-		json_data.amount = rorder.total_price;
-		
-		json_data.bill_key = rorder.vt_response.bill_key;
-		
+		if(stat == 'success'){
+			json_data.payment_timelimit = rorder.product_list[0].payment_timelimit;
+			json_data.created_at = rorder.created_at;
+			json_data.timelimit = req.app.get('helpers').addHours(new Date(rorder.created_at).getTime(),rorder.product_list[0].payment_timelimit);
+			
+			json_data.amount = rorder.total_price;
+			
+			json_data.bill_key = rorder.vt_response.bill_key;
+		}
 		json_data.step_payment = new Object();
 		json_data.step_payment.atm_mandiri = new Object();
 		json_data.step_payment.atm_mandiri.header = 'Pembayaran melalui ATM Mandiri:';
@@ -396,7 +441,11 @@ function template_success_screen(req,rorder,revent,type,next){
 		json_data.step_payment.atm_mandiri.step[0] = 'Masukan PIN anda.';
 		json_data.step_payment.atm_mandiri.step[1] = 'Pada menu utama pilih menu Pembayaran kemudian pilih menu Multi Payment.';
 		json_data.step_payment.atm_mandiri.step[2] = 'Masukan Kode Perusahaan, dalam hal ini adalah 70012 kemudian tekan tombol Benar.';
-		json_data.step_payment.atm_mandiri.step[3] = 'Masukan Kode Pembayaran anda, dalam hal ini adalah '+rorder.vt_response.bill_key+' kemudian anda akan mendapatkan detail pembayaran anda.';
+		if(stat == 'success'){
+			json_data.step_payment.atm_mandiri.step[3] = 'Masukan Kode Pembayaran anda, dalam hal ini adalah '+rorder.vt_response.bill_key+' kemudian anda akan mendapatkan detail pembayaran anda.';
+		}else{
+			json_data.step_payment.atm_mandiri.step[3] = 'Masukan Kode Pembayaran anda, dalam hal ini adalah (number bill key) kemudian anda akan mendapatkan detail pembayaran anda.';
+		}
 		json_data.step_payment.atm_mandiri.step[4] = 'Konfirmasi pembayaran anda.';
 		
 		json_data.step_payment.online_mandiri = new Object();
@@ -405,7 +454,11 @@ function template_success_screen(req,rorder,revent,type,next){
 		json_data.step_payment.online_mandiri.step[0] = 'Login ke Internet Banking Mandiri (https://ib.bankmandiri.co.id/) (https://ib.bankmandiri.co.id/).';
 		json_data.step_payment.online_mandiri.step[1] = 'Di Menu Utama silakan pilih Bayar kemudian pilih Multi Payment.';
 		json_data.step_payment.online_mandiri.step[2] = 'Pilih akun anda di Dari Rekening, kemudian di Penyedia Jasa pilih Veritrans.';
-		json_data.step_payment.online_mandiri.step[3] = 'Masukkan Kode Pembayaran anda, dalam hal ini adalah '+rorder.vt_response.bill_key+' dan klik Lanjutkan.';
+		if(stat == 'success'){
+			json_data.step_payment.online_mandiri.step[3] = 'Masukkan Kode Pembayaran anda, dalam hal ini adalah '+rorder.vt_response.bill_key+' dan klik Lanjutkan.';
+		}else{
+			json_data.step_payment.online_mandiri.step[3] = 'Masukkan Kode Pembayaran anda, dalam hal ini adalah (number bill key) dan klik Lanjutkan.';
+		}
 		json_data.step_payment.online_mandiri.step[4] = 'Konfirmasi pembayaran anda menggunakan Mandiri Token.';
 		
 	}else if(type == 'bp_success'){
@@ -415,5 +468,5 @@ function template_success_screen(req,rorder,revent,type,next){
 		json_data.event = revent;
 		json_data.summary = rorder;
 	}
-	next(json_data);
+	return json_data;
 }

@@ -550,69 +550,72 @@ function updsocialfeed_async(guests_viewed,fb_id,next){
 					fb_id:{$in:in_fb_id},
 					// "users.fb_id":{$ne:fb_id}
 				}
-				socialfeed_coll.find(cond).toArray(function(err,rows){
-					if(rows.length > 0){
-						async.forEachOf(rows,function(v,k,e){
-							
-							var cek_exist = 0;
-							async.forEachOf(v.users,function(ve,ke,ee){
-								if(ve.fb_id == fb_id){
-									cek_exist = 1;
-								}
-							})
-							
-							if(cek_exist == 1){
-								var cond2 = {
-									_id:new ObjectId(v._id),
-									"users.fb_id":fb_id
-								}
-								var form2 = {
-									$set:{
-										"users.$.last_viewed":new Date(),
-										"users.$.event_id":guests_viewed[0].event_id,
-										"users.$.event_name":guests_viewed[0].event_name
-									}
-								}
-								socialfeed_coll.update(cond2,form2,function(err,upd){
-									if(err){
-										debug.log("Err Code:312");
-										debug.log(err);
-									}
-								})
-								// debug.log("update aja");
-							
-							
-							}else if(cek_exist == 0){
-							
-							
-								json_data.fb_id = usersdt.fb_id;
-								json_data.first_name = usersdt.first_name;
-								json_data.gender = usersdt.gender;
-								json_data.last_viewed = new Date();
-								json_data.event_id = guests_viewed[0].event_id;
-								json_data.event_name = guests_viewed[0].event_name;
-								json_data.didMatch = false;
-								json_data.from_state = "viewed";
-								json_data.to_state = "viewed";
+				socialfeed_coll.findOne({fb_id:fb_id},function(err,rownsoc){
+					socialfeed_coll.find(cond).toArray(function(err,rows){
+						if(rows.length > 0){
+							async.forEachOf(rows,function(v,k,e){
 								
-								socialfeed_coll.update({_id:new ObjectId(v._id)},{$push:{users:json_data}},function(err,upd){
-									if(err){
-										debug.log("Err code:111231231");
-										debug.log(err);
+								var cek_exist = 0;
+								async.forEachOf(v.users,function(ve,ke,ee){
+									if(ve.fb_id == fb_id){
+										cek_exist = 1;
 									}
 								})
-								// debug.log("push baru");
+								
+								if(cek_exist == 1){
+									var cond2 = {
+										_id:new ObjectId(v._id),
+										"users.fb_id":fb_id
+									}
+									var form2 = {
+										$set:{
+											"users.$.last_viewed":new Date(),
+											"users.$.event_id":guests_viewed[0].event_id,
+											"users.$.event_name":guests_viewed[0].event_name,
+											"users.$.points":String(rownsoc.points)
+										}
+									}
+									socialfeed_coll.update(cond2,form2,function(err,upd){
+										if(err){
+											debug.log("Err Code:312");
+											debug.log(err);
+										}
+									})
+									// debug.log("update aja");
+								
+								
+								}else if(cek_exist == 0){
+								
+								
+									json_data.fb_id = usersdt.fb_id;
+									json_data.first_name = usersdt.first_name;
+									json_data.gender = usersdt.gender;
+									json_data.last_viewed = new Date();
+									json_data.event_id = guests_viewed[0].event_id;
+									json_data.event_name = guests_viewed[0].event_name;
+									json_data.points = String(rownsoc.points);
+									json_data.didMatch = false;
+									json_data.from_state = "viewed";
+									json_data.to_state = "viewed";
+									
+									socialfeed_coll.update({_id:new ObjectId(v._id)},{$push:{users:json_data}},function(err,upd){
+										if(err){
+											debug.log("Err code:111231231");
+											debug.log(err);
+										}
+									})
+									// debug.log("push baru");
 
-							}
-							
-						});
-						cb(null,"New Data Others Just Added");
-					}else{
-						cb(null,"No Data Others Can Be Added");
-					}
-					
-				});
-			
+								}
+								
+							});
+							cb(null,"New Data Others Just Added");
+						}else{
+							cb(null,"No Data Others Can Be Added");
+						}
+						
+					});
+				})
 			})
 			
 		},
@@ -624,6 +627,7 @@ function updsocialfeed_async(guests_viewed,fb_id,next){
 					json_data.created_at = new Date();
 					
 					json_data.users = [];
+					json_data.points = 0;
 					
 					var n = 0;
 					async.forEachOf(guests_viewed,function(v,k,e){

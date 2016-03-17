@@ -19,4 +19,5 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.post('/delete_cc',other.delete_cc);
   app.get('/order_list/:fb_id',other.order_list);
   app.get('/success_screen/:order_id',other.success_screen);
+  app.get('/walkthrough_payment',other.walkthrough_payment);
 }
