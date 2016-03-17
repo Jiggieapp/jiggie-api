@@ -52,6 +52,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/notif_handle',commerce.notifications_handler);
   app.get('/app/v3/product/order_list/:fb_id',commerce.order_list);
   app.get('/app/v3/product/success_screen/:order_id',commerce.success_screen);
+  app.get('/app/v3/product/walkthrough_payment',commerce.walkthrough_payment);
   
   var xmpp = require(path_controller+'xmpp');
   app.get('/xmpp/:user',xmpp.index);

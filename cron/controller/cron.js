@@ -6,9 +6,6 @@ var ObjectId = require('mongodb').ObjectID;
 var request = require('request');
 var cron = require('cron').CronJob;
 
-var redis   = require("redis");
-var rclient  = redis.createClient(6379,"jiggieappsredis.futsnq.0001.apse1.cache.amazonaws.com");
-
 
 /*
 Cron Jobs
@@ -94,7 +91,21 @@ function start_jobs(req,next){
 				  timeZone: 'Asia/Jakarta'
 				});
 				job.start();
+			}else if(v.type == 'event'){
+				var job = new cron({
+				  cronTime: v.schedule,
+				  onTick: function() {
+					eventdetails_startnotif(req,function(dt){
+						debug.log('START EVENT NOTIF');
+						debug.log(dt);
+					})
+				  },
+				  start: true,
+				  timeZone: 'Asia/Jakarta'
+				});
+				job.start();
 			}
+			
 		})
 		next();
 	})
@@ -379,21 +390,22 @@ function flush_socfed(req,next){
 					debug.log(err);
 					cb(null,false)
 				}else{
-					var tot_yes = 0;
-					var tot_no = 0;
-					var uv = 0;
-					var maturity = 0;
-					var treshold_maturity = 20;
-					var points = 0;
 					async.forEachOf(r,function(v,k,e){
+						var tot_yes = 0;
+						var tot_no = 0;
+						var uv = 0;
+						var maturity = 0;
+						var treshold_maturity = 20;
+						var points = 0;
 						async.forEachOf(v.users,function(ve,ke,ee){
-							if(ve.to_state == 'approve'){
+							if(ve.to_state == 'approved'){
 								tot_yes++;
-							}else if(ve.to_state == 'denied'){
+							}
+							if(ve.to_state == 'denied'){
 								tot_no++;
 							}
 						})
-						uv = parseInt(v.users.length) - (parseInt(tot_yes) + tot_yes(tot_no));
+						uv = parseInt(v.users.length) - (parseInt(tot_yes) + parseInt(tot_no));
 						
 						if(uv < treshold_maturity){
 							maturity = parseFloat(uv)/parseFloat(treshold_maturity);
@@ -402,17 +414,20 @@ function flush_socfed(req,next){
 						}
 						
 						// social algoritm
-						points = (parseFloat(tot_yes)/(parseFloat(tot_yes)+parseFloat(tot_no)))*parseFloat(maturity);
+						var alpha = parseFloat(tot_yes)/(parseFloat(tot_yes)+parseFloat(tot_no));
+						if(String(alpha) == 'NaN'){alpha = 0;}
+						points = (alpha)*parseFloat(maturity);
+						if(String(points) == 'NaN'){points = 0;}
 						
-						social_feed.update({fb_id:v.fb_id},{
+						socialfeed_coll.update({fb_id:v.fb_id},{
 							$set:{
 								points_data:{
-									tot_yes :tot_yes,
-									tot_no:tot_no,
-									uv:uv,
-									maturity:maturity
+									tot_yes :String(tot_yes),
+									tot_no:String(tot_no),
+									uv:String(uv),
+									maturity:String(maturity)
 								},
-								points:points
+								points:String(points)
 							}
 						},function(err,upd){})
 					})
@@ -467,3 +482,50 @@ function commerce_startnotif(req,next){
 	})
 }
 /*End : commerce*/
+
+/*Start: event_details*/
+function eventdetails_startnotif(req,next){
+	async.waterfall([
+		function get_autonotif(cb){
+			autonotif_coll.findOne({type:'event'},function(err,r){
+				if(err){
+					debug.log('data event empty');
+					cb(null,false,[])
+				}else{
+					cb(null,true,r)
+				}
+			});
+		},
+		function push_notif(stat,rows,cb){
+			if(stat == true){
+				var msg = rows.text;
+				var event_id = rows.event_id;
+				if(typeof msg != 'undefined' && msg != null && msg != '' && typeof event_id != 'undefined' && event_id != null && event_id != ''){
+					var options = {
+						url:'http://127.0.0.1:16523/apn_all',
+						form:{
+							message:msg,
+							type:'event',
+							event_id:event_id
+						}
+					}
+					request.post(options,function(err,resp,body){
+						if (!err && resp.statusCode == 200) {
+							cb2(null,true)
+						}else{
+							debug.log('Failed Push Notif');
+							cb2(null,false);
+						}
+					})
+				}else{
+					cb(null,false)
+				}
+			}else{
+				cb(null,false);
+			}
+		}
+	],function(err,data){
+		next(data);
+	})
+}
+/*End: event_details*/

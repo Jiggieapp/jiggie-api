@@ -120,6 +120,7 @@ function get_data(req,fb_id,gender_interest,next){
 												json_data[n].type = "viewed";
 												json_data[n].type_rank = 1;
 											}
+											json_data[n].points = v.points;
 											json_data[n].last_updated = v.last_viewed;
 											n++;
 										}else if(gender_interest == 'male'){
@@ -138,7 +139,7 @@ function get_data(req,fb_id,gender_interest,next){
 													json_data[n].type = "viewed";
 													json_data[n].type_rank = 1;
 												}
-												
+												json_data[n].points = v.points;
 												json_data[n].last_updated = v.last_viewed;
 												n++;
 											}
@@ -158,7 +159,7 @@ function get_data(req,fb_id,gender_interest,next){
 													json_data[n].type = "viewed";
 													json_data[n].type_rank = 1;
 												}
-												
+												json_data[n].points = v.points;
 												json_data[n].last_updated = v.last_viewed;
 												n++;
 											}
@@ -206,6 +207,9 @@ function get_data(req,fb_id,gender_interest,next){
 var sortDate = function (a, b){
 	if(a.type_rank < b.type_rank) return 1;
 	if(a.type_rank > b.type_rank) return -1;
+	
+	if(a.points < b.points) return 1;
+	if(a.points > b.points) return -1;
 	
 	
 	if(a.last_updated == undefined)
