@@ -368,25 +368,82 @@ function push_expire(req,next){
 
 /*Start : Flush Social Feed Data*/
 function flush_socfed(req,next){
-	var form_upd = {
-		$pull:{
-			users:{
-				$or:[
-					{from_state:'viewed',to_state:'viewed'},
-					{from_state:'approved',to_state:'viewed'},
-					{from_state:'viewed',to_state:'approved'}
-				]
+	async.waterfall([
+		function algorithm_points(cb){
+			socialfeed_coll.find({}).toArray(function(err,r){
+				if(err){
+					debug.log(err);
+					cb(null,false)
+				}else{
+					var tot_yes = 0;
+					var tot_no = 0;
+					var uv = 0;
+					var maturity = 0;
+					var treshold_maturity = 20;
+					var points = 0;
+					async.forEachOf(r,function(v,k,e){
+						async.forEachOf(v.users,function(ve,ke,ee){
+							if(ve.to_state == 'approve'){
+								tot_yes++;
+							}else if(ve.to_state == 'denied'){
+								tot_no++;
+							}
+						})
+						uv = parseInt(v.users.length) - (parseInt(tot_yes) + tot_yes(tot_no));
+						
+						if(uv < treshold_maturity){
+							maturity = parseFloat(uv)/parseFloat(treshold_maturity);
+						}else if(uv >= treshold_maturity){
+							maturity = 1;
+						}
+						
+						// social algoritm
+						points = (parseFloat(tot_yes)/(parseFloat(tot_yes)+parseFloat(tot_no)))*parseFloat(maturity);
+						
+						social_feed.update({fb_id:v.fb_id},{
+							$set:{
+								points_data:{
+									tot_yes :tot_yes,
+									tot_no:tot_no,
+									uv:uv,
+									maturity:maturity,
+									points:points
+								}
+							}
+						},function(err,upd){})
+					})
+					cb(null,true);
+				}
+			})
+		},
+		function flushing(stat,cb){
+			if(stat == true){
+				var form_upd = {
+					$pull:{
+						users:{
+							$or:[
+								{from_state:'viewed',to_state:'viewed'},
+								{from_state:'approved',to_state:'viewed'},
+								{from_state:'viewed',to_state:'approved'}
+							]
+						}
+					}
+				}
+				
+				socialfeed_coll.update({},form_upd,{multi:true},function(err,upd){
+					if(err){
+						debug.log(err);
+						cb(null,false);
+					}else{
+						cb(null,true);
+					}
+				})
+			}else{
+				cb(null,false)
 			}
 		}
-	}
-	
-	socialfeed_coll.update({},form_upd,{multi:true},function(err,upd){
-		if(err){
-			debug.log(err);
-			next(false);
-		}else{
-			next(true);
-		}
+	],function(err,data){
+		next(data);
 	})
 }
 /*End : Flush Social Feed Data*/
