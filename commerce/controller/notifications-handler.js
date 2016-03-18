@@ -26,7 +26,7 @@ function handling(req,next){
 		// cron for handle notifications transaction has been paid
 		function handle_va_bp(cb){
 			var job = new cron({
-			  cronTime: '*/10 * * * * *',
+			  cronTime: '*/30 * * * * *',
 			  onTick: function() {
 				get_status(req,function(dt){
 					debug.log('listener va bp has been paid running');
@@ -42,7 +42,7 @@ function handling(req,next){
 		// cron for handle payment timelimit
 		function handle_payment_timelimit(cb){
 			var job = new cron({
-			  cronTime: '*/10 * * * * *',
+			  cronTime: '*/30 * * * * *',
 			  onTick: function() {
 				payment_timelimit(req,function(dt){
 					debug.log('listener payment timelimit running');
@@ -58,7 +58,7 @@ function handling(req,next){
 		// cron for handle cancel payment from VT
 		function handle_cancel_payment_fromVT(cb){
 			var job = new cron({
-			  cronTime: '*/10 * * * * *',
+			  cronTime: '*/30 * * * * *',
 			  onTick: function() {
 				sync_cancel(req,function(dt){
 					debug.log('listener handle_cancel_payment_fromVT running');
@@ -408,7 +408,7 @@ function send_mail(req,email_to,vt,next){
 			debug.log('error sending mail')
 			next(error);
 		}else{
-			debug.log(info.response)
+			debug.log('EMAIL SENT TO '+email_to+' '+info.response)
 			next(true);
 		}
 	});

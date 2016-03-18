@@ -366,7 +366,9 @@ function template_success_screen(req,rorder,revent,type,stat){
 	}
 	json_data.type = type;
 	
+	
 	if(type == 'va_pending'){
+		json_data.payment_type = 'va';
 		if(stat == 'success'){
 			json_data.payment_timelimit = rorder.product_list[0].payment_timelimit;
 			json_data.created_at = rorder.created_at;
@@ -374,57 +376,62 @@ function template_success_screen(req,rorder,revent,type,stat){
 			
 			json_data.amount = rorder.total_price;
 			
-			json_data.virtual_number = rorder.vt_response.permata_va_number;
+			json_data.transfer_to = rorder.vt_response.permata_va_number;
 		}
 		
-		json_data.step_payment = new Object();
-		json_data.step_payment.bca = new Object();
-		json_data.step_payment.bca.header = 'Cara Pembayaran lewat ATM BCA/Jaringan ATM PRIMA';
-		json_data.step_payment.bca.step = [];
-		json_data.step_payment.bca.step[0] = 'Pada Menu utama, Pilih Transaksi Lainnya.';
-		json_data.step_payment.bca.step[1] = 'Pilih Transfer.';
-		json_data.step_payment.bca.step[2] = 'Pilih Ke Rek Bank Lain.';
-		json_data.step_payment.bca.step[3] = 'Masukkan kode 013 untuk Bank Permata lalu tekan Benar.';
-		json_data.step_payment.bca.step[4] = 'Masukkan jumlah tagihan yang akan Anda bayar secara lengkap. Pembayaran dengan jumlah yang tidak sesuai akan otomatis ditolak.';
+		// bca //
+		json_data.step_payment = [];
+		json_data.step_payment[0] = new Object();
+		json_data.step_payment[0].header = 'Cara Pembayaran lewat ATM BCA/Jaringan ATM PRIMA';
+		json_data.step_payment[0].step = [];
+		json_data.step_payment[0].step[0] = 'Pada Menu utama, Pilih Transaksi Lainnya.';
+		json_data.step_payment[0].step[1] = 'Pilih Transfer.';
+		json_data.step_payment[0].step[2] = 'Pilih Ke Rek Bank Lain.';
+		json_data.step_payment[0].step[3] = 'Masukkan kode 013 untuk Bank Permata lalu tekan Benar.';
+		json_data.step_payment[0].step[4] = 'Masukkan jumlah tagihan yang akan Anda bayar secara lengkap. Pembayaran dengan jumlah yang tidak sesuai akan otomatis ditolak.';
 		if(stat == 'success'){
-			json_data.step_payment.bca.step[5] = 'Masukkan '+rorder.vt_response.permata_va_number+' (16 digit no. virtual account pembayaran) lalu tekan Benar.';
+			json_data.step_payment[0].step[5] = 'Masukkan '+rorder.vt_response.permata_va_number+' (16 digit no. virtual account pembayaran) lalu tekan Benar.';
 		}else{
-			json_data.step_payment.bca.step[5] = 'Masukkan (16 digit no. virtual account pembayaran) lalu tekan Benar.';
+			json_data.step_payment[0].step[5] = 'Masukkan (16 digit no. virtual account pembayaran) lalu tekan Benar.';
 		}
-		json_data.step_payment.bca.step[6] = 'Pada halaman konfirmasi transfer akan muncul jumlah yang dibayarkan & nomor rekening tujuan. Jika informasinya telah sesuai tekan Benar.';
+		json_data.step_payment[0].step[6] = 'Pada halaman konfirmasi transfer akan muncul jumlah yang dibayarkan & nomor rekening tujuan. Jika informasinya telah sesuai tekan Benar.';
 		
-		json_data.step_payment.mandiri = new Object();
-		json_data.step_payment.mandiri.header = 'Cara Pembayaran lewat ATM Mandiri/Jaringan ATM Bersama :';
-		json_data.step_payment.mandiri.step = [];
-		json_data.step_payment.mandiri.step[0] = 'Pada Menu utama, pilih Transaksi Lainnya.';
-		json_data.step_payment.mandiri.step[1] = 'Pilih Transfer.';
-		json_data.step_payment.mandiri.step[2] = 'Pilih Antar Bank Online.';
+		// mandiri //
+		json_data.step_payment[1] = new Object();
+		json_data.step_payment[1].header = 'Cara Pembayaran lewat ATM Mandiri/Jaringan ATM Bersama :';
+		json_data.step_payment[1].step = [];
+		json_data.step_payment[1].step[0] = 'Pada Menu utama, pilih Transaksi Lainnya.';
+		json_data.step_payment[1].step[1] = 'Pilih Transfer.';
+		json_data.step_payment[1].step[2] = 'Pilih Antar Bank Online.';
 		if(stat == 'success'){
-			json_data.step_payment.mandiri.step[3] = 'Masukkan nomor 013 '+rorder.vt_response.permata_va_number+' (kode 013 dan 16 digit Virtual account).';
+			json_data.step_payment[1].step[3] = 'Masukkan nomor 013 '+rorder.vt_response.permata_va_number+' (kode 013 dan 16 digit Virtual account).';
 		}else{
-			json_data.step_payment.mandiri.step[3] = 'Masukkan nomor 013 (kode 013 dan 16 digit Virtual account).';
+			json_data.step_payment[1].step[3] = 'Masukkan nomor 013 (kode 013 dan 16 digit Virtual account).';
 		}
-		json_data.step_payment.mandiri.step[4] = 'Masukkan jumlah tagihan yang akan Anda bayar secara lengkap. Pembayaran dengan jumlah yang tidak sesuai akan otomatis ditolak.';
-		json_data.step_payment.mandiri.step[5] = 'Pada halaman konfirmasi transfer akan muncul jumlah yang dibayarkan & nomor rekening tujuan. Jika informasinya telah sesuai tekan Benar.';
+		json_data.step_payment[1].step[4] = 'Masukkan jumlah tagihan yang akan Anda bayar secara lengkap. Pembayaran dengan jumlah yang tidak sesuai akan otomatis ditolak.';
+		json_data.step_payment[1].step[5] = 'Pada halaman konfirmasi transfer akan muncul jumlah yang dibayarkan & nomor rekening tujuan. Jika informasinya telah sesuai tekan Benar.';
 		
-		json_data.step_payment.permata = new Object();
-		json_data.step_payment.permata.header = 'Cara Pembayaran lewat ATM Bank Permata/ATM Alto :';
-		json_data.step_payment.permata.step = [];
-		json_data.step_payment.permata.step[0] = 'Pada Menu Utama, pilih Transaksi Lainnya.';
-		json_data.step_payment.permata.step[1] = 'Pilih Transaksi Pembayaran.';
-		json_data.step_payment.permata.step[2] = 'Pilih Lain-lain.';
-		json_data.step_payment.permata.step[3] = 'Pilih Pembayaran Virtual Account.';
+		// permata //
+		json_data.step_payment[2] = new Object();
+		json_data.step_payment[2].header = 'Cara Pembayaran lewat ATM Bank Permata/ATM Alto :';
+		json_data.step_payment[2].step = [];
+		json_data.step_payment[2].step[0] = 'Pada Menu Utama, pilih Transaksi Lainnya.';
+		json_data.step_payment[2].step[1] = 'Pilih Transaksi Pembayaran.';
+		json_data.step_payment[2].step[2] = 'Pilih Lain-lain.';
+		json_data.step_payment[2].step[3] = 'Pilih Pembayaran Virtual Account.';
 		if(stat == 'success'){
-			json_data.step_payment.permata.step[4] = 'Masukkan 16 digit no. Virtual Account '+rorder.vt_response.permata_va_number;
+			json_data.step_payment[2].step[4] = 'Masukkan 16 digit no. Virtual Account '+rorder.vt_response.permata_va_number;
 		}else{
-			json_data.step_payment.permata.step[4] = 'Masukkan 16 digit no. Virtual Account ';
+			json_data.step_payment[2].step[4] = 'Masukkan 16 digit no. Virtual Account ';
 		}
-		json_data.step_payment.permata.step[5] = 'Di halaman konfirmasi akan muncul no. virtual account dan jumlah tagihan, lalu tekan Benar.';
-		json_data.step_payment.permata.step[6] = 'Pilih rekening pembayaran Anda dan tekan Benar.';
+		json_data.step_payment[2].step[5] = 'Di halaman konfirmasi akan muncul no. virtual account dan jumlah tagihan, lalu tekan Benar.';
+		json_data.step_payment[2].step[6] = 'Pilih rekening pembayaran Anda dan tekan Benar.';
 	}else if(type == 'va_success'){
+		json_data.payment_type = 'va';
 		json_data.event = revent;
 		json_data.summary = rorder;
 	}else if(type == 'bp_pending'){
+		json_data.payment_type = 'bp';
 		if(stat == 'success'){
 			json_data.payment_timelimit = rorder.product_list[0].payment_timelimit;
 			json_data.created_at = rorder.created_at;
@@ -432,36 +439,42 @@ function template_success_screen(req,rorder,revent,type,stat){
 			
 			json_data.amount = rorder.total_price;
 			
-			json_data.bill_key = rorder.vt_response.bill_key;
+			json_data.transfer_to = rorder.vt_response.bill_key;
 		}
-		json_data.step_payment = new Object();
-		json_data.step_payment.atm_mandiri = new Object();
-		json_data.step_payment.atm_mandiri.header = 'Pembayaran melalui ATM Mandiri:';
-		json_data.step_payment.atm_mandiri.step = [];
-		json_data.step_payment.atm_mandiri.step[0] = 'Masukan PIN anda.';
-		json_data.step_payment.atm_mandiri.step[1] = 'Pada menu utama pilih menu Pembayaran kemudian pilih menu Multi Payment.';
-		json_data.step_payment.atm_mandiri.step[2] = 'Masukan Kode Perusahaan, dalam hal ini adalah 70012 kemudian tekan tombol Benar.';
-		if(stat == 'success'){
-			json_data.step_payment.atm_mandiri.step[3] = 'Masukan Kode Pembayaran anda, dalam hal ini adalah '+rorder.vt_response.bill_key+' kemudian anda akan mendapatkan detail pembayaran anda.';
-		}else{
-			json_data.step_payment.atm_mandiri.step[3] = 'Masukan Kode Pembayaran anda, dalam hal ini adalah (number bill key) kemudian anda akan mendapatkan detail pembayaran anda.';
-		}
-		json_data.step_payment.atm_mandiri.step[4] = 'Konfirmasi pembayaran anda.';
 		
-		json_data.step_payment.online_mandiri = new Object();
-		json_data.step_payment.online_mandiri.header = 'Cara membayar melalui Internet Banking Mandiri:';
-		json_data.step_payment.online_mandiri.step = [];
-		json_data.step_payment.online_mandiri.step[0] = 'Login ke Internet Banking Mandiri (https://ib.bankmandiri.co.id/) (https://ib.bankmandiri.co.id/).';
-		json_data.step_payment.online_mandiri.step[1] = 'Di Menu Utama silakan pilih Bayar kemudian pilih Multi Payment.';
-		json_data.step_payment.online_mandiri.step[2] = 'Pilih akun anda di Dari Rekening, kemudian di Penyedia Jasa pilih Veritrans.';
+		json_data.step_payment = [];
+		
+		// atm mandiri //
+		json_data.step_payment[0] = new Object();
+		json_data.step_payment[0].header = 'Pembayaran melalui ATM Mandiri:';
+		json_data.step_payment[0].step = [];
+		json_data.step_payment[0].step[0] = 'Masukan PIN anda.';
+		json_data.step_payment[0].step[1] = 'Pada menu utama pilih menu Pembayaran kemudian pilih menu Multi Payment.';
+		json_data.step_payment[0].step[2] = 'Masukan Kode Perusahaan, dalam hal ini adalah 70012 kemudian tekan tombol Benar.';
 		if(stat == 'success'){
-			json_data.step_payment.online_mandiri.step[3] = 'Masukkan Kode Pembayaran anda, dalam hal ini adalah '+rorder.vt_response.bill_key+' dan klik Lanjutkan.';
+			json_data.step_payment[0].step[3] = 'Masukan Kode Pembayaran anda, dalam hal ini adalah '+rorder.vt_response.bill_key+' kemudian anda akan mendapatkan detail pembayaran anda.';
 		}else{
-			json_data.step_payment.online_mandiri.step[3] = 'Masukkan Kode Pembayaran anda, dalam hal ini adalah (number bill key) dan klik Lanjutkan.';
+			json_data.step_payment[0].step[3] = 'Masukan Kode Pembayaran anda, dalam hal ini adalah (number bill key) kemudian anda akan mendapatkan detail pembayaran anda.';
 		}
-		json_data.step_payment.online_mandiri.step[4] = 'Konfirmasi pembayaran anda menggunakan Mandiri Token.';
+		json_data.step_payment[0].step[4] = 'Konfirmasi pembayaran anda.';
+		
+		
+		// online banking mandiri //
+		json_data.step_payment[1] = new Object();
+		json_data.step_payment[1].header = 'Cara membayar melalui Internet Banking Mandiri:';
+		json_data.step_payment[1].step = [];
+		json_data.step_payment[1].step[0] = 'Login ke Internet Banking Mandiri (https://ib.bankmandiri.co.id/) (https://ib.bankmandiri.co.id/).';
+		json_data.step_payment[1].step[1] = 'Di Menu Utama silakan pilih Bayar kemudian pilih Multi Payment.';
+		json_data.step_payment[1].step[2] = 'Pilih akun anda di Dari Rekening, kemudian di Penyedia Jasa pilih Veritrans.';
+		if(stat == 'success'){
+			json_data.step_payment[1].step[3] = 'Masukkan Kode Pembayaran anda, dalam hal ini adalah '+rorder.vt_response.bill_key+' dan klik Lanjutkan.';
+		}else{
+			json_data.step_payment[1].step[3] = 'Masukkan Kode Pembayaran anda, dalam hal ini adalah (number bill key) dan klik Lanjutkan.';
+		}
+		json_data.step_payment[1].step[4] = 'Konfirmasi pembayaran anda menggunakan Mandiri Token.';
 		
 	}else if(type == 'bp_success'){
+		json_data.payment_type = 'bp';
 		json_data.event = revent;
 		json_data.summary = rorder;
 	}else if(type == 'cc'){

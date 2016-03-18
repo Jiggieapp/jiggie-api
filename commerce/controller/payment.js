@@ -11,6 +11,7 @@ var comurl = 'https://commerce.jiggieapp.com/VT/production/';
 
 exports.index = function(req, res){
 	var type = req.body.type;
+	type = type.toLowerCase();
 	if(type == 'cc'){
 		post_transaction_cc(req,function(dt){
 			if(dt == false){
@@ -42,9 +43,10 @@ exports.index = function(req, res){
 /*Start : Transaction Using VA & BP*/
 function post_transaction_va(req,next){
 	var post = req.body;
-	var order_id = post.order_id;
+	var order_id = String(post.order_id);
 	var token_id = post.token_id;
 	var type = post.type;
+	type = type.toLowerCase();
 	
 	var schema = req.app.get('mongo_path');
 	var order = require(schema+'/order_product.js');
@@ -284,6 +286,7 @@ function merge_data_va(req,body,next){
 	var order_id = post.order_id;
 	var token_id = post.token_id;
 	var type = post.type;
+	type = type.toLowerCase();
 	
 	var schema = req.app.get('mongo_path');
 	var order = require(schema+'/order_product.js');
@@ -357,9 +360,10 @@ function merge_data_va(req,body,next){
 /*Start:Transaction Using CC*/
 function post_transaction_cc(req,next){
 	var post = req.body;
-	var order_id = post.order_id;
+	var order_id = String(post.order_id);
 	var token_id = post.token_id;
 	var type = post.type;
+	type = type.toLowerCase();
 	var is_new_card = post.is_new_card;
 	var secure_cc = 1;
 	
