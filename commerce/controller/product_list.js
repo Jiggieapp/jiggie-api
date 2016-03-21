@@ -254,7 +254,7 @@ function post_summary(req,next){
 				var json_data = new Object();
 		
 				json_data.code = String(randomString.alphaNumUpper(6,new Date().getTime()));
-				json_data.order_status = 'checkout_completed';
+				json_data.order_status = 'checkout_incompleted';
 				json_data.payment_status = 'awaiting_payment';
 				json_data.order_id = new Date().getTime();;
 				json_data.fb_id = post.fb_id;

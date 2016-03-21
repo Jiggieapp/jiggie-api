@@ -186,7 +186,11 @@ function orderlist(req,next){
 	var fb_id = req.params.fb_id;
 	async.waterfall([
 		function get_order(cb){
-			order_coll.find({fb_id:fb_id}).toArray(function(err,r){
+			var cond = {
+				fb_id:fb_id,
+				order_status:{$ne:'checkout_incompleted'}
+			}
+			order_coll.find(cond).toArray(function(err,r){
 				if(err){
 					debug.log('error otherjs commerce line 71');
 					debug.log(err);
@@ -232,10 +236,12 @@ function orderlist(req,next){
 							json_data[n] = new Object();
 							json_data[n].order = v;
 							json_data[n].event = ve;
+							json_data[n].created_at = v.created_at;
 							n++;
 						}
 					})
 				})
+				json_data = json_data.sort(sortDate);
 				cb(null,true,json_data);
 			}else{
 				cb(null,false,[]);
@@ -254,6 +260,21 @@ function orderlist(req,next){
 			next(false,[]);
 		}
 	})
+}
+
+var sortDate = function (a, b){
+	if(a.created_at == undefined)
+	{
+		a.created_at = new Date(2000,0,1);
+	}
+	if(b.created_at == undefined)
+	{
+		b.created_at = new Date(2000,0,1);
+	}
+	if (a.created_at < b.created_at) return 1;
+	if (a.created_at > b.created_at) return -1;
+	
+	return 0;
 }
 
 exports.success_screen = function(req,res){
