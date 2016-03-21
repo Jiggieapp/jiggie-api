@@ -81,6 +81,13 @@ exports.invitelink = function(req, res){
 
 
 // https://jiggieapp.onelink.me/1630402100?pid=test_source&c=no_campaign&af_dp=jiggie%3A%2F%2F&af_force_dp=true
+
+/* share app*/
+//https://jiggieapp.onelink.me/1630402100?pid=App_Invite&c=Fazlur_Rahman&af_dp=jiggie%3A%2F%2Fevent_list&af_web_dp=http%3A%2F%2Fwww.jiggieapp.com%2F&af_chrome_lp=true&advertising_id=ec5dae50-51a1-491c-ab27-8eb268e347f7&af_sub1=10205703989179267
+
+/*share event*/
+//https://jiggieapp.onelink.me/1630402100?pid=Event_Invite&c=Fazlur_Rahman&af_dp=jiggie%3A%2F%2Fevent_detail%2F56eb91c59e2ca3030021aa02&af_web_dp=http%3A%2F%2Fwww.jiggieapp.com%2F&af_chrome_lp=true&af_sub1=10205703989179267&af_sub2=56eb91c59e2ca3030021aa02&advertising_id=ec5dae50-51a1-491c-ab27-8eb268e347f7
+
 exports.lookuplink = function(req,res)
 {
 	var data = new Object();
@@ -94,10 +101,12 @@ exports.lookuplink = function(req,res)
 				if(item.type != "general")
 				{
 					// data.url = trackdomain  + "/" + "id1047291489?pid=Event_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_sub2=" + item.event_id + "&af_ios_lp=true";
-					data.url = trackdomain  + "/" + "1630402100?pid=Event_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_sub2=" + item.event_id + "&af_force_dp=true&af_ios_lp=true&af_chrome_lp=true";
+					// data.url = trackdomain  + "/" + "1630402100?pid=Event_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_sub2=" + item.event_id + "&af_force_dp=true&af_ios_lp=true&af_chrome_lp=true";
+					data.url = trackdomain  + "/" + "1630402100?pid=Event_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2Fevent_detail%2F"+item.event_id+"&af_web_dp=http%3A%2F%2Fwww.jiggieapp.com%2F&af_chrome_lp=true&af_sub1="+item.from_fb_id+"&af_sub2="+item.event_id+"&advertising_id=ec5dae50-51a1-491c-ab27-8eb268e347f7";
 				}else{
 					// data.url = trackdomain + "/id1047291489?pid=App_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_ios_lp=true";
-					data.url = trackdomain + "/1630402100?pid=App_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_force_dp=true&af_ios_lp=true&af_chrome_lp=true";
+					// data.url = trackdomain + "/1630402100?pid=App_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_force_dp=true&af_ios_lp=true&af_chrome_lp=true";
+					data.url = trackdomain + "/1630402100?pid=App_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2Fevent_list&af_web_dp=http%3A%2F%2Fwww.jiggieapp.com%2F&af_chrome_lp=true&advertising_id=ec5dae50-51a1-491c-ab27-8eb268e347f7&af_sub1=" + item.from_fb_id;
 				}
 				res.send(data.url);
 			})
