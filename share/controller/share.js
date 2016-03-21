@@ -10,8 +10,8 @@ var HashidsNPM = require("hashids");
 var Hashids = new HashidsNPM("bfdlkKjlKBKJBjkbk08y23h9hek",6,"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
 var basedomain = 'http://jigg.io';
-var trackdomain = 'http://app.appsflyer.com';
-// var trackdomain = 'https://jiggieapp.onelink.me';
+// var trackdomain = 'http://app.appsflyer.com';
+var trackdomain = 'https://jiggieapp.onelink.me';
 
 exports.invitelink = function(req, res){
 	req.app.get("helpers").logging("request","get","",req);
