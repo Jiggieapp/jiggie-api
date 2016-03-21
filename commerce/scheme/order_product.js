@@ -7,7 +7,7 @@ var varScheme = new Schema({
 	
 	order_id:{type:String,default:''},
 	code : {type:String, min:6, max:6,required:true},
-	order_status : {type:String, enum:['checkout_completed','pending_payment','pending_shipment','shipped','completed','cancel'],required:true},
+	order_status : {type:String, enum:['checkout_incompleted','checkout_completed','pending_payment','pending_shipment','shipped','completed','cancel'],required:true},
 	payment_status : {type:String, enum:['awaiting_payment','paid','refund','expire','void'],required:true},
 	product_list : [{
 		ticket_type : {type:String, enum:['purchase','reservation'],required:true},
