@@ -551,6 +551,9 @@ function updsocialfeed_async(guests_viewed,fb_id,next){
 					// "users.fb_id":{$ne:fb_id}
 				}
 				socialfeed_coll.findOne({fb_id:fb_id},function(err,rownsoc){
+					if(typeof rownsoc.points == 'undefined'){
+						rownsoc.points = 0;
+					}
 					socialfeed_coll.find(cond).toArray(function(err,rows){
 						if(rows.length > 0){
 							async.forEachOf(rows,function(v,k,e){
