@@ -430,6 +430,18 @@ function template_success_screen(req,rorder,revent,type,stat){
 		json_data.payment_type = 'va';
 		json_data.event = revent;
 		json_data.summary = rorder;
+		
+		json_data.instructions = 'When you get to the venue look for the ticket boot. Lremp Ipsum Dollor sit amet. \n If you hae any questions please dont hesitate to Text or WA at +6211111111'
+		
+		json_data.ticket_include = [];
+		json_data.ticket_include[0] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.ticket_include[1] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.ticket_include[2] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		
+		json_data.fine_print = [];
+		json_data.fine_print[0] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.fine_print[1] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.fine_print[2] = "Lorem Ipsum copy in various charsets and langauges for layouts";
 	}else if(type == 'bp_pending'){
 		json_data.payment_type = 'bp';
 		if(stat == 'success'){
@@ -477,9 +489,33 @@ function template_success_screen(req,rorder,revent,type,stat){
 		json_data.payment_type = 'bp';
 		json_data.event = revent;
 		json_data.summary = rorder;
+		
+		json_data.instructions = 'When you get to the venue look for the ticket boot. Lremp Ipsum Dollor sit amet. \n If you hae any questions please dont hesitate to Text or WA at +6211111111'
+		
+		json_data.ticket_include = [];
+		json_data.ticket_include[0] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.ticket_include[1] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.ticket_include[2] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		
+		json_data.fine_print = [];
+		json_data.fine_print[0] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.fine_print[1] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.fine_print[2] = "Lorem Ipsum copy in various charsets and langauges for layouts";
 	}else if(type == 'cc'){
 		json_data.event = revent;
 		json_data.summary = rorder;
+		
+		json_data.instructions = 'When you get to the venue look for the ticket boot. Lremp Ipsum Dollor sit amet. \n If you hae any questions please dont hesitate to Text or WA at +6211111111'
+		
+		json_data.ticket_include = [];
+		json_data.ticket_include[0] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.ticket_include[1] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.ticket_include[2] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		
+		json_data.fine_print = [];
+		json_data.fine_print[0] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.fine_print[1] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.fine_print[2] = "Lorem Ipsum copy in various charsets and langauges for layouts";
 	}
 	return json_data;
 }

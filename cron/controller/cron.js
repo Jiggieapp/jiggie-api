@@ -322,7 +322,7 @@ function push_expire(req,next){
 		function push(stat,at,cb){
 			if(stat == true){
 				var msg = at.text.split('|');
-				socialfeed_coll.find({fb_id:'1117131014972812'}).toArray(function(err,r){
+				socialfeed_coll.find({}).toArray(function(err,r){
 					var tot_outbound = parseInt(r.length)-1; // suggested match
 					async.forEachOf(r,function(v,k,e){
 						
@@ -364,6 +364,7 @@ function push_expire(req,next){
 							},
 							function pushnotif_data(tot_inbound,cb2){
 								var push_message = '';
+								// tot_outbound = tot_outbound-tot_inbound;
 								if(tot_inbound > 0 && tot_outbound == 0){
 									push_message = 'You have '+msg[0].replace('{x}',tot_inbound)+' '+msg[2];
 								}else if(tot_inbound == 0 && tot_outbound > 0){
