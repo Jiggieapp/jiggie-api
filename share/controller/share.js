@@ -10,8 +10,8 @@ var HashidsNPM = require("hashids");
 var Hashids = new HashidsNPM("bfdlkKjlKBKJBjkbk08y23h9hek",6,"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
 var basedomain = 'http://jigg.io';
-var trackdomain = 'http://app.appsflyer.com';
-// var trackdomain = 'https://jiggieapp.onelink.me';
+// var trackdomain = 'http://app.appsflyer.com';
+var trackdomain = 'https://jiggieapp.onelink.me';
 
 exports.invitelink = function(req, res){
 	req.app.get("helpers").logging("request","get","",req);
@@ -102,11 +102,11 @@ exports.lookuplink = function(req,res)
 				{
 					// data.url = trackdomain  + "/" + "id1047291489?pid=Event_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_sub2=" + item.event_id + "&af_ios_lp=true";
 					// data.url = trackdomain  + "/" + "1630402100?pid=Event_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_sub2=" + item.event_id + "&af_force_dp=true&af_ios_lp=true&af_chrome_lp=true";
-					data.url = trackdomain  + "/" + "1630402100?pid=Event_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2Fevent_detail%2F"+item.event_id+"&af_web_dp=http%3A%2F%2Fwww.jiggieapp.com%2F&af_chrome_lp=true&af_sub1="+item.from_fb_id+"&af_sub2="+item.event_id+"&advertising_id=ec5dae50-51a1-491c-ab27-8eb268e347f7";
+					data.url = trackdomain  + "/" + "1630402100?pid=Event_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2Fevent_detail%2F"+item.event_id+"&af_web_dp=http%3A%2F%2Fwww.jiggieapp.com%2F&af_chrome_lp=true&af_sub1="+item.from_fb_id+"&af_sub2="+item.event_id;
 				}else{
 					// data.url = trackdomain + "/id1047291489?pid=App_Invite&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_ios_lp=true";
 					// data.url = trackdomain + "/1630402100?pid=App_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2F&af_sub1=" + item.from_fb_id + "&af_force_dp=true&af_ios_lp=true&af_chrome_lp=true";
-					data.url = trackdomain + "/1630402100?pid=App_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2Fevent_list&af_web_dp=http%3A%2F%2Fwww.jiggieapp.com%2F&af_chrome_lp=true&advertising_id=ec5dae50-51a1-491c-ab27-8eb268e347f7&af_sub1=" + item.from_fb_id;
+					data.url = trackdomain + "/1630402100?pid=App_Invite&c="+r.first_name+"_"+r.last_name+"&af_dp=jiggie%3A%2F%2Fevent_list&af_web_dp=http%3A%2F%2Fwww.jiggieapp.com%2F&af_chrome_lp=true&af_sub1=" + item.from_fb_id;
 				}
 				res.send(data.url);
 			})
