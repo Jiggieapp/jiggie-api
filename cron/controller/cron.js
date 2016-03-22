@@ -245,43 +245,89 @@ function push_matchchat(req,next){
 		function push(stat,at,cb){
 			if(stat == true){
 				var msg = at.text.split('|');
-				socialfeed_coll.find({}).toArray(function(err,r){
-					var tot_outbound = parseInt(r.length)-1; // suggested match
+				socialfeed_coll.find({fb_id:{$in:['10205703989179267','1117131014972812','10153235258823994']}}).toArray(function(err,r){
+					
 					async.forEachOf(r,function(v,k,e){
-						var tot_inbound = 0; // request chat
-						
+						var tot_outbound = parseInt(r.length)-1; // suggested match	
+							
+						// get all inbound
+						var arrfb_inbound = [];
+						var n = 0;
 						async.forEachOf(v.users,function(ve,ke,ee){
 							if(ve.from_state == 'viewed' && ve.to_state == 'approved'){
-								tot_inbound++;
+								arrfb_inbound[n] = ve.fb_id;
+								n++;
 							}
 						})
-						var push_message = '';
-						if(tot_inbound > 0 && tot_outbound == 0){
-							push_message = 'You have '+msg[0].replace('{x}',tot_inbound);
-						}else if(tot_inbound == 0 && tot_outbound > 0){
-							push_message = 'You have '+msg[1].replace('{x}',tot_outbound);
-						}else{
-							push_message = 'You have '+msg[0].replace('{x}',tot_inbound)+' and '+msg[1].replace('{x}',tot_outbound);
-						}
 						
-						var options = {
-							url:'http://127.0.0.1:16523/apn',
-							form:{
-									fb_id:v.fb_id,
-									message:push_message,
-									route:'',
-									fromId:'123456',
-									type:'social',
-									event_id:''
+						// start : filtering inbound data //
+						async.waterfall([
+							function get_membersettings(cb2){
+								membersettings_coll.findOne({fb_id:v.fb_id},function(err,rmem){
+									cb2(null,rmem);
+								})
+							},
+							function get_customers(rmem,cb2){
+								var tot_inbound = 0; // request chat
+								var gender_interest = rmem.gender_interest;
+								customers_coll.find({fb_id:{$in:arrfb_inbound}}).toArray(function(err,rcust){
+									async.forEachOf(rcust,function(vcust,kcust,eee){
+										if(gender_interest == 'both'){
+											if(vcust.matchme == true){
+												tot_inbound++;
+											}
+										}else{
+											if(vcust.gender == gender_interest && vcust.matchme == true){
+												tot_inbound++;
+											}
+										}
+										
+									})
+									cb2(null,tot_inbound);
+								})
+							},
+							function pushnotif_data(tot_inbound,cb2){
+								var push_message = '';
+								tot_outbound = tot_outbound-tot_inbound;
+								if(tot_inbound > 0 && tot_outbound == 0){
+									push_message = 'You have '+msg[0].replace('{x}',tot_inbound);
+								}else if(tot_inbound == 0 && tot_outbound > 0){
+									push_message = 'You have '+msg[1].replace('{x}',tot_outbound);
+								}else if(tot_inbound == 0 && tot_outbound == 0){
+									push_message = '';
+								}else{
+									push_message = 'You have '+msg[0].replace('{x}',tot_inbound)+' and '+msg[1].replace('{x}',tot_outbound);
 								}
-						}
-						request.post(options,function(err,resp,body){
-							if (!err && resp.statusCode == 200) {
-								debug.log('Push Notif Auto');
-							}else{
-								debug.log('Failed Push Notif line 212');
+								
+								if(push_message != ''){
+									var options = {
+										url:'http://127.0.0.1:16523/apn',
+										form:{
+												fb_id:v.fb_id,
+												message:push_message,
+												route:'',
+												fromId:'123456',
+												type:'social',
+												event_id:''
+											}
+									}
+									request.post(options,function(err,resp,body){
+										if (!err && resp.statusCode == 200) {
+											debug.log('Push Notif Auto Match Chat');
+										}else{
+											debug.log('Failed Push Notif line 301');
+										}
+									})
+								}else{
+									debug.log('message empty');
+								}
+								cb2(null,true);
 							}
+						],function(err,data){
+							debug.log(data);
 						})
+						
+						// end : filtering inbound data //
 					})
 					cb(null,true);
 				})
@@ -323,9 +369,8 @@ function push_expire(req,next){
 			if(stat == true){
 				var msg = at.text.split('|');
 				socialfeed_coll.find({}).toArray(function(err,r){
-					var tot_outbound = parseInt(r.length)-1; // suggested match
 					async.forEachOf(r,function(v,k,e){
-						
+						var tot_outbound = parseInt(r.length)-1; // suggested match
 						// get all inbound
 						var arrfb_inbound = [];
 						var n = 0;
@@ -364,33 +409,39 @@ function push_expire(req,next){
 							},
 							function pushnotif_data(tot_inbound,cb2){
 								var push_message = '';
-								// tot_outbound = tot_outbound-tot_inbound;
+								tot_outbound = tot_outbound-tot_inbound;
 								if(tot_inbound > 0 && tot_outbound == 0){
 									push_message = 'You have '+msg[0].replace('{x}',tot_inbound)+' '+msg[2];
 								}else if(tot_inbound == 0 && tot_outbound > 0){
-									push_message = 'You have '+msg[1].replace('{x}',tot_outbound)+' '+msg[2];;
+									push_message = 'You have '+msg[1].replace('{x}',tot_outbound)+' '+msg[2];
+								}else if(tot_inbound == 0 && tot_outbound == 0){
+									push_message = '';
 								}else{
-									push_message = 'You have '+msg[0].replace('{x}',tot_inbound)+' and '+msg[1].replace('{x}',tot_outbound)+' '+msg[2];;
+									push_message = 'You have '+msg[0].replace('{x}',tot_inbound)+' and '+msg[1].replace('{x}',tot_outbound)+' '+msg[2];
 								}
 								
-								var options = {
-									url:'http://127.0.0.1:16523/apn',
-									form:{
-											fb_id:v.fb_id,
-											message:push_message,
-											route:'',
-											fromId:'123456',
-											type:'social',
-											event_id:''
-										}
-								}
-								request.post(options,function(err,resp,body){
-									if (!err && resp.statusCode == 200) {
-										debug.log('Push Notif Auto Expire');
-									}else{
-										debug.log('Failed Push Notif line 301');
+								if(push_message != ''){
+									var options = {
+										url:'http://127.0.0.1:16523/apn',
+										form:{
+												fb_id:v.fb_id,
+												message:push_message,
+												route:'',
+												fromId:'123456',
+												type:'social',
+												event_id:''
+											}
 									}
-								})
+									request.post(options,function(err,resp,body){
+										if (!err && resp.statusCode == 200) {
+											debug.log('Push Notif Auto Expire');
+										}else{
+											debug.log('Failed Push Notif line 301');
+										}
+									})
+								}else{
+									debug.log('message empty');
+								}
 								cb2(null,true);
 							}
 						],function(err,data){

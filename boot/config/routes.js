@@ -39,6 +39,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/app/v3/invitelink',share.index);
   app.get('/s/:id',share.parseShareLink);
   app.get('/ss/:id',share.showParseShareLink);
+  app.get('/app/v3/getshare/:fb_id',share.getshare);
   
   
   var commerce = require(path_controller+'commerce');

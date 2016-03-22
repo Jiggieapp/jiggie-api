@@ -146,6 +146,7 @@ function post_transaction_va(req,next){
 				// e:customer_details //
 				
 				json_data.token_id = token_id;
+				json_data.code = dt.code;
 				
 				var url_execute = '';
 				if(type == 'va'){
@@ -495,6 +496,7 @@ function post_transaction_cc(req,next){
 				// e:customer_details //
 				
 				json_data.token_id = token_id;
+				json_data.code = dt.code;
 				
 				json_data.save_cc = parseInt(1);
 				json_data.secure = parseInt(secure_cc);

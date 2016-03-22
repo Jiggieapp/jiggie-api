@@ -346,8 +346,8 @@ function getdata(req,event_details_id,fb_id,gender_interest,next){
 											new_guestviewed[x].fb_id = v.fb_id;
 											new_guestviewed[x].first_name = v.first_name;
 											new_guestviewed[x].gender = v.gender;
-											(ve.from_state == "approved") ? json_data[x].is_invited = true : json_data[x].is_invited = false;
-											(ve.to_state == "approved" && ve.from_state == "approved") ? json_data[x].is_connected = true : json_data[x].is_connected = false;
+											(ve.from_state == "approved") ? new_guestviewed[x].is_invited = true : new_guestviewed[x].is_invited = false;
+												(ve.to_state == "approved" && ve.from_state == "approved") ? new_guestviewed[x].is_connected = true : new_guestviewed[x].is_connected = false;
 											x++;
 										}
 									}
@@ -361,8 +361,8 @@ function getdata(req,event_details_id,fb_id,gender_interest,next){
 												new_guestviewed[x].fb_id = v.fb_id;
 												new_guestviewed[x].first_name = v.first_name;
 												new_guestviewed[x].gender = v.gender;
-												(ve.from_state == "approved") ? json_data[x].is_invited = true : json_data[x].is_invited = false;
-											(ve.to_state == "approved" && ve.from_state == "approved") ? json_data[x].is_connected = true : json_data[x].is_connected = false;
+												(ve.from_state == "approved") ? new_guestviewed[x].is_invited = true : new_guestviewed[x].is_invited = false;
+												(ve.to_state == "approved" && ve.from_state == "approved") ? new_guestviewed[x].is_connected = true : new_guestviewed[x].is_connected = false;
 												x++;
 											}
 										}
@@ -377,8 +377,8 @@ function getdata(req,event_details_id,fb_id,gender_interest,next){
 												new_guestviewed[x].fb_id = v.fb_id;
 												new_guestviewed[x].first_name = v.first_name;
 												new_guestviewed[x].gender = v.gender;
-												(ve.from_state == "approved") ? json_data[x].is_invited = true : json_data[x].is_invited = false;
-											(ve.to_state == "approved" && ve.from_state == "approved") ? json_data[x].is_connected = true : json_data[x].is_connected = false;
+												(ve.from_state == "approved") ? new_guestviewed[x].is_invited = true : new_guestviewed[x].is_invited = false;
+												(ve.to_state == "approved" && ve.from_state == "approved") ? new_guestviewed[x].is_connected = true : new_guestviewed[x].is_connected = false;
 												x++;
 											}
 										}
