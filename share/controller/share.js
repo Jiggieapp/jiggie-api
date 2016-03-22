@@ -34,7 +34,7 @@ exports.invitelink = function(req, res){
 			}else{
 				createLink(from_fb_id,type,function(item){
 					addInviteLink(item,function(err,result){
-						json_data.url = basedomain + "/s/" + item.hash;
+						json_data.url = basedomain + "/" + item.hash;
 						res.json(json_data);
 					})
 				})
@@ -55,7 +55,7 @@ exports.invitelink = function(req, res){
 				}
 				invitelinks_coll.findOne(cond,function(err,dt){
 					if(dt != null){
-						json_data.url = basedomain + "/s/" + dt.hash;
+						json_data.url = basedomain + "/" + dt.hash;
 						res.json(json_data);
 					}else{
 						var dataobj = new Object();
@@ -66,7 +66,7 @@ exports.invitelink = function(req, res){
 						dataobj.venue_name = venue_name;
 						createHostingLink(dataobj,function(item){
 							addInviteLink(item,function(err,result){
-								json_data.url = basedomain + "/s/" + item.hash;
+								json_data.url = basedomain + "/" + item.hash;
 								res.json(json_data);
 							})
 						})
