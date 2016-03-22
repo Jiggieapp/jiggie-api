@@ -29,7 +29,7 @@ exports.invitelink = function(req, res){
 		}
 		invitelinks_coll.findOne(cond,function(err,rows){
 			if(rows != null){
-				json_data.url = basedomain + "/s/" + rows.hash;
+				json_data.url = basedomain + "/" + rows.hash;
 				res.json(json_data);
 			}else{
 				createLink(from_fb_id,type,function(item){
