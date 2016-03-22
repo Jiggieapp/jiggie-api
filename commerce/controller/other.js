@@ -168,7 +168,7 @@ exports.delete_cc = function(req,res){
 			}
 		}
 	],function(err,data){
-		next(data);
+		res.json({success:true});
 	})
 }
 
