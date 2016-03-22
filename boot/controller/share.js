@@ -1,6 +1,10 @@
 var url = "http://127.0.0.1:53412";
 var curl = require('request');
 
+var hr = new Object();
+hr.response = 1;
+hr.msg = "success";
+
 exports.index = function(req,res){
 	var type = req.param('type');
 	var from_fb_id = req.param('from_fb_id');

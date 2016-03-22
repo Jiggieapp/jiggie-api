@@ -45,6 +45,7 @@ function getshare(req,next){
 					json_data.list[n].fullname = v.first_name+' '+v.last_name;
 					json_data.list[n].email = v.email;
 					json_data.list[n].appsflyer = v.appsflyer;
+					json_data.list[n].url_admin = 'https://admin.jiggieapp.com/admin/user/users/#/details='+v.fb_id;
 					n++;
 				})
 				cb(null,true,json_data)
