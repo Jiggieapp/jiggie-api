@@ -52,7 +52,11 @@ function get_data(req,next){
 		},
 		function get_ticket(cek,rows_event,cb){
 			if(cek == 1){
-				tickettypes_coll.find({event_id:event_id}).toArray(function(err,r){
+				var cond1 = {
+					event_id:event_id,
+					active:{$ne:false}
+				}
+				tickettypes_coll.find(cond1).toArray(function(err,r){
 					if(r.length > 0){
 						var json_data = new Object();
 						json_data.event_id = event_id;
