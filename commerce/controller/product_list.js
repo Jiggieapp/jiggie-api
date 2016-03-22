@@ -89,6 +89,7 @@ function get_data(req,next){
 								}else{
 									json_data.purchase[n].payment_timelimit = v.payment_timelimit;
 								}
+								json_data.purchase[n].summary = v.summary;
 								n++;
 							}else if(v.ticket_type == 'reservation'){
 								json_data.reservation[m] = new Object();
@@ -111,6 +112,7 @@ function get_data(req,next){
 								}else{
 									json_data.reservation[m].payment_timelimit = v.payment_timelimit;
 								}
+								json_data.reservation[m].summary = v.summary;
 								m++;
 							}
 						})
