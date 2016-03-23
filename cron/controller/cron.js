@@ -245,7 +245,7 @@ function push_matchchat(req,next){
 		function push(stat,at,cb){
 			if(stat == true){
 				var msg = at.text.split('|');
-				socialfeed_coll.find({fb_id:{$in:['10205703989179267','1117131014972812','10153235258823994']}}).toArray(function(err,r){
+				socialfeed_coll.find({}).toArray(function(err,r){
 					
 					async.forEachOf(r,function(v,k,e){
 						var tot_outbound = parseInt(r.length)-1; // suggested match	

@@ -310,6 +310,7 @@ function get_status(req,next){
 									if(results.transaction_status == 'settlement'){
 										send_mail(req,v.guest_detail.email,results,function(mail_stat){
 											if(mail_stat == true){
+												/*update order*/
 												var form_upd = {
 													$set:{
 														mail_status:true,
@@ -323,6 +324,24 @@ function get_status(req,next){
 													if(err){
 														debug.log('error line 86 => notif');
 														debug.log(err);
+													}
+												})
+												
+												/*update tickettype*/
+												var condt = {
+													_id:new ObjectId(v.product_list[0].ticket_id)
+												}
+												var form_updt = {
+													$push:{
+														order_id:v.order_id,
+														num_buy:v.product_list[0].num_buy
+													}
+												}
+												tickettypes_coll.update(condt,form_updt,function(err3,upd){
+													if(err3){
+														debug.log('error update sold');
+													}else{
+														debug.log('updated sold');
 													}
 												})
 											}else{
