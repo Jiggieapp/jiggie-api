@@ -333,8 +333,10 @@ function get_status(req,next){
 												}
 												var form_updt = {
 													$push:{
-														order_id:v.order_id,
-														num_buy:v.product_list[0].num_buy
+														sold:{
+															order_id:v.order_id,
+															num_buy:v.product_list[0].num_buy
+														}
 													}
 												}
 												tickettypes_coll.update(condt,form_updt,function(err3,upd){

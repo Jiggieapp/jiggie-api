@@ -610,8 +610,10 @@ function post_transaction_cc(req,next){
 												}
 												var form_upd = {
 													$push:{
-														order_id:order_id,
-														num_buy:v.num_buy
+														sold:{
+															order_id:order_id,
+															num_buy:v.num_buy
+														}
 													}
 												}
 												tickettypes_coll.update(condt,form_upd,function(err3,upd){
