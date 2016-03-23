@@ -602,6 +602,32 @@ function post_transaction_cc(req,next){
 											cb2(null,false);
 										}
 									},
+									function update_sold(stat,cb2){
+										if(stat == true){
+											async.forEachOf(r.product_list,function(v,k,e){
+												var condt = {
+													_id:new ObjectId(v.ticket_id)
+												}
+												var form_upd = {
+													$push:{
+														order_id:order_id,
+														num_buy:v.num_buy
+													}
+												}
+												tickettypes_coll.update(condt,form_upd,function(err3,upd){
+													if(err3){
+														debug.log('error update sold');
+														cb2(null,false);
+													}else{
+														debug.log('updated sold');
+														cb2(null,true);
+													}
+												})
+											})
+										}else{
+											cb2(null,false);
+										}
+									},
 									function upd_order(stat,cb2){
 										if(stat == true){
 											var form_upd = {

@@ -54,7 +54,8 @@ function get_data(req,next){
 			if(cek == 1){
 				var cond1 = {
 					event_id:event_id,
-					active:{$ne:false}
+					active:{$ne:false},
+					status:'active'
 				}
 				tickettypes_coll.find(cond1).toArray(function(err,r){
 					if(r.length > 0){
