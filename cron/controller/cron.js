@@ -391,7 +391,6 @@ function push_expire(req,next){
 				var msg = at.text.split('|');
 				socialfeed_coll.find({}).toArray(function(err,r){
 					async.forEachOf(r,function(v,k,e){
-						var tot_outbound = parseInt(r.length)-1; // suggested match
 						// get all inbound
 						var arrfb_inbound = [];
 						var arrfb_outbound = [];
@@ -465,6 +464,7 @@ function push_expire(req,next){
 								}
 								
 								if(push_message != ''){
+									debug.log(push_message);
 									var options = {
 										url:'http://127.0.0.1:16523/apn',
 										form:{
@@ -547,7 +547,7 @@ function flush_socfed(req,next){
 						}
 						
 						// social algoritm
-						var alpha = parseFloat(tot_yes)/(parseFloat(tot_yes)+parseFloat(tot_no));
+						var alpha = parseFloat(tot_yes)/(parseFloat(tot_yes)+parseFloat(tot_no)+parseFloat(uv));
 						if(String(alpha) == 'NaN'){alpha = 0;}
 						points = (alpha)*parseFloat(maturity);
 						if(String(points) == 'NaN'){points = 0;}
