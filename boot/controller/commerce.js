@@ -134,8 +134,12 @@ exports.payment = function(req,res){
 				if (!err && resp.statusCode == 200) {
 					res.header("Content-type","application/json");
 					var json_data = JSON.parse(body);
+					console.log(json_data);
 					if(typeof json_data.code_error != 'undefined'){
-						res.status(json_data.code_error).send({});
+						var obj_err = new Object();
+						obj_err.response = 0;
+						obj_err.msg = json_data.msg.status_message;
+						res.send(obj_err);
 					}else{
 						hr.data = new Object();
 						hr.data.payment_informations = JSON.parse(body);

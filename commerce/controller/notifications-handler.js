@@ -42,7 +42,7 @@ function handling(req,next){
 		// cron for handle payment timelimit
 		function handle_payment_timelimit(cb){
 			var job = new cron({
-			  cronTime: '*/30 * * * * *',
+			  cronTime: '*/10 * * * * *',
 			  onTick: function() {
 				payment_timelimit(req,function(dt){
 					debug.log('listener payment timelimit running');
@@ -58,7 +58,7 @@ function handling(req,next){
 		// cron for handle cancel payment from VT
 		function handle_cancel_payment_fromVT(cb){
 			var job = new cron({
-			  cronTime: '*/30 * * * * *',
+			  cronTime: '1 * * * * *',
 			  onTick: function() {
 				sync_cancel(req,function(dt){
 					debug.log('listener handle_cancel_payment_fromVT running');
