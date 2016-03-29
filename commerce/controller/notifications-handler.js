@@ -10,6 +10,7 @@ var comurl = 'https://commerce.jiggieapp.com/VT/production/';
 var cron = require('cron').CronJob;
 
 var crypto = require('crypto');
+var EmailTemplate = require('email-templates').EmailTemplate
 
 exports.index = function(req, res){
 	handling(req,function(stat){
@@ -136,8 +137,8 @@ function payment_timelimit(req,next){
 		function sync_data(stat,dt_order,dt_ticket,cb){
 			if(stat == true){
 				try{
-					var timelimit;
 					async.forEachOf(dt_order,function(v,k,e){
+						var timelimit = '';
 						async.forEachOf(dt_ticket,function(ve,ke,ee){
 							if(v.product_list[0].ticket_id == ve._id){
 								if(typeof ve.payment_timelimit == 'undefined' || ve.payment_timelimit == ''){
@@ -145,29 +146,24 @@ function payment_timelimit(req,next){
 								}else{
 									timelimit = ve.payment_timelimit;
 								}
-								
 							}
 						})
 						
 						var created_at_plus = req.app.get('helpers').addHours(new Date(v.created_at).getTime(),timelimit);					
 						var now = new Date();
-						
-						debug.log('TimeLimit : '+timelimit);
-						debug.log('Time From DB :'+String(v.created_at));
-						debug.log('Time From DB add hours :'+created_at_plus)
-						debug.log('Time Now :'+now);
 							
 						if(now > created_at_plus){
-							debug.log('udah lewat');
+							debug.log('TimeLimit : '+timelimit);
+							debug.log('Time From DB :'+String(v.created_at));
+							debug.log('Time From DB add hours :'+created_at_plus)
+							debug.log('Time Now :'+now);
 							cancel_transaction(req,v,function(dtrt){})
-						}else{
-							debug.log('blum lewat');
 						}
 						cb(null,true);
 					})
 				}catch(e){
 					debug.log(e);
-					cb(null,false);
+					// cb(null,false);
 				}
 			}else{
 				cb(null,false);
@@ -285,12 +281,12 @@ function get_status(req,next){
 				}
 			})
 		},
-		function sync_with_vt(stat,dt_order,cb){
+		function sync_with_vt(stat,dt_order,cb2){
 			if(stat == true){
 				async.forEachOf(dt_order,function(v,k,e){
 					if(typeof v.vt_response == 'undefined' || v.vt_response == '' || JSON.stringify(v.vt_response) == '{}'){
-						debug.log('vt response null');
-						cb(null,false)
+						// debug.log('vt response null');
+						// cb2(null,false);
 					}else{
 						if(v.vt_response.payment_type == 'bank_transfer' || v.vt_response.payment_type == 'echannel'){
 							var options = {
@@ -355,13 +351,13 @@ function get_status(req,next){
 								}
 							})
 						}else{
-							debug.log('payment type not bank_transfer or echannel');
+							// debug.log('payment type not bank_transfer or echannel');
 						}
 					}
 				})
-				cb(null,true)
+				cb2(null,true);
 			}else{
-				cb(null,false);
+				cb2(null,false);
 			}
 		}
 	],function(err,merge){
@@ -377,62 +373,157 @@ function send_mail(req,email_to,vt,next){
 	var user = req.app.get('mail_user');
 	var pass = req.app.get('mail_pass');
 	
+	var path = require('path')
+	var templateDir = path.resolve(__dirname,'..','views','templates');
+	
 	var from = 'cto@jiggieapp.com';
 	var to = email_to;
 	var subject = '';
 	var html = '';
 	
-	if(vt.payment_type == 'credit_card'){
-		if(vt.transaction_status == 'capture'){
-			subject = 'Thanks For Yout Credit Card Payment';
-			html = '<html><strong>Testing Sukses Pembayaran Menggunakan Credit Card</strong></html>';
+	async.waterfall([
+		function get_order(cb){
+			order_coll.findOne({order_id:vt.order_id},function(err,rows_order){
+				if(err){
+					debug.log('error line 388 notif handler js commerce')
+					cb(null,false,[]);
+				}else{
+					if(rows_order == null){
+						debug.log('line 391 error rows order data null')
+						cb(null,false,[]);
+					}else{
+						cb(null,true,rows_order)
+					}
+				}
+			})
+		},
+		function get_customers(stat,rows_order,cb){
+			if(stat == true){
+				customers_coll.findOne({fb_id:rows_order.fb_id},function(err,rows_cust){
+					if(err){
+						debug.log('error line 404 notif handler customers')
+						cb(null,false,[],[]);
+					}else{
+						if(rows_cust == null){
+							debug.log('error line 407 data cust null');
+							cb(null,false,[],[]);
+						}else{
+							cb(null,true,rows_order,rows_cust)
+						}
+					}
+				})
+			}else{
+				cb(null,false,[],[]);
+			}
+		},
+		function get_event(stat,rows_order,rows_cust,cb){
+			if(stat == true){
+				events_detail_coll.findOne({_id:new ObjectId(rows_order.event_id)},function(err,rows_event){
+					if(err){
+						debug.log('error line 423 commerce notif handler')
+						cb(null,false,[],[],[]);
+					}else{
+						if(rows_event == null){
+							debug.log('error line 426 data event null in notif handler')
+							cb(null,false,[],[],[]);
+						}else{
+							cb(null,true,rows_order,rows_cust,rows_event)
+						}
+					}
+					
+				})
+			}else{
+				cb(null,false,[],[],[]);
+			}
+		},
+		function sync_template(stat,rows_order,rows_cust,rows_event,cb){
+			if(stat == true){
+				if(vt.payment_type == 'credit_card'){
+					if(vt.transaction_status == 'capture'){
+						subject = 'Thanks For Yout Credit Card Payment';
+						
+						var product_name = rows_order.product_list[0].name+' (x'+rows_order.product_list[0].num_buy+')';
+						var amount_service = rows_order.total_adminfee
+						var tax = rows_order.total_tax_amount
+						
+						var parseTo = {
+							first_name:rows_cust.first_name,
+							event_name:rows_event.title,
+							event_date:req.app.get('helpers').parseDate(rows_event.start_datetime,'ddd, DD MMM YYYY'),
+							rsvp_no:rows_order.code,
+							guest_name:rows_order.guest_detail.name,
+							payment_method:'Credit Card',
+							event_datetime_word:req.app.get('helpers').parseDate(rows_order.start_datetime,'DD MMMM YYYY - HH:mm:ss'),
+							product_name:product_name,
+							
+							
+						}
+						var container_template = 'success_screen_vabp'
+					}
+				}else if(vt.payment_type == 'bank_transfer'){
+					if(vt.transaction_status == 'settlement'){
+						subject = 'Your VA Payment Already Success';
+						html = '<html><strong>Testing Success Pembayaran Menggunakan Bank Transfer</strong></html>';
+					}else if(vt.transaction_status == 'pending'){
+						subject = 'Your VA Payment Pending';
+						html = '<html><strong>Testing Pending Pembayaran Menggunakan Bank Transfer</strong></html>';
+						
+					}
+				}else if(vt.payment_type == 'echannel'){
+					if(vt.transaction_status == 'settlement'){
+						subject = 'Your BP Payment Already Success';
+						html = '<html><strong>Testing Success Pembayaran Menggunakan Echannel</strong></html>';
+					}else if(vt.transaction_status == 'pending'){
+						subject = 'Your BP Payment Pending';
+						html = '<html><strong>Testing Pending Pembayaran Menggunakan Echannel</strong></html>';
+					}
+				}else if(vt.payment_type == 'cancel'){
+					subject = 'Your Payment Cancel';
+					html = '<html><strong>Testing Cancel Pembayaran</strong></html>';
+				}
+			}else{
+				
+			}
 		}
-	}else if(vt.payment_type == 'bank_transfer'){
-		if(vt.transaction_status == 'settlement'){
-			subject = 'Your VA Payment Already Success';
-			html = '<html><strong>Testing Success Pembayaran Menggunakan Bank Transfer</strong></html>';
-		}else if(vt.transaction_status == 'pending'){
-			subject = 'Your VA Payment Pending';
-			html = '<html><strong>Testing Pending Pembayaran Menggunakan Bank Transfer</strong></html>';
-		}
-	}else if(vt.payment_type == 'echannel'){
-		if(vt.transaction_status == 'settlement'){
-			subject = 'Your BP Payment Already Success';
-			html = '<html><strong>Testing Success Pembayaran Menggunakan Echannel</strong></html>';
-		}else if(vt.transaction_status == 'pending'){
-			subject = 'Your BP Payment Pending';
-			html = '<html><strong>Testing Pending Pembayaran Menggunakan Echannel</strong></html>';
-		}
-	}else if(vt.payment_type == 'cancel'){
-		subject = 'Your Payment Cancel';
-		html = '<html><strong>Testing Cancel Pembayaran</strong></html>';
-	}
+	],function(){
+		
+	})
 	
-	var nodemailer = require('nodemailer');
-	var transporter = nodemailer.createTransport({
-		host: host,
-		port: port,
-		auth: {
-			user: user,
-			pass: pass
-		}
-	});
-	var mailOptions = {
-		from: from, 
-		to: to, 
-		subject: subject, 
-		text: subject, 
-		html: html
-	};
-	transporter.sendMail(mailOptions, function(error, info){
-		if(error){
-			debug.log('error sending mail')
-			next(error);
-		}else{
-			debug.log('EMAIL SENT TO '+email_to+' '+info.response)
-			next(true);
-		}
-	});
+	
+	
+	
+	
+	
+	
+	
+	// var template = new EmailTemplate(path.join(templateDir, 'success_screen'))
+	// var parseTo = {name: 'Joe', pasta: 'spaghetti'}
+	// template.render(parseTo, function (err, results) {
+		// var nodemailer = require('nodemailer');
+		// var transporter = nodemailer.createTransport({
+			// host: host,
+			// port: port,
+			// auth: {
+				// user: user,
+				// pass: pass
+			// }
+		// });
+		// var mailOptions = {
+			// from: from, 
+			// to: to, 
+			// subject: subject, 
+			// text: subject, 
+			// html: results.html
+		// };
+		// transporter.sendMail(mailOptions, function(error, info){
+			// if(error){
+				// debug.log('error sending mail')
+			// }else{
+				// console.log('EMAIL SENT TO '+email_to+' '+info.response)
+			// }
+		// });
+	// })
+	next(true);
 }
 
 exports.sendnotif = function(req,res){

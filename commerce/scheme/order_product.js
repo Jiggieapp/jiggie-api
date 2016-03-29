@@ -10,8 +10,10 @@ var varScheme = new Schema({
 	order_status : {type:String, enum:['checkout_incompleted','checkout_completed','pending_payment','pending_shipment','shipped','completed','cancel'],required:true},
 	payment_status : {type:String, enum:['awaiting_payment','paid','refund','expire','void'],required:true},
 	product_list : [{
-		ticket_type : {type:String, enum:['purchase','reservation'],required:true},
-		max_buy : {type:String, required:true},
+		ticket_type : {type:String, enum:['purchase','booking'],required:true},
+		max_buy : {type:String, default:''},
+		min_deposit_percent : {type:String, default:''},
+		min_deposit_amount : {type:String, default:''},
 		num_buy : {type:String, required:true},
 		total_price : {type:String, required:true},
 		total_price_aftertax : {type:String, required:true},

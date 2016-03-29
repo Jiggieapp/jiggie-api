@@ -320,7 +320,19 @@ function get_success_screen(req,next){
 				cb(null,false,[],[]);
 			}
 		},
-		function sync_data(stat,rorder,revent,cb){
+		function get_cust(stat,rorder,revent,cb){
+			if(stat == true){
+				customers_coll.findOne({fb_id:rorder.fb_id},function(err,r){
+					cb(null,true,rorder,revent,r)
+				})
+				
+			}else{
+				debug.log('error line 327 other commerce');
+				cb(null,false,[],[],[])
+			}
+			
+		},
+		function sync_data(stat,rorder,revent,rcust,cb){
 			if(stat == true){
 				if(typeof rorder.vt_response == 'undefined' || rorder.vt_response == null || rorder.vt_response == ''){
 					debug.log('data vt null line 171 other commerce')
@@ -346,7 +358,7 @@ function get_success_screen(req,next){
 					}else if(rorder.vt_response.payment_type == 'credit_card'){
 						type = 'cc';
 					}
-					var template = template_success_screen(req,rorder,revent,type,'success');
+					var template = template_success_screen(req,rorder,revent,rcust,type,'success');
 					cb(null,true,template);
 				}
 			}else{
@@ -369,21 +381,23 @@ function get_success_screen(req,next){
 }
 
 exports.walkthrough_payment = function(req,res){
-	var va_step = template_success_screen(req,[],'','va_pending','walkthrough_payment');
-	var bp_step = template_success_screen(req,[],'','bp_pending','walkthrough_payment');
+	var va_step = template_success_screen(req,[],'',[],'va_pending','walkthrough_payment');
+	var bp_step = template_success_screen(req,[],'',[],'bp_pending','walkthrough_payment');
 	var json_data = new Object();
 	json_data.va_step = va_step;
 	json_data.bp_step = bp_step;
 	res.json(json_data);
 }
 
-function template_success_screen(req,rorder,revent,type,stat){
+function template_success_screen(req,rorder,revent,rcust,type,stat){
 	var json_data = new Object();
 	if(stat == 'success'){
 		json_data.order_id = rorder.order_id;
 		json_data.order_number = rorder.code;
 		json_data.order_status = rorder.order_status;
 		json_data.payment_status = rorder.payment_status;
+		json_data.first_name = rcust.first_name;
+		json_data.last_name = rcust.last_name;
 	}
 	json_data.type = type;
 	
@@ -395,7 +409,12 @@ function template_success_screen(req,rorder,revent,type,stat){
 			json_data.created_at = rorder.created_at;
 			json_data.timelimit = req.app.get('helpers').addHours(new Date(rorder.created_at).getTime(),rorder.product_list[0].payment_timelimit);
 			
-			json_data.amount = rorder.total_price;
+			if(rorder.product_list[0].ticket_type == 'booking'){
+				json_data.amount = parseInt(rorder.vt_response.gross_amount);
+			}else if(rorder.product_list[0].ticket_type == 'purchase'){
+				json_data.amount = parseInt(rorder.total_price);
+			}
+			
 			
 			json_data.transfer_to = rorder.vt_response.permata_va_number;
 		}
@@ -450,7 +469,14 @@ function template_success_screen(req,rorder,revent,type,stat){
 	}else if(type == 'va_success'){
 		json_data.payment_type = 'va';
 		json_data.event = revent;
-		json_data.summary = rorder;
+		
+		if(rorder.product_list[0].ticket_type == 'booking'){
+			rorder.pay_deposit = parseInt(rorder.vt_response.gross_amount);
+			json_data.summary = rorder;
+		}else if(rorder.product_list[0].ticket_type == 'purchase'){
+			json_data.summary = rorder;
+		}
+		
 		
 		json_data.instructions = 'When you get to the venue look for the ticket boot. Lremp Ipsum Dollor sit amet. \n If you hae any questions please dont hesitate to Text or WA at +6211111111'
 		
@@ -470,7 +496,11 @@ function template_success_screen(req,rorder,revent,type,stat){
 			json_data.created_at = rorder.created_at;
 			json_data.timelimit = req.app.get('helpers').addHours(new Date(rorder.created_at).getTime(),rorder.product_list[0].payment_timelimit);
 			
-			json_data.amount = rorder.total_price;
+			if(rorder.product_list[0].ticket_type == 'booking'){
+				json_data.amount = parseInt(rorder.vt_response.gross_amount);
+			}else if(rorder.product_list[0].ticket_type == 'purchase'){
+				json_data.amount = parseInt(rorder.total_price);
+			}
 			
 			json_data.transfer_to = rorder.vt_response.bill_key;
 		}
@@ -509,7 +539,12 @@ function template_success_screen(req,rorder,revent,type,stat){
 	}else if(type == 'bp_success'){
 		json_data.payment_type = 'bp';
 		json_data.event = revent;
-		json_data.summary = rorder;
+		if(rorder.product_list[0].ticket_type == 'booking'){
+			rorder.pay_deposit = parseInt(rorder.vt_response.gross_amount);
+			json_data.summary = rorder;
+		}else if(rorder.product_list[0].ticket_type == 'purchase'){
+			json_data.summary = rorder;
+		}
 		
 		json_data.instructions = 'When you get to the venue look for the ticket boot. Lremp Ipsum Dollor sit amet. \n If you hae any questions please dont hesitate to Text or WA at +6211111111'
 		
@@ -523,8 +558,14 @@ function template_success_screen(req,rorder,revent,type,stat){
 		json_data.fine_print[1] = "Lorem Ipsum copy in various charsets and langauges for layouts";
 		json_data.fine_print[2] = "Lorem Ipsum copy in various charsets and langauges for layouts";
 	}else if(type == 'cc'){
+		json_data.payment_type = 'cc';
 		json_data.event = revent;
-		json_data.summary = rorder;
+		if(rorder.product_list[0].ticket_type == 'booking'){
+			rorder.pay_deposit = parseInt(rorder.vt_response.gross_amount);
+			json_data.summary = rorder;
+		}else if(rorder.product_list[0].ticket_type == 'purchase'){
+			json_data.summary = rorder;
+		}
 		
 		json_data.instructions = 'When you get to the venue look for the ticket boot. Lremp Ipsum Dollor sit amet. \n If you hae any questions please dont hesitate to Text or WA at +6211111111'
 		

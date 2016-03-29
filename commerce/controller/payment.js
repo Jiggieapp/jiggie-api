@@ -12,10 +12,15 @@ var comurl = 'https://commerce.jiggieapp.com/VT/production/';
 exports.index = function(req, res){
 	var type = req.body.type;
 	type = type.toLowerCase();
+	
 	if(type == 'cc'){
 		post_transaction_cc(req,function(dt){
 			if(dt == false){
-				res.json({code_error:403})
+				res.json({
+					msg:{
+						status_message:'Validation Payment Incorrect'
+					}
+				})
 			}else{
 				res.json(dt);
 			}
@@ -23,7 +28,11 @@ exports.index = function(req, res){
 	}else if(type == 'va'){
 		post_transaction_va(req,function(dt){
 			if(dt == false){
-				res.json({code_error:403})
+				res.json({
+					msg:{
+						status_message:'Validation Payment Incorrect'
+					}
+				})
 			}else{
 				res.json(dt);
 			}
@@ -31,7 +40,23 @@ exports.index = function(req, res){
 	}else if(type == 'bp'){
 		post_transaction_va(req,function(dt){
 			if(dt == false){
-				res.json({code_error:403})
+				res.json({
+					msg:{
+						status_message:'Validation Payment Incorrect'
+					}
+				})
+			}else{
+				res.json(dt);
+			}
+		})
+	}else if(type == 'bca'){
+		post_transaction_va(req,function(dt){
+			if(dt == false){
+				res.json({
+					msg:{
+						status_message:'Validation Payment Incorrect'
+					}
+				})
 			}else{
 				res.json(dt);
 			}
@@ -46,6 +71,7 @@ function post_transaction_va(req,next){
 	var order_id = String(post.order_id);
 	var token_id = post.token_id;
 	var type = post.type;
+	var pay_deposit = post.pay_deposit;
 	type = type.toLowerCase();
 	
 	var schema = req.app.get('mongo_path');
@@ -67,6 +93,28 @@ function post_transaction_va(req,next){
 				}
 			})
 		},
+		function is_ticket_exist(stat,dt,cb){
+			if(stat == true){
+				var cond22 = {
+					_id:new ObjectId(dt.product_list[0].ticket_id),
+					active:{$ne:false},
+					status:'active'
+				}
+				tickettypes_coll.findOne(cond22,function(err,r){
+					if(err){
+						cb(null,false,[]);
+					}else{
+						if(r == null){
+							cb(null,false,[]);
+						}else{
+							cb(null,true,dt);
+						}
+					}
+				})
+			}else{
+				cb(null,false,[]);
+			}
+		},
 		function get_customers(stat,dt,cb){
 			if(stat == false){
 				cb(null,false,dt,[])
@@ -86,6 +134,22 @@ function post_transaction_va(req,next){
 				})
 			}
 		},
+		function cek_valid_min_deposit_booking(stat,dt,dt2,cb){
+			if(stat == true){
+				if(dt.product_list[0].ticket_type == 'booking'){
+					if(parseFloat(pay_deposit) >= parseFloat(dt.product_list[0].min_deposit_amount)){
+						cb(null,true,dt,dt2);
+					}else{
+						debug.log('errorr min deposit required for booking');
+						cb(null,false,[],[]);
+					}
+				}else{
+					cb(null,true,dt,dt2);
+				}
+			}else{
+				cb(null,false,[],[]);
+			}
+		},
 		function sync_data(stat,dt,dt2,cb){
 			if(stat == true){
 				var json_data = new Object();
@@ -93,7 +157,11 @@ function post_transaction_va(req,next){
 				// s:transaction_details //
 				transaction_details = new Object();	
 				transaction_details.order_id = order_id;
-				transaction_details.gross_amount = parseFloat(dt.total_price);
+				if(dt.product_list[0].ticket_type == 'purchase'){
+					transaction_details.gross_amount = parseFloat(dt.total_price);
+				}else if(dt.product_list[0].ticket_type == 'booking'){
+					transaction_details.gross_amount = parseInt(pay_deposit);
+				}
 				json_data.transaction_details = transaction_details;
 				// e:transaction_details //
 				
@@ -103,9 +171,14 @@ function post_transaction_va(req,next){
 				async.forEachOf(dt.product_list,function(v,k,e){
 					items[n] = new Object();
 					items[n].id = v.ticket_id;
-					items[n].price = parseFloat(v.total_price_aftertax);
-					items[n].quantity = parseFloat(v.num_buy);
 					items[n].name = v.name;
+					if(v.ticket_type == 'purchase'){
+						items[n].price = parseFloat(v.total_price_aftertax);
+						items[n].quantity = parseFloat(v.num_buy);
+					}else if(v.ticket_type == 'booking'){
+						items[n].price = parseInt(pay_deposit);
+						items[n].quantity = parseInt(1);
+					}
 					n++;
 				})
 				json_data.items = items;
@@ -148,11 +221,18 @@ function post_transaction_va(req,next){
 				json_data.token_id = token_id;
 				json_data.code = dt.code;
 				
+				if(dt.product_list[0].ticket_type == 'booking'){
+					json_data.booking_guest_numbuy = dt.product_list[0].num_buy;
+				}else if(dt.product_list[0].ticket_type == 'purchase'){
+					json_data.booking_guest_numbuy = 0;
+				}
 				var url_execute = '';
 				if(type == 'va'){
 					url_execute = 'transaction_va.php';
 				}else if(type == 'bp'){
 					url_execute = 'transaction_bp.php';
+				}else if(type == 'bca'){
+					url_execute = 'transaction_bca.php';
 				}
 				
 				// get timelimit
@@ -185,17 +265,21 @@ function post_transaction_va(req,next){
 				
 				
 			}else{
-				cb(null,false);
+				cb(null,false,[],[]);
 			}
 		},
 		function cek_transaction_vt(stat,dtorder,body,cb){
-			debug.log('cek VT');
-			debug.log(body);
-			var vt = JSON.parse(body);
-			if(typeof vt.code_error == 'undefined'){
-				cb(null,true,dtorder,body)	
+			if(stat == true){
+				debug.log('cek VT');
+				debug.log(body);
+				var vt = JSON.parse(body);
+				if(typeof vt.code_error == 'undefined'){
+					cb(null,true,dtorder,body)	
+				}else{
+					debug.log("Error Code in VT Commerce VA");
+					cb(null,false,[],[]);
+				}
 			}else{
-				debug.log("Error Code in VT Commerce VA");
 				cb(null,false,[],[]);
 			}
 		},
@@ -212,7 +296,7 @@ function post_transaction_va(req,next){
 				})
 			}else{
 				debug.log('error line 165 => paymentjs');
-				cb(null,false,[]);
+				cb(null,false,[],[]);
 			}
 		},
 		function upd_vt(stat,dtorder,body,cb2){
@@ -273,7 +357,9 @@ function post_transaction_va(req,next){
 			if(type == 'bp'){
 				str = {success:true,status:'capture',bill_key:vt.bill_key,biller_code:vt.biller_code,method:'Mandiri Bill Payment'}
 			}else if(type == 'va'){
-				str = {success:true,status:'capture',va_number:vt.permata_va_number,method:'Virtual Account'}
+				str = {success:true,status:'capture',va_number:vt.permata_va_number,method:'PERMATA Virtual Account'}
+			}else if(type == 'bca'){
+				str = {success:true,status:'capture',va_number:vt.va_numbers[0].va_number,method:'BCA Virtual Account'}
 			}
 			next(str)
 		}else{
@@ -287,12 +373,13 @@ function merge_data_va(req,body,next){
 	var order_id = post.order_id;
 	var token_id = post.token_id;
 	var type = post.type;
+	var pay_deposit = post.pay_deposit;
 	type = type.toLowerCase();
 	
 	var schema = req.app.get('mongo_path');
 	var order = require(schema+'/order_product.js');
 	
-	if(type == 'va' || type == 'bp'){
+	if(type == 'va' || type == 'bp' || type == 'bca'){
 		async.waterfall([
 			function get_stock(cb2){
 				order.findOne({order_id:order_id},function(err,r){
@@ -363,6 +450,7 @@ function post_transaction_cc(req,next){
 	var post = req.body;
 	var order_id = String(post.order_id);
 	var token_id = post.token_id;
+	var pay_deposit = post.pay_deposit;
 	var type = post.type;
 	type = type.toLowerCase();
 	var is_new_card = post.is_new_card;
@@ -406,6 +494,28 @@ function post_transaction_cc(req,next){
 				}
 			})
 		},
+		function is_ticket_exist(stat,dt,cb){
+			if(stat == true){
+				var cond22 = {
+					_id:new ObjectId(dt.product_list[0].ticket_id),
+					active:{$ne:false},
+					status:'active'
+				}
+				tickettypes_coll.findOne(cond22,function(err,r){
+					if(err){
+						cb(null,false,[]);
+					}else{
+						if(r == null){
+							cb(null,false,[]);
+						}else{
+							cb(null,true,dt);
+						}
+					}
+				})
+			}else{
+				cb(null,false,[]);
+			}
+		},
 		function get_customers(stat,dt,cb){
 			if(stat == false){
 				cb(null,false,dt,[])
@@ -425,6 +535,22 @@ function post_transaction_cc(req,next){
 				})
 			}
 		},
+		function cek_valid_min_deposit_booking(stat,dt,dt2,cb){
+			if(stat == true){
+				if(dt.product_list[0].ticket_type == 'booking'){
+					if(parseFloat(pay_deposit) >= parseFloat(dt.product_list[0].min_deposit_amount)){
+						cb(null,true,dt,dt2);
+					}else{
+						debug.log('error min deposit required for booking');
+						cb(null,false,[],[]);
+					}
+				}else{
+					cb(null,true,dt,dt2);
+				}
+			}else{
+				cb(null,false,[],[]);
+			}
+		},
 		function sync_data(stat,dt,dt2,cb){
 			if(stat == true){
 				var json_data = new Object();
@@ -433,7 +559,11 @@ function post_transaction_cc(req,next){
 				// s:transaction_details //
 				transaction_details = new Object();	
 				transaction_details.order_id = order_id;
-				transaction_details.gross_amount = parseFloat(dt.total_price);
+				if(dt.product_list[0].ticket_type == 'purchase'){
+					transaction_details.gross_amount = parseFloat(dt.total_price);
+				}else if(dt.product_list[0].ticket_type == 'booking'){
+					transaction_details.gross_amount = parseInt(pay_deposit);
+				}
 				json_data.transaction_details = transaction_details;
 				// e:transaction_details //
 				
@@ -443,9 +573,14 @@ function post_transaction_cc(req,next){
 				async.forEachOf(dt.product_list,function(v,k,e){
 					items[n] = new Object();
 					items[n].id = v.ticket_id;
-					items[n].price = parseFloat(v.total_price_aftertax);
-					items[n].quantity = parseInt(v.num_buy);
 					items[n].name = v.name;
+					if(v.ticket_type == 'purchase'){
+						items[n].price = parseFloat(v.total_price_aftertax);
+						items[n].quantity = parseFloat(v.num_buy);
+					}else if(v.ticket_type == 'booking'){
+						items[n].price = parseInt(pay_deposit);
+						items[n].quantity = parseInt(1);
+					}
 					n++;
 				})
 				json_data.items = items;
@@ -520,12 +655,16 @@ function post_transaction_cc(req,next){
 			}
 		},
 		function cek_transaction_vt(stat,dt,dt2,body,cb){
-			var vt = JSON.parse(body);
-			debug.log(vt);
-			if(typeof vt.code_error == 'undefined'){
-				cb(null,true,dt,dt2,body)	
+			if(stat == true){
+				var vt = JSON.parse(body);
+				debug.log(vt);
+				if(typeof vt.code_error == 'undefined'){
+					cb(null,true,dt,dt2,body)	
+				}else{
+					debug.log("Error Code in VT Commerce CC");
+					cb(null,false,[],[],[]);
+				}
 			}else{
-				debug.log("Error Code in VT Commerce CC");
 				cb(null,false,[],[],[]);
 			}
 		},

@@ -1,0 +1,78 @@
+<html>
+<head>
+	<title><%=congrats_title%></title>
+	<link href='https://fonts.googleapis.com/css?family=Roboto:400,700' rel='stylesheet' type='text/css' />
+
+</head>
+<body>
+<div id="container">
+	<div id="inner_container">
+
+		<div id="header">
+			<h1>Congratulations <%=first_name%>!</h1>
+			<p>You have successfully purchased tickets for</p>
+		</div>
+
+		<div id="event">
+			<h2><%=event_name%></h2>
+			<span id="event_date"><%=event_date%></span>
+		</div>
+
+		<div id="rsvp_no">
+			<p><strong>ORDER NUMBER</strong><span><%=rsvp_no%></span></p>			
+		</div>
+
+		<div id="customer_detail">
+			<table class="summary">
+				<tbody>
+					<tr>
+						<th>GUEST NAME</th>
+						<td><%=guest_name%></td>
+					</tr>
+					<tr>
+						<th>STATUS</th>
+						<td><%=status%></td>
+					</tr>
+					<tr>
+						<th>PAYMENT METHOD</th>
+						<td><%=payment_method%></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<div id="rsvp_title">
+			<h3>ORDER SUMMARY</h3>			
+			<span id="event_schedule"><%=event_datetime_word%></span>
+		</div>
+
+		<div id="rsvp_summary">
+			<table class="summary">
+				<tbody>
+					<tr>
+						<th><%=product_name%></th>
+						<td><%=product_price%></td>
+					</tr>
+					<tr>
+						<th>ADMINISTRATIF FEE</th>
+						<td class="bot-bor"><%=amount_service%></td>
+					</tr>
+					<tr>
+						<th>TAX</th>
+						<td><%=amount_tax%></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<div id="instruction">
+			<h3>INSTRUCTIONS</h3>
+			<p>
+				<%=instructions%>
+			</p>
+		</div>
+
+	</div>
+</div>
+</body>
+</html>
