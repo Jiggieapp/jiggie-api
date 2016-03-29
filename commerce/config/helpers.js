@@ -43,6 +43,27 @@ var helpers = {
 		var dateString = moment(time).format('YYYY-MM-DD HH:mm:ss');
 		var timeAdd = moment(dateString).add(minute,'minute');
 		return new Date(timeAdd);
+	},
+	template_success: function(req){
+		var fs = require('fs-sync');
+		var path = require('path');
+		var ppt = path.join(__dirname,"../../global/email.html");
+		var html = fs.read(ppt);
+		return html;
+	},
+	parseDate:function(dateutc,string_format){
+		var momenttz = require('moment-timezone');
+		var dt_moment = momenttz.tz(dateutc,'Asia/Jakarta');
+		var nformat = dt_moment.format()
+		debug.log(nformat);
+		
+		var moment = require('moment');
+		// var dtmoment = moment(nformat).format('ddd, DD MMM YYYY');
+		var dtmoment = moment(nformat).format(string_format);
+		
+		return dtmoment;
+
+			
 	}
 }
 

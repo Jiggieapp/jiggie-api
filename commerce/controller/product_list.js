@@ -92,7 +92,7 @@ function get_data(req,next){
 								}
 								json_data.purchase[n].summary = v.summary;
 								n++;
-							}else if(v.ticket_type == 'reservation'){
+							}else if(v.ticket_type == 'booking'){
 								json_data.reservation[m] = new Object();
 								json_data.reservation[m].ticket_id = v._id;
 								json_data.reservation[m].name = v.name;
@@ -108,6 +108,8 @@ function get_data(req,next){
 								json_data.reservation[m].total_price = v.total;
 								json_data.reservation[m].description = v.description;
 								json_data.reservation[m].max_guests = v.guest;
+								json_data.reservation[m].min_deposit_percent = v.deposit;
+								json_data.reservation[m].min_deposit_amount = String((parseFloat(v.total_num)/100)*parseFloat(v.deposit))
 								if(typeof v.payment_timelimit == 'undefined'){
 									json_data.reservation[m].payment_timelimit = 180;
 								}else{
@@ -222,24 +224,28 @@ function post_summary(req,next){
 	var post = req.body;
 	
 	async.waterfall([
-		function get_ticketdata(cb){
+		function get_ticketdata(callback){
 			var in_ticketid = [];
 			var n = 0;
 			async.forEachOf(post.product_list,function(v,k,e){
 				in_ticketid[n] = new ObjectId(v.ticket_id);
 			})
-			tickettypes_coll.find({_id:{$in:in_ticketid}}).toArray(function(err,r){
-				async.forEachOf(r,function(v,k,e){
-					async.forEachOf(post.product_list,function(ve,ke,ee){
-						if(v._id == ve.ticket_id){
-							v.num_buy = ve.num_buy;
-							v.guest_detail = ve.guest_detail;
-							v.ticket_id = ve.ticket_id;
-						}
+			tickettypes_coll.find({_id:{$in:in_ticketid},active:{$ne:false},status:'active'}).toArray(function(err,r){
+				if(r == null || typeof r == 'undefined' || r.length <= 0){
+					callback(null,false,[])
+				}else{
+					async.forEachOf(r,function(v,k,e){
+						async.forEachOf(post.product_list,function(ve,ke,ee){
+							if(v._id == ve.ticket_id){
+								v.num_buy = ve.num_buy;
+								v.guest_detail = ve.guest_detail;
+								v.ticket_id = ve.ticket_id;
+							}
+						})
 					})
-				})
-				debug.log(r);
-				cb(null,true,r)
+					debug.log(r);
+					callback(null,true,r)
+				}
 			})
 		},
 		function get_event(stat,rows_ticket,cb){
@@ -281,18 +287,34 @@ function post_summary(req,next){
 				var tot_price_all = 0;
 				json_data.product_list = [];
 				async.forEachOf(rows_ticket,function(v,k,e){
-					tot_tax = parseFloat(v.tax_amount)*parseInt(v.num_buy);
-					tot_tip = parseFloat(v.tip_amount)*parseInt(v.num_buy);
-					var mata_uang;(typeof v.currency == 'undefined') ? mata_uang = 'IDR' : mata_uang = v.currency;
-					tot_price = parseFloat(v.price)*parseInt(v.num_buy);
-					total_price_aftertax = parseFloat(v.price)+parseFloat(v.tax_amount)+(parseFloat(v.admin_fee)/parseFloat(v.num_buy))+parseFloat(v.tip_amount);
-					tot_price_all = tot_price + tot_tax + tot_tip + parseFloat(v.admin_fee);
-					
 					json_data.product_list[n] = new Object();
+					
+					var mata_uang;(typeof v.currency == 'undefined') ? mata_uang = 'IDR' : mata_uang = v.currency;
+					if(v.ticket_type == 'purchase'){
+						tot_tax = parseFloat(v.tax_amount)*parseInt(v.num_buy);
+						tot_tip = parseFloat(v.tip_amount)*parseInt(v.num_buy);
+						tot_price = parseFloat(v.price)*parseInt(v.num_buy);
+						total_price_aftertax = parseFloat(v.price)+parseFloat(v.tax_amount)+(parseFloat(v.admin_fee)/parseFloat(v.num_buy))+parseFloat(v.tip_amount);
+						tot_price_all = tot_price + tot_tax + tot_tip + parseFloat(v.admin_fee);
+						
+						json_data.product_list[n].max_buy = String(v.guest);
+					}else if(v.ticket_type == 'booking'){
+						tot_tax = parseFloat(v.tax_amount);
+						tot_tip = parseFloat(v.tip_amount);
+						tot_price = parseFloat(v.price);
+						total_price_aftertax = parseFloat(v.total_num);
+						tot_price_all = parseFloat(v.total_num);
+						
+						
+						
+						json_data.product_list[n].min_deposit_percent = String(v.deposit);
+						json_data.product_list[n].min_deposit_amount = String((parseFloat(v.total_num)/100)*parseFloat(v.deposit))
+					}
+					
+					
 					json_data.product_list[n].ticket_id = String(v.ticket_id);
 					json_data.product_list[n].name = String(v.name);
 					json_data.product_list[n].ticket_type = String(v.ticket_type);
-					json_data.product_list[n].max_buy = String(v.guest);
 					json_data.product_list[n].quantity = String(v.quantity);
 					json_data.product_list[n].admin_fee = String(v.admin_fee);
 					json_data.product_list[n].tax_percent = String(v.tax);
@@ -366,30 +388,39 @@ function post_summary(req,next){
 							cek_exist = false;
 						}
 						
-						cb(null,1,json_data,cek_exist,cek_quantity,cek_type)
+						if(rows_ticket.ticket_type == 'purchase'){
+							if(json_data.product_list[0].num_buy > json_data.product_list[0].max_buy){
+								cek_max = false;
+							}else{
+								cek_max = true;
+							}
+						}
+						
+						cb(null,1,json_data,cek_exist,cek_quantity,cek_type,cek_max)
 					}
 				})
 			}else{
-				cb(null,0,'','','','');
+				cb(null,0,'','','','','');
 			}
 		},
-		function post_data(cek,json_data,cek_exist,cek_quantity,cek_type,cb){
+		function post_data(cek,json_data,cek_exist,cek_quantity,cek_type,cek_max,callback){
 			if(cek == 1){
 				debug.log('cek_exist : '+cek_exist);
 				debug.log('cek_quantity : '+cek_quantity);
 				debug.log('cek_type : '+cek_type);
-				if(cek_exist == true && cek_quantity == true && cek_type == true){
+				debug.log('cek_max : '+cek_max);
+				if(cek_exist == true && cek_quantity == true && cek_type == true && cek_max == true){
 					var insert = new order(json_data);
 					insert.save(function(err){
 						if(err){debug.log(err);}else{
-							cb(null,json_data)
+							callback(null,json_data)
 						}
 					})
 				}else{
-					cb(null,false);
+					callback(null,false);
 				}
 			}else{
-				cb(null,0);
+				callback(null,0);
 			}
 		}
 		

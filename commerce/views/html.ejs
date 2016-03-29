@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{{congrats_title}}</title>
+	<link href='https://fonts.googleapis.com/css?family=Roboto:400,700' rel='stylesheet' type='text/css' />
+	<style type="text/css">
+	* {font-family: "Roboto", Helvetica, Arial, sans-serif;}
+
+	body{
+		width: 100%;
+		margin: 0; padding: 0;
+		text-align: center;
+	}
+	#container{
+		max-width: 600px;
+		margin: auto;
+		text-align: left;
+	}
+
+	#inner_container{
+		margin: 30px 0px 0px 0px;
+	}
+
+	#header{
+		text-align: center;
+		background: url("https://s3-ap-southeast-1.amazonaws.com/jiggieimages/emails/img-check.png") top center no-repeat;
+		padding: 220px 0px 0px 0px;
+	}
+	#header h1{
+		margin: 0; padding: 0;
+	}
+	#header p{
+		color: #a4a4a4;
+		margin: 10px; padding: 0px 0px 20px 0px;
+	}
+
+	#event{
+		text-align: center;
+		border: 1px #ccc dashed;
+		margin: 10px 0; padding: 20px 10px;
+		color: #a4a4a4;
+	}
+	#event h2{
+		margin: 0; padding: 0;
+		color: #ab3dd3;
+		text-transform: uppercase;
+	}
+
+	#rsvp_no{
+		margin: 20px 0px;
+		padding: 0px 0px 10px 0px;
+		border-bottom: 1px #ccc solid;
+	}
+	#rsvp_no strong{
+		font-size: 18.72px;
+	}
+	#rsvp_no p span{
+		display: block; 
+		float: right;
+		color: #ab3dd3;
+	}
+
+	table.summary{
+		width: 100%;
+		margin: 0px 0px 10px 0px;
+	}
+	table.summary th{
+		color: #898989;
+	}
+	table.summary td, table.summary th{
+		padding: 10px 0;
+	}
+	table.summary td{
+		text-align: right;
+		color: #ab3dd3;
+	}
+	table.summary.green{
+		color: #00a850;
+	}
+
+	.bot-bor{
+		border-bottom: 1px dashed #ccc;
+	}
+
+
+	#rsvp_title{
+		margin: 20px 0px 20px 0px;
+		padding: 20px 0px 0px 0px;
+	}
+	#rsvp_title h3{
+		margin: 0; padding: 0;
+		background: url("https://s3-ap-southeast-1.amazonaws.com/jiggieimages/emails/line+-+reservation+summary.png") right center no-repeat;
+	}
+	#rsvp_title span{
+		color: #a4a4a4;
+	}
+
+	#rsvp_summary{
+		margin: 20px 0px 20px 0px;
+	}
+
+	#instruction{
+		margin: 30px 0;
+	}
+	#instruction h3{
+		margin: 0; padding: 0;
+		background: url("https://s3-ap-southeast-1.amazonaws.com/jiggieimages/emails/line+-+reservation+summary.png") right center no-repeat;
+	}
+	#instruction p{
+		color: #a4a4a4;
+	}
+	</style>
+</head>
+<body>
+<div id="container">
+	<div id="inner_container">
+
+		<div id="header">
+			<h1>Congratulations {{first_name}}!</h1>
+			<p>You have successfully placed a reservation for</p>
+		</div>
+
+		<div id="event">
+			<h2>{{event_name}}</h2>
+			<span id="event_date">{{event_date}}</span>
+		</div>
+
+		<div id="rsvp_no">
+			<p><strong>RESERVATION NUMBER</strong><span>{{rsvp_no}}</span></p>			
+		</div>
+
+		<div id="customer_detail">
+			<table class="summary">
+				<tbody>
+					<tr>
+						<th>GUEST NAME</th>
+						<td>{{guest_name}}</td>
+					</tr>
+					<tr>
+						<th>TOTAL GUEST</th>
+						<td>{{total_guest}}</td>
+					</tr>
+					<tr>
+						<th>STATUS</th>
+						<td>{{status}}</td>
+					</tr>
+					<tr>
+						<th>PAYMENT METHOD</th>
+						<td>{{payment_method}}</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<div id="rsvp_title">
+			<h3>RESERVATION SUMMARY</h3>			
+			<span id="event_schedule">{{event_datetime_word}}</span>
+		</div>
+
+		<div id="rsvp_summary">
+			<table class="summary">
+				<tbody>
+					<tr>
+						<th>{{PRODUCT_NAME}}</th>
+						<td>{{product_price}}</td>
+					</tr>
+					<tr>
+						<th>TAX</th>
+						<td>{{amount_tax}}</td>
+					</tr>
+					<tr>
+						<th>SERVICE CHARGE</th>
+						<td class="bot-bor">{{amount_service}}</td>
+					</tr>
+					<tr>
+						<th>ESTIMATED TOTAL</th>
+						<td>{{amount_estimated}}</td>
+					</tr>
+					<tr>
+						<th>REQUIRED DEPOSIT</th>
+						<td class="bot-bor green">{{amount_deposit}}</td>
+					</tr>
+					<tr>
+						<th>ESTIMATED BALANCE<br />(PAY AT VENUE)</th>
+						<td>{{amount_balance}}</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<div id="instruction">
+			<h3>INSTRUCTIONS</h3>
+			<p>
+				{{instructions}}
+			</p>
+		</div>
+
+	</div>
+</div>
+</body>
+</html>
