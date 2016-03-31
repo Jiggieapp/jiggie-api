@@ -52,18 +52,9 @@ var helpers = {
 		return html;
 	},
 	parseDate:function(dateutc,string_format){
-		var momenttz = require('moment-timezone');
-		var dt_moment = momenttz.tz(dateutc,'Asia/Jakarta');
-		var nformat = dt_moment.format()
-		debug.log(nformat);
-		
-		var moment = require('moment');
-		// var dtmoment = moment(nformat).format('ddd, DD MMM YYYY');
-		var dtmoment = moment(nformat).format(string_format);
-		
-		return dtmoment;
-
-			
+		var momenttz = require('moment-timezone')
+		var dt = momenttz(dateutc).tz('Asia/Jakarta').format(string_format);
+		return dt
 	}
 }
 

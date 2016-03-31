@@ -11,15 +11,15 @@ exports.environ = function(app,express,helmet,path,compression,bodyParser){
 	app.use(express.logger('dev'));
 	
 	/*mail env*/
-	// app.set('mail_host','smtp.mandrillapp.com');
-	// app.set('mail_port',587);
-	// app.set('mail_user','cto@jiggieapp.com');
-	// app.set('mail_pass','4HilaY1jFATpOsjOXgUXoQ');
-	
 	app.set('mail_host','smtp.mandrillapp.com');
 	app.set('mail_port',587);
-	app.set('mail_user','DwitaMelati');
-	app.set('mail_pass','VuGDhbjMxIW5D6QPcUJ5Lg');
+	app.set('mail_user','cto@jiggieapp.com');
+	app.set('mail_pass','4HilaY1jFATpOsjOXgUXoQ');
+	
+	// app.set('mail_host','smtp.mandrillapp.com');
+	// app.set('mail_port',587);
+	// app.set('mail_user','jiggie');
+	// app.set('mail_pass','VuGDhbjMxIW5D6QPcUJ5Lg');
 	/*mail env*/
 
 	app.use(express.json());

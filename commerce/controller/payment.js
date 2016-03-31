@@ -17,8 +17,9 @@ exports.index = function(req, res){
 		post_transaction_cc(req,function(dt){
 			if(dt == false){
 				res.json({
+					code_error:403,
 					msg:{
-						status_message:'Validation Payment Incorrect'
+						status_message:'Ticket Is Not Available'
 					}
 				})
 			}else{
@@ -29,8 +30,9 @@ exports.index = function(req, res){
 		post_transaction_va(req,function(dt){
 			if(dt == false){
 				res.json({
+					code_error:403,
 					msg:{
-						status_message:'Validation Payment Incorrect'
+						status_message:'Ticket Is Not Available'
 					}
 				})
 			}else{
@@ -41,8 +43,9 @@ exports.index = function(req, res){
 		post_transaction_va(req,function(dt){
 			if(dt == false){
 				res.json({
+					code_error:403,
 					msg:{
-						status_message:'Validation Payment Incorrect'
+						status_message:'Ticket Is Not Available'
 					}
 				})
 			}else{
@@ -53,8 +56,9 @@ exports.index = function(req, res){
 		post_transaction_va(req,function(dt){
 			if(dt == false){
 				res.json({
+					code_error:403,
 					msg:{
-						status_message:'Validation Payment Incorrect'
+						status_message:'Ticket Is Not Available'
 					}
 				})
 			}else{
@@ -102,9 +106,11 @@ function post_transaction_va(req,next){
 				}
 				tickettypes_coll.findOne(cond22,function(err,r){
 					if(err){
+						debug.log('error line 105 payment commerce')
 						cb(null,false,[]);
 					}else{
 						if(r == null){
+							debug.log('error line 109 payment commerce')
 							cb(null,false,[]);
 						}else{
 							cb(null,true,dt);
@@ -254,8 +260,10 @@ function post_transaction_va(req,next){
 						}
 						curl.post(options,function(err,resp,body){
 							if (!err && resp.statusCode == 200) {
+								debug.log('VT RESPONSE SUCCESS')
 								cb(null,true,dt,body)
 							}else{
+								debug.log('VT RESPONSE FAILED')
 								cb(null,false,[],[]);
 							}
 						});
@@ -331,13 +339,11 @@ function post_transaction_va(req,next){
 		},
 		function send_notif(stat,dtorder,vt,cb2){
 			if(stat == true){
-				curl.get({url:'http://127.0.0.1:24534/notif_handle'},function(err,resp,body){})
-				
 				var form_post = new Object();
 				form_post.vt = vt;
 				form_post.email_to = dtorder.guest_detail.email;
 				var options = {
-					url:'http://127.0.0.1:24534/sendnotif',
+					url:'http://127.0.0.1:31456/sendnotif',
 					form:form_post
 				}
 				curl.post(options,function(err,resp,body){

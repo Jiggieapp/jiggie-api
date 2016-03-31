@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<link href='https://fonts.googleapis.com/css?family=Roboto:400,700' rel='stylesheet' type='text/css' />
+	<style type="text/css">
+	* {font-family: "Roboto", Helvetica, Arial, sans-serif;}
+
+	body{
+		width: 100%;
+		margin: 0; padding: 0;
+		text-align: center;
+	}
+	#container{
+		max-width: 600px;
+		margin: auto;
+		text-align: left;
+	}
+
+	#inner_container{
+		margin: 30px 0px 0px 0px;
+	}
+
+	#header{
+		text-align: center;
+		background: url("https://s3-ap-southeast-1.amazonaws.com/jiggieimages/emails/img-check.png") top center no-repeat;
+		padding: 220px 0px 0px 0px;
+	}
+	#header h1{
+		margin: 0; padding: 0;
+	}
+	#header p{
+		color: #a4a4a4;
+		margin: 10px; padding: 0px 0px 20px 0px;
+	}
+
+	#event{
+		text-align: center;
+		border: 1px #ccc dashed;
+		margin: 10px 0; padding: 20px 10px;
+		color: #a4a4a4;
+	}
+	#event h2{
+		margin: 0; padding: 0;
+		color: #ab3dd3;
+		text-transform: uppercase;
+	}
+
+	#rsvp_no{
+		margin: 20px 0px;
+		padding: 0px 0px 10px 0px;
+		border-bottom: 1px #ccc solid;
+	}
+	#rsvp_no strong{
+		font-size: 18.72px;
+	}
+	#rsvp_no p span{
+		display: block; 
+		float: right;
+		color: #ab3dd3;
+		font-size: 18.72px;
+		font-weight: bold;
+	}
+
+	table.summary{
+		width: 100%;
+		margin: 0px 0px 10px 0px;
+	}
+	table.summary th{
+		color: #898989;
+	}
+	table.summary td, table.summary th{
+		padding: 10px 0;
+	}
+	table.summary td{
+		text-align: right;
+		color: #ab3dd3;
+	}
+	table.summary.green{
+		color: #00a850;
+	}
+
+	.bot-bor{
+		border-bottom: 1px dashed #ccc;
+	}
+
+
+	#rsvp_title{
+		margin: 20px 0px 20px 0px;
+		padding: 20px 0px 0px 0px;
+	}
+	#rsvp_title h3{
+		margin: 0; padding: 0;
+		background: url("https://s3-ap-southeast-1.amazonaws.com/jiggieimages/emails/line+-+reservation+summary.png") right center no-repeat;
+	}
+	#rsvp_title span{
+		color: #a4a4a4;
+	}
+
+	#rsvp_summary{
+		margin: 20px 0px 20px 0px;
+	}
+
+	#instruction{
+		margin: 30px 0;
+	}
+	#instruction p{
+		font-size: 24px;
+		color: #4b4b4b;
+	}
+	#instruction ol{
+		display: block;
+		margin: 0px 0px 0px 0px; padding: 0px 0px 0px 0px;
+		counter-reset: numList;
+		list-style: none;
+	}
+	#instruction ol li{
+		position: relative;
+		margin: 10px 0px 0px 0px;
+		padding: 0px 0px 0px 0px;
+	}
+	.number{
+		background: url("https://s3-ap-southeast-1.amazonaws.com/jiggieimages/emails/circle-purple-min.png") top left no-repeat;
+		width: 24px; height: 24px;
+		padding: 2px 0px 0px 8px;
+		font-weight: bold;
+		color: #fff;
+	}
+	#transfer_summary p{
+		margin: 0; padding: 10px 0;
+	}
+	#transfer_summary table{
+		width: 100%;
+		border-bottom: 1px solid #ccc;
+		padding: 0px 0px 20px 0px;
+	}
+	#transfer_summary table td{
+		padding: 0px 0px 0px 30px;
+	}
+	.purple-big{
+		color: #ab41d3;
+		font-size: 28px;
+		font-weight: bold;
+	}
+	.right-border{
+		border-right: 1px solid #ccc;
+	}
+	.float-left{
+		float: left;
+		display: block;
+	}
+	.clear{
+		clear: both;
+	}
+	</style>
+</head>
+<body>
+<div id="container">
+	<div id="inner_container">
+
+		<div id="header">
+			<h1>Congratulations {{first_name}}!</h1>
+			<p>You have successfully placed a reservation for</p>
+		</div>
+
+		<div id="event">
+			<h2>{{event_name}}</h2>
+			<span id="event_date">{{event_date}}</span>
+		</div>
+
+		<div id="rsvp_no">
+			<p><strong>RESERVATION NUMBER</strong><span>{{rsvp_no}}</span></p>			
+		</div>
+
+		<div id="transfer_summary">
+			<table>
+				<tbody>
+					<tr>
+						<td class="right-border">
+							<p>Transfer Time Limit</p>
+							<p class="purple-big">{{time_limit}}</p>
+						</td>
+						<td>
+							<p>Transfer Amount</p>
+							<p class="purple-big">{{amount}}</p>
+						</td>
+					</tr>
+					<tr>
+						<td colspan="2">
+							<p>Transfer To:</p>
+							<p class="purple-big">{{account_number}}</p>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<div id="instruction">
+			<h3>{{payment_steps_header}}</h3>
+			<p>
+				<ol>
+					<li><span class="float-left number">{{1}}</span><div class="float-left">{{step_1}}</div><div class="clear"></div></li>
+					<li><span class="float-left number">{{2}}</span><div class="float-left">{{step_2}}</div><div class="clear"></div></li>
+				</ol>
+			</p>
+		</div>
+
+	</div>
+</div>
+</body>
+</html>

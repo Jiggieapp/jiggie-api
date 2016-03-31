@@ -52,6 +52,8 @@
 		display: block; 
 		float: right;
 		color: #ab3dd3;
+		font-size: 18.72px;
+		font-weight: bold;
 	}
 
 	table.summary{
@@ -70,10 +72,6 @@
 	}
 	table.summary.green{
 		color: #00a850;
-	}
-	table.summary tr.total{
-		font-size: 24px;
-		font-weight: bold;
 	}
 
 	.bot-bor{
@@ -100,10 +98,51 @@
 	#instruction{
 		margin: 30px 0;
 	}
-	#instruction h3{
-		margin: 0; padding: 0;
-		background: url("https://s3-ap-southeast-1.amazonaws.com/jiggieimages/emails/line+-+reservation+summary.png") right center no-repeat;
-	}
 	#instruction p{
-		color: #a4a4a4;
+		font-size: 24px;
+		color: #4b4b4b;
+	}
+	#instruction ol{
+		display: block;
+		margin: 0px 0px 0px 0px; padding: 0px 0px 0px 0px;
+		counter-reset: numList;
+		list-style: none;
+	}
+	#instruction ol li{
+		position: relative;
+		margin: 10px 0px 0px 0px;
+		padding: 0px 0px 0px 0px;
+	}
+	.number{
+		background: url("https://s3-ap-southeast-1.amazonaws.com/jiggieimages/emails/circle-purple-min.png") top left no-repeat;
+		width: 24px; height: 24px;
+		padding: 2px 0px 0px 8px;
+		font-weight: bold;
+		color: #fff;
+	}
+	#transfer_summary p{
+		margin: 0; padding: 10px 0;
+	}
+	#transfer_summary table{
+		width: 100%;
+		border-bottom: 1px solid #ccc;
+		padding: 0px 0px 20px 0px;
+	}
+	#transfer_summary table td{
+		padding: 0px 0px 0px 30px;
+	}
+	.purple-big{
+		color: #ab41d3;
+		font-size: 28px;
+		font-weight: bold;
+	}
+	.right-border{
+		border-right: 1px solid #ccc;
+	}
+	.float-left{
+		float: left;
+		display: block;
+	}
+	.clear{
+		clear: both;
 	}

@@ -43,3 +43,19 @@ eventEmitter.on('database_connected',function(){
 		console.log("membersettings connected");
 	});
 });
+
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('order_products',function(collection){
+		order_coll = collection;
+		console.log("order_products connected");
+	});
+});
+
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('tickettypes',function(collection){
+		tickettypes_coll = collection;
+		console.log("tickettypes connected");
+	});
+});
