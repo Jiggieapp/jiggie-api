@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<link href='https://fonts.googleapis.com/css?family=Roboto:400,700' rel='stylesheet' type='text/css' />
+</head>
+<body>
+<div id="container">
+	<div id="inner_container">
+
+		<div id="header">
+			<h1>Congratulations <%=first_name%>!</h1>
+			<p>You have successfully purchased tickets for</p>
+		</div>
+
+		<div id="event">
+			<h2><%=event_name%></h2>
+			<span id="event_date"><%=event_date%></span>
+		</div>
+
+		<div id="rsvp_no">
+			<p><strong>ORDER NUMBER</strong><span><%=rsvp_no%></span></p>
+			<p><strong>PRODUCT NAME</strong><span><%=product_name%></span></p>
+			<p><strong>PAYMENT METHOD</strong><span><%=payment_method%></span></p>			
+		</div>
+
+		<div id="transfer_summary">
+			<table>
+				<tbody>
+					<tr>
+						<td class="right-border">
+							<p>Transfer Time Limit</p>
+							<p class="purple-big"><%=time_limit%></p>
+						</td>
+						<td>
+							<p>Transfer Amount</p>
+							<p class="purple-big"><%=amount%></p>
+						</td>
+					</tr>
+					<tr>
+						<td colspan="2">
+							<p>Transfer To:</p>
+							<p class="purple-big"><%=account_number%></p>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		
+		<!--
+		<div id="instruction">
+			<h3>payment_steps_header</h3>
+			<p>
+				<ol>
+					<li><span class="float-left number">1</span><div class="float-left">step_1</div><div class="clear"></div></li>
+					<li><span class="float-left number">2</span><div class="float-left">step_2</div><div class="clear"></div></li>
+				</ol>
+			</p>
+		</div>
+		-->
+
+	</div>
+</div>
+</body>
+</html>

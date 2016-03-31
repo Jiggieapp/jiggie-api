@@ -341,9 +341,17 @@ function get_success_screen(req,next){
 					var type = '';
 					if(rorder.vt_response.payment_type == 'bank_transfer'){
 						if(rorder.vt_response.transaction_status == 'pending'){
-							type = 'va_pending';
+							if(typeof rorder.vt_response.permata_va_number != 'undefined'){
+								type = 'va_pending';
+							}else if(typeof rorder.vt_response.va_numbers[0].bank != 'undefined'){
+								type = 'bca_pending'
+							}
 						}else if(rorder.vt_response.transaction_status == 'settlement'){
-							type = 'va_success';
+							if(typeof rorder.vt_response.permata_va_number != 'undefined'){
+								type = 'va_success';
+							}else if(typeof rorder.vt_response.va_numbers[0].bank != 'undefined'){
+								type = 'bca_success'
+							}
 						}else if(rorder.order_status == 'cancel'){
 							type = 'va_pending';
 						}
@@ -402,7 +410,62 @@ function template_success_screen(req,rorder,revent,rcust,type,stat){
 	json_data.type = type;
 	
 	
-	if(type == 'va_pending'){
+	if(type == 'bca_pending'){
+		json_data.payment_type = 'bca';
+		if(stat == 'success'){
+			json_data.payment_timelimit = rorder.product_list[0].payment_timelimit;
+			json_data.created_at = rorder.created_at;
+			json_data.timelimit = req.app.get('helpers').addHours(new Date(rorder.created_at).getTime(),rorder.product_list[0].payment_timelimit);
+			
+			if(rorder.product_list[0].ticket_type == 'booking'){
+				json_data.amount = parseInt(rorder.vt_response.gross_amount);
+			}else if(rorder.product_list[0].ticket_type == 'purchase'){
+				json_data.amount = parseInt(rorder.total_price);
+			}
+			json_data.transfer_to = rorder.vt_response.va_numbers[0].va_number;
+		}
+		
+		// bca //
+		json_data.step_payment = [];
+		json_data.step_payment[0] = new Object();
+		json_data.step_payment[0].header = 'Cara Pembayaran Melalui Channel BCA';
+		json_data.step_payment[0].step = [];
+		json_data.step_payment[0].step[0] = 'Pilih pembayaran melalui BCA VA.';
+		json_data.step_payment[0].step[1] = 'Catat nomor Virtual Account yang Anda dapat.';
+		json_data.step_payment[0].step[2] = 'Gunakan channel BCA untuk menyelesaikan pembayaran. ';
+		json_data.step_payment[0].step[3] = 'Masukkan PIN Anda. ';
+		json_data.step_payment[0].step[4] = 'Pilih Transfer ke BCA Virtual Account.';
+		if(stat == 'success'){
+			json_data.step_payment[0].step[5] = 'Masukkan nomor Virtual Account yang Anda dapat sebelumnya. ';
+		}else{
+			json_data.step_payment[0].step[5] = 'Masukkan nomor Virtual Account yang Anda dapat sebelumnya. ';
+		}
+		json_data.step_payment[0].step[6] = 'Pastikan detail pembayaran Anda benar & masukkan item pembayaran yang akan dibayar.';
+		json_data.step_payment[0].step[7] = 'Pembayaran Anda dengan BCA VA selesai.';
+		
+	}else if(type == 'bca_success'){
+		json_data.payment_type = 'bca';
+		json_data.event = revent;
+		
+		if(rorder.product_list[0].ticket_type == 'booking'){
+			rorder.pay_deposit = parseInt(rorder.vt_response.gross_amount);
+			json_data.summary = rorder;
+		}else if(rorder.product_list[0].ticket_type == 'purchase'){
+			json_data.summary = rorder;
+		}
+		
+		json_data.instructions = 'When you get to the venue look for the ticket boot. Lremp Ipsum Dollor sit amet. \n If you hae any questions please dont hesitate to Text or WA at +6211111111'
+		
+		json_data.ticket_include = [];
+		json_data.ticket_include[0] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.ticket_include[1] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.ticket_include[2] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		
+		json_data.fine_print = [];
+		json_data.fine_print[0] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.fine_print[1] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.fine_print[2] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+	}else if(type == 'va_pending'){
 		json_data.payment_type = 'va';
 		if(stat == 'success'){
 			json_data.payment_timelimit = rorder.product_list[0].payment_timelimit;

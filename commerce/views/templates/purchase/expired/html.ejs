@@ -7,8 +7,8 @@
 	<div id="inner_container">
 
 		<div id="header">
-			<h1>Congratulations <%=first_name%>!</h1>
-			<p>You have successfully purchased tickets for</p>
+			<h1><%=first_name%>, your transaction has expired!</h1>
+			<p>Please place a new booking from the Jiggie app</p>
 		</div>
 
 		<div id="event">
@@ -66,14 +66,15 @@
 				</tbody>
 			</table>
 		</div>
-
+		
+		<% if(status != "Expired"){%>
 		<div id="instruction">
 			<h3>INSTRUCTIONS</h3>
 			<p>
 				<%=instructions%>
 			</p>
 		</div>
-
+		<% } %>
 	</div>
 </div>
 </body>

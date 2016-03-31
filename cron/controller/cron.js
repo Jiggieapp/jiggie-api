@@ -79,18 +79,18 @@ function start_jobs(req,next){
 				});
 				job.start();
 			}else if(v.type == 'commerce'){
-				var job = new cron({
-				  cronTime: v.schedule,
-				  onTick: function() {
-					commerce_startnotif(req,function(dt){
-						debug.log('START COMMERCE NOTIF');
-						debug.log(dt);
-					})
-				  },
-				  start: true,
-				  timeZone: 'Asia/Jakarta'
-				});
-				job.start();
+				// var job = new cron({
+				  // cronTime: v.schedule,
+				  // onTick: function() {
+					// commerce_startnotif(req,function(dt){
+						// debug.log('START COMMERCE NOTIF');
+						// debug.log(dt);
+					// })
+				  // },
+				  // start: true,
+				  // timeZone: 'Asia/Jakarta'
+				// });
+				// job.start();
 			}else if(v.type == 'event'){
 				var job = new cron({
 				  cronTime: v.schedule,

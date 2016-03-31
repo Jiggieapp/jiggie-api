@@ -4,6 +4,7 @@ exports.execute = function(app,https,http,fs){
 	  var curl = require('request');
 	  setTimeout(function(){
 		curl.get({url:'http://127.0.0.1:31456/auto_notif'},function(err,resp,body){});
+		curl.get({url:'http://127.0.0.1:31456/notif_handle'},function(err,resp,body){});
 	  },15000)
 	  console.log("HTTPS: "+app.get('port'));
 	});

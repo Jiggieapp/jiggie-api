@@ -44,6 +44,24 @@ var helpers = {
 				// debug.log(err);
 			}
 		})
+	},
+	addHours : function(time,minute){
+		var moment = require('moment');
+		var dateString = moment(time).format('YYYY-MM-DD HH:mm:ss');
+		var timeAdd = moment(dateString).add(minute,'minute');
+		return new Date(timeAdd);
+	},
+	template_success: function(req){
+		var fs = require('fs-sync');
+		var path = require('path');
+		var ppt = path.join(__dirname,"../../global/email.html");
+		var html = fs.read(ppt);
+		return html;
+	},
+	parseDate:function(dateutc,string_format){
+		var momenttz = require('moment-timezone')
+		var dt = momenttz(dateutc).tz('Asia/Jakarta').format(string_format);
+		return dt
 	}
 }
 
