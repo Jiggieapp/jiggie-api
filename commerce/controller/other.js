@@ -332,7 +332,24 @@ function get_success_screen(req,next){
 			}
 			
 		},
-		function sync_data(stat,rorder,revent,rcust,cb){
+		function get_instructions(stat,rorder,revent,rcust,cb){
+			if(stat == true){
+				btins_coll.find({}).toArray(function(err,r){
+					if(err){
+						cb(null,false,[],[],[],[])
+					}else{
+						if(r.length > 0){
+							cb(null,true,rorder,revent,rcust,r)
+						}else{
+							cb(null,false,[],[],[],[])
+						}
+					}
+				})
+			}else{
+				cb(null,false,[],[],[],[])
+			}
+		},
+		function sync_data(stat,rorder,revent,rcust,step_payment,cb){
 			if(stat == true){
 				if(typeof rorder.vt_response == 'undefined' || rorder.vt_response == null || rorder.vt_response == ''){
 					debug.log('data vt null line 171 other commerce')
@@ -366,7 +383,7 @@ function get_success_screen(req,next){
 					}else if(rorder.vt_response.payment_type == 'credit_card'){
 						type = 'cc';
 					}
-					var template = template_success_screen(req,rorder,revent,rcust,type,'success');
+					var template = template_success_screen(req,rorder,revent,rcust,type,step_payment,'success');
 					cb(null,true,template);
 				}
 			}else{
@@ -389,15 +406,44 @@ function get_success_screen(req,next){
 }
 
 exports.walkthrough_payment = function(req,res){
-	var va_step = template_success_screen(req,[],'',[],'va_pending','walkthrough_payment');
-	var bp_step = template_success_screen(req,[],'',[],'bp_pending','walkthrough_payment');
-	var json_data = new Object();
-	json_data.va_step = va_step;
-	json_data.bp_step = bp_step;
-	res.json(json_data);
+	async.waterfall([
+		function get_ins(cb){
+			btins_coll.find({}).toArray(function(err,r){
+				if(err){
+					cb(null,false,[])
+				}else{
+					if(r.length > 0){
+						cb(null,true,r)
+					}else{
+						cb(null,false,[])
+					}
+				}
+			})
+		},
+		function sync_data(stat,step_payment,cb){
+			if(stat == true){
+				var va_step = template_success_screen(req,[],'',[],'va_pending',step_payment,'walkthrough_payment');
+				var bp_step = template_success_screen(req,[],'',[],'bp_pending',step_payment,'walkthrough_payment');
+				var bca_step = template_success_screen(req,[],'',[],'bca_pending',step_payment,'walkthrough_payment');
+				var json_data = new Object();
+				json_data.va_step = va_step;
+				json_data.bp_step = bp_step;
+				json_data.bca_step = bca_step;
+				cb(null,true,json_data)
+			}else{
+				cb(null,false,[])
+			}
+		}
+	],function(err,stat,json_data){
+		if(stat == true){
+			res.json(json_data)
+		}else if(stat == false){
+			res.json({code_error:403})
+		}
+	})
 }
 
-function template_success_screen(req,rorder,revent,rcust,type,stat){
+function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat){
 	var json_data = new Object();
 	if(stat == 'success'){
 		json_data.order_id = rorder.order_id;
@@ -425,23 +471,27 @@ function template_success_screen(req,rorder,revent,rcust,type,stat){
 			json_data.transfer_to = rorder.vt_response.va_numbers[0].va_number;
 		}
 		
+		var arr_steppayment = []
+		async.forEachOf(step_payment,function(v,k,e){
+			if(v.channel == 'VA BCA'){
+				arr_steppayment = v.data;
+			}
+		})
+		
+		async.forEachOf(arr_steppayment,function(v,k,e){
+			var filter_steps = [];
+			async.forEachOf(v.steps,function(ve,ke,ee){
+				if(stat == 'success'){
+					filter_steps.push(ve.replace('{{va_no}}',rorder.vt_response.va_numbers[0].va_number))
+				}else{
+					filter_steps.push(ve.replace('{{va_no}}','Virtual Number'))
+				}
+			})
+			arr_steppayment[k].steps = filter_steps
+		})
+		
 		// bca //
-		json_data.step_payment = [];
-		json_data.step_payment[0] = new Object();
-		json_data.step_payment[0].header = 'Cara Pembayaran Melalui Channel BCA';
-		json_data.step_payment[0].step = [];
-		json_data.step_payment[0].step[0] = 'Pilih pembayaran melalui BCA VA.';
-		json_data.step_payment[0].step[1] = 'Catat nomor Virtual Account yang Anda dapat.';
-		json_data.step_payment[0].step[2] = 'Gunakan channel BCA untuk menyelesaikan pembayaran. ';
-		json_data.step_payment[0].step[3] = 'Masukkan PIN Anda. ';
-		json_data.step_payment[0].step[4] = 'Pilih Transfer ke BCA Virtual Account.';
-		if(stat == 'success'){
-			json_data.step_payment[0].step[5] = 'Masukkan nomor Virtual Account yang Anda dapat sebelumnya. ';
-		}else{
-			json_data.step_payment[0].step[5] = 'Masukkan nomor Virtual Account yang Anda dapat sebelumnya. ';
-		}
-		json_data.step_payment[0].step[6] = 'Pastikan detail pembayaran Anda benar & masukkan item pembayaran yang akan dibayar.';
-		json_data.step_payment[0].step[7] = 'Pembayaran Anda dengan BCA VA selesai.';
+		json_data.step_payment = arr_steppayment;
 		
 	}else if(type == 'bca_success'){
 		json_data.payment_type = 'bca';
@@ -454,7 +504,11 @@ function template_success_screen(req,rorder,revent,rcust,type,stat){
 			json_data.summary = rorder;
 		}
 		
-		json_data.instructions = 'When you get to the venue look for the ticket boot. Lremp Ipsum Dollor sit amet. \n If you hae any questions please dont hesitate to Text or WA at +6211111111'
+		if(typeof revent.instruction == 'undefined' || revent.instruction == null){
+			json_data.instructions = ''
+		}else{
+			json_data.instructions = revent.instruction
+		}
 		
 		json_data.ticket_include = [];
 		json_data.ticket_include[0] = "Lorem Ipsum copy in various charsets and langauges for layouts";
@@ -478,57 +532,31 @@ function template_success_screen(req,rorder,revent,rcust,type,stat){
 				json_data.amount = parseInt(rorder.total_price);
 			}
 			
-			
 			json_data.transfer_to = rorder.vt_response.permata_va_number;
 		}
 		
-		// bca //
-		json_data.step_payment = [];
-		json_data.step_payment[0] = new Object();
-		json_data.step_payment[0].header = 'Cara Pembayaran lewat ATM BCA/Jaringan ATM PRIMA';
-		json_data.step_payment[0].step = [];
-		json_data.step_payment[0].step[0] = 'Pada Menu utama, Pilih Transaksi Lainnya.';
-		json_data.step_payment[0].step[1] = 'Pilih Transfer.';
-		json_data.step_payment[0].step[2] = 'Pilih Ke Rek Bank Lain.';
-		json_data.step_payment[0].step[3] = 'Masukkan kode 013 untuk Bank Permata lalu tekan Benar.';
-		json_data.step_payment[0].step[4] = 'Masukkan jumlah tagihan yang akan Anda bayar secara lengkap. Pembayaran dengan jumlah yang tidak sesuai akan otomatis ditolak.';
-		if(stat == 'success'){
-			json_data.step_payment[0].step[5] = 'Masukkan '+rorder.vt_response.permata_va_number+' (16 digit no. virtual account pembayaran) lalu tekan Benar.';
-		}else{
-			json_data.step_payment[0].step[5] = 'Masukkan (16 digit no. virtual account pembayaran) lalu tekan Benar.';
-		}
-		json_data.step_payment[0].step[6] = 'Pada halaman konfirmasi transfer akan muncul jumlah yang dibayarkan & nomor rekening tujuan. Jika informasinya telah sesuai tekan Benar.';
+		var arr_steppayment = []
+		async.forEachOf(step_payment,function(v,k,e){
+			if(v.channel == 'VA Permata'){
+				arr_steppayment = v.data;
+			}
+		})
 		
-		// mandiri //
-		json_data.step_payment[1] = new Object();
-		json_data.step_payment[1].header = 'Cara Pembayaran lewat ATM Mandiri/Jaringan ATM Bersama :';
-		json_data.step_payment[1].step = [];
-		json_data.step_payment[1].step[0] = 'Pada Menu utama, pilih Transaksi Lainnya.';
-		json_data.step_payment[1].step[1] = 'Pilih Transfer.';
-		json_data.step_payment[1].step[2] = 'Pilih Antar Bank Online.';
-		if(stat == 'success'){
-			json_data.step_payment[1].step[3] = 'Masukkan nomor 013 '+rorder.vt_response.permata_va_number+' (kode 013 dan 16 digit Virtual account).';
-		}else{
-			json_data.step_payment[1].step[3] = 'Masukkan nomor 013 (kode 013 dan 16 digit Virtual account).';
-		}
-		json_data.step_payment[1].step[4] = 'Masukkan jumlah tagihan yang akan Anda bayar secara lengkap. Pembayaran dengan jumlah yang tidak sesuai akan otomatis ditolak.';
-		json_data.step_payment[1].step[5] = 'Pada halaman konfirmasi transfer akan muncul jumlah yang dibayarkan & nomor rekening tujuan. Jika informasinya telah sesuai tekan Benar.';
+		async.forEachOf(arr_steppayment,function(v,k,e){
+			var filter_steps = [];
+			async.forEachOf(v.steps,function(ve,ke,ee){
+				if(stat == 'success'){
+					filter_steps.push(ve.replace('{{va_no}}',rorder.vt_response.permata_va_number))
+				}else{
+					filter_steps.push(ve.replace('{{va_no}}','Virtual Number'))
+				}
+			})
+			arr_steppayment[k].steps = filter_steps
+		})
 		
-		// permata //
-		json_data.step_payment[2] = new Object();
-		json_data.step_payment[2].header = 'Cara Pembayaran lewat ATM Bank Permata/ATM Alto :';
-		json_data.step_payment[2].step = [];
-		json_data.step_payment[2].step[0] = 'Pada Menu Utama, pilih Transaksi Lainnya.';
-		json_data.step_payment[2].step[1] = 'Pilih Transaksi Pembayaran.';
-		json_data.step_payment[2].step[2] = 'Pilih Lain-lain.';
-		json_data.step_payment[2].step[3] = 'Pilih Pembayaran Virtual Account.';
-		if(stat == 'success'){
-			json_data.step_payment[2].step[4] = 'Masukkan 16 digit no. Virtual Account '+rorder.vt_response.permata_va_number;
-		}else{
-			json_data.step_payment[2].step[4] = 'Masukkan 16 digit no. Virtual Account ';
-		}
-		json_data.step_payment[2].step[5] = 'Di halaman konfirmasi akan muncul no. virtual account dan jumlah tagihan, lalu tekan Benar.';
-		json_data.step_payment[2].step[6] = 'Pilih rekening pembayaran Anda dan tekan Benar.';
+		// va //
+		json_data.step_payment = arr_steppayment;
+		
 	}else if(type == 'va_success'){
 		json_data.payment_type = 'va';
 		json_data.event = revent;
@@ -541,7 +569,11 @@ function template_success_screen(req,rorder,revent,rcust,type,stat){
 		}
 		
 		
-		json_data.instructions = 'When you get to the venue look for the ticket boot. Lremp Ipsum Dollor sit amet. \n If you hae any questions please dont hesitate to Text or WA at +6211111111'
+		if(typeof revent.instruction == 'undefined' || revent.instruction == null){
+			json_data.instructions = ''
+		}else{
+			json_data.instructions = revent.instruction
+		}
 		
 		json_data.ticket_include = [];
 		json_data.ticket_include[0] = "Lorem Ipsum copy in various charsets and langauges for layouts";
@@ -568,36 +600,36 @@ function template_success_screen(req,rorder,revent,rcust,type,stat){
 			json_data.transfer_to = rorder.vt_response.bill_key;
 		}
 		
-		json_data.step_payment = [];
+		var arr_steppayment = []
+		async.forEachOf(step_payment,function(v,k,e){
+			if(v.channel == 'VA Mandiri'){
+				arr_steppayment = v.data;
+			}
+		})
 		
-		// atm mandiri //
-		json_data.step_payment[0] = new Object();
-		json_data.step_payment[0].header = 'Pembayaran melalui ATM Mandiri:';
-		json_data.step_payment[0].step = [];
-		json_data.step_payment[0].step[0] = 'Masukan PIN anda.';
-		json_data.step_payment[0].step[1] = 'Pada menu utama pilih menu Pembayaran kemudian pilih menu Multi Payment.';
-		json_data.step_payment[0].step[2] = 'Masukan Kode Perusahaan, dalam hal ini adalah 70012 kemudian tekan tombol Benar.';
-		if(stat == 'success'){
-			json_data.step_payment[0].step[3] = 'Masukan Kode Pembayaran anda, dalam hal ini adalah '+rorder.vt_response.bill_key+' kemudian anda akan mendapatkan detail pembayaran anda.';
-		}else{
-			json_data.step_payment[0].step[3] = 'Masukan Kode Pembayaran anda, dalam hal ini adalah (number bill key) kemudian anda akan mendapatkan detail pembayaran anda.';
-		}
-		json_data.step_payment[0].step[4] = 'Konfirmasi pembayaran anda.';
+		async.forEachOf(arr_steppayment,function(v,k,e){
+			var filter_steps = [];
+			var filter_steps2 = [];
+			async.forEachOf(v.steps,function(ve,ke,ee){
+				if(stat == 'success'){
+					filter_steps.push(ve.replace('{{va_no}}',rorder.vt_response.bill_key))
+				}else{
+					filter_steps.push(ve.replace('{{va_no}}','Bill Key'))
+				}
+				
+			})
+			async.forEachOf(filter_steps,function(ve,ke,ee){
+				if(stat == 'success'){
+					filter_steps2.push(ve.replace('{{co_no}}',rorder.vt_response.biller_code))
+				}else{
+					filter_steps2.push(ve.replace('{{co_no}}','Company Code'))
+				}
+				
+			})
+			arr_steppayment[k].steps = filter_steps2
+		})
 		
-		
-		// online banking mandiri //
-		json_data.step_payment[1] = new Object();
-		json_data.step_payment[1].header = 'Cara membayar melalui Internet Banking Mandiri:';
-		json_data.step_payment[1].step = [];
-		json_data.step_payment[1].step[0] = 'Login ke Internet Banking Mandiri (https://ib.bankmandiri.co.id/) (https://ib.bankmandiri.co.id/).';
-		json_data.step_payment[1].step[1] = 'Di Menu Utama silakan pilih Bayar kemudian pilih Multi Payment.';
-		json_data.step_payment[1].step[2] = 'Pilih akun anda di Dari Rekening, kemudian di Penyedia Jasa pilih Veritrans.';
-		if(stat == 'success'){
-			json_data.step_payment[1].step[3] = 'Masukkan Kode Pembayaran anda, dalam hal ini adalah '+rorder.vt_response.bill_key+' dan klik Lanjutkan.';
-		}else{
-			json_data.step_payment[1].step[3] = 'Masukkan Kode Pembayaran anda, dalam hal ini adalah (number bill key) dan klik Lanjutkan.';
-		}
-		json_data.step_payment[1].step[4] = 'Konfirmasi pembayaran anda menggunakan Mandiri Token.';
+		json_data.step_payment = arr_steppayment;
 		
 	}else if(type == 'bp_success'){
 		json_data.payment_type = 'bp';
@@ -609,7 +641,11 @@ function template_success_screen(req,rorder,revent,rcust,type,stat){
 			json_data.summary = rorder;
 		}
 		
-		json_data.instructions = 'When you get to the venue look for the ticket boot. Lremp Ipsum Dollor sit amet. \n If you hae any questions please dont hesitate to Text or WA at +6211111111'
+		if(typeof revent.instruction == 'undefined' || revent.instruction == null){
+			json_data.instructions = ''
+		}else{
+			json_data.instructions = revent.instruction
+		}
 		
 		json_data.ticket_include = [];
 		json_data.ticket_include[0] = "Lorem Ipsum copy in various charsets and langauges for layouts";
@@ -630,7 +666,11 @@ function template_success_screen(req,rorder,revent,rcust,type,stat){
 			json_data.summary = rorder;
 		}
 		
-		json_data.instructions = 'When you get to the venue look for the ticket boot. Lremp Ipsum Dollor sit amet. \n If you hae any questions please dont hesitate to Text or WA at +6211111111'
+		if(typeof revent.instruction == 'undefined' || revent.instruction == null){
+			json_data.instructions = ''
+		}else{
+			json_data.instructions = revent.instruction
+		}
 		
 		json_data.ticket_include = [];
 		json_data.ticket_include[0] = "Lorem Ipsum copy in various charsets and langauges for layouts";

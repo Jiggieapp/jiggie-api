@@ -42,3 +42,10 @@ eventEmitter.on('database_connected',function(){
 		console.log("order_products connected");
 	});
 });
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('bt_instructions',function(collection){
+		btins_coll = collection;
+		console.log("bt_instructions connected");
+	});
+});

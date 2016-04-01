@@ -426,7 +426,27 @@ function send_mail(req,email_to,vt,next){
 				cb(null,false,[],[],[]);
 			}
 		},
-		function sync_template(stat,rows_order,rows_cust,rows_event,cb){
+		function get_instructions(stat,rows_order,rows_cust,rows_event,cb){
+			if(stat == true){
+				btins_coll.find({}).toArray(function(err,r){
+					if(err){
+						debug.log('Instruction Coll Err')
+						debug.log(err)
+						cb(null,false,[],[],[],[])
+					}else{
+						if(r.length > 0){
+							cb(null,true,rows_order,rows_cust,rows_event,r)
+						}else{
+							debug.log('Instruction Coll Empty')
+							cb(null,false,[],[],[],[])
+						}
+					}
+				})
+			}else{
+				cb(null,false,[],[],[],[])
+			}
+		},
+		function sync_template(stat,rows_order,rows_cust,rows_event,step_payment,cb){
 			if(stat == true){
 				if(vt.payment_type == 'credit_card'){
 					
@@ -584,10 +604,30 @@ function send_mail(req,email_to,vt,next){
 							if(typeof vt.permata_va_number != 'undefined'){
 								var payment_type = 'Bank Transfer Permata Bank'
 								var account_number = vt.permata_va_number;
+								var arr_steppayment = []
+								async.forEachOf(step_payment,function(v,k,e){
+									if(v.channel == 'VA Permata'){
+										arr_steppayment = v.data;
+									}
+								})
 							}else if(typeof vt.va_numbers[0].bank != 'undefined'){
 								var payment_type = 'Bank Transfer BCA Bank'
 								var account_number = vt.va_numbers[0].va_number;
+								var arr_steppayment = []
+								async.forEachOf(step_payment,function(v,k,e){
+									if(v.channel == 'VA BCA'){
+										arr_steppayment = v.data;
+									}
+								})
 							}
+							
+							async.forEachOf(arr_steppayment,function(v,k,e){
+								var filter_steps = [];
+								async.forEachOf(v.steps,function(ve,ke,ee){
+									filter_steps.push(ve.replace('{{va_no}}',account_number))
+								})
+								arr_steppayment[k].steps = filter_steps
+							})
 						
 							var product_name = rows_order.product_list[0].name+' (x'+rows_order.product_list[0].num_buy+')';
 							var amount_service = 'Rp. '+String(numeral(rows_order.total_adminfee).format('0,0'))
@@ -609,8 +649,7 @@ function send_mail(req,email_to,vt,next){
 								time_limit:time_limit,
 								amount:amount,
 								account_number:account_number,
-								instructions:'BLA BLA BLA BLA BLA',
-								// step_payment:step_payment
+								step_payment:arr_steppayment
 							}
 							var template = new EmailTemplate(path.join(templateDir,'purchase','pending'))
 						}else if(rows_order.product_list[0].ticket_type == 'booking'){
@@ -619,10 +658,30 @@ function send_mail(req,email_to,vt,next){
 							if(typeof vt.permata_va_number != 'undefined'){
 								var payment_type = 'Bank Transfer Permata Bank'
 								var account_number = vt.permata_va_number;
+								var arr_steppayment = []
+								async.forEachOf(step_payment,function(v,k,e){
+									if(v.channel == 'VA Permata'){
+										arr_steppayment = v.data;
+									}
+								})
 							}else if(typeof vt.va_numbers[0].bank != 'undefined'){
 								var payment_type = 'Bank Transfer BCA Bank'
 								var account_number = vt.va_numbers[0].va_number;
+								var arr_steppayment = []
+								async.forEachOf(step_payment,function(v,k,e){
+									if(v.channel == 'VA BCA'){
+										arr_steppayment = v.data;
+									}
+								})
 							}
+							
+							async.forEachOf(arr_steppayment,function(v,k,e){
+								var filter_steps = [];
+								async.forEachOf(v.steps,function(ve,ke,ee){
+									filter_steps.push(ve.replace('{{va_no}}',account_number))
+								})
+								arr_steppayment[k].steps = filter_steps
+							})
 						
 							var product_name = rows_order.product_list[0].name+' (x'+rows_order.product_list[0].num_buy+')';
 							var amount_service = 'Rp. '+String(numeral(rows_order.total_adminfee).format('0,0'))
@@ -644,8 +703,7 @@ function send_mail(req,email_to,vt,next){
 								time_limit:time_limit,
 								amount:amount,
 								account_number:account_number,
-								instructions:'BLA BLA BLA BLA BLA',
-								// step_payment:step_payment
+								step_payment:arr_steppayment
 							}
 							var template = new EmailTemplate(path.join(templateDir,'booking','pending'))
 						}
@@ -725,7 +783,27 @@ function send_mail(req,email_to,vt,next){
 							subject = 'Your Payment Still Pending';
 							var payment_type = 'Mandiri Bill Payment'
 							var account_number = vt.bill_key;
+							var company_number = vt.biller_code;
 							
+							var arr_steppayment = []
+							async.forEachOf(step_payment,function(v,k,e){
+								if(v.channel == 'VA Mandiri'){
+									arr_steppayment = v.data;
+								}
+							})
+							
+							async.forEachOf(arr_steppayment,function(v,k,e){
+								var filter_steps = [];
+								var filter_steps2 = [];
+								async.forEachOf(v.steps,function(ve,ke,ee){
+									filter_steps.push(ve.replace('{{va_no}}',account_number))
+								})
+								async.forEachOf(filter_steps,function(ve,ke,ee){
+									filter_steps2.push(ve.replace('{{co_no}}',company_number))
+								})
+								arr_steppayment[k].steps = filter_steps2
+							})
+						
 						
 							var product_name = rows_order.product_list[0].name+' (x'+rows_order.product_list[0].num_buy+')';
 							var amount_service = 'Rp. '+String(numeral(rows_order.total_adminfee).format('0,0'))
@@ -747,8 +825,7 @@ function send_mail(req,email_to,vt,next){
 								time_limit:time_limit,
 								amount:amount,
 								account_number:account_number,
-								instructions:'BLA BLA BLA BLA BLA',
-								// step_payment:step_payment
+								step_payment:arr_steppayment
 							}
 							var template = new EmailTemplate(path.join(templateDir,'purchase','pending'))
 						}else if(rows_order.product_list[0].ticket_type == 'booking'){
@@ -756,6 +833,21 @@ function send_mail(req,email_to,vt,next){
 							subject = 'Your Payment Still Pending';
 							var payment_type = 'Mandiri Bill Payment'
 							var account_number = vt.bill_key;
+							
+							var arr_steppayment = []
+							async.forEachOf(step_payment,function(v,k,e){
+								if(v.channel == 'VA Mandiri'){
+									arr_steppayment = v.data;
+								}
+							})
+							
+							async.forEachOf(arr_steppayment,function(v,k,e){
+								var filter_steps = [];
+								async.forEachOf(v.steps,function(ve,ke,ee){
+									filter_steps.push(ve.replace('{{va_no}}',account_number))
+								})
+								arr_steppayment[k].steps = filter_steps
+							})
 						
 							var product_name = rows_order.product_list[0].name+' (x'+rows_order.product_list[0].num_buy+')';
 							var amount_service = 'Rp. '+String(numeral(rows_order.total_adminfee).format('0,0'))
@@ -777,8 +869,7 @@ function send_mail(req,email_to,vt,next){
 								time_limit:time_limit,
 								amount:amount,
 								account_number:account_number,
-								instructions:'BLA BLA BLA BLA BLA',
-								// step_payment:step_payment
+								step_payment:arr_steppayment
 							}
 							var template = new EmailTemplate(path.join(templateDir,'booking','pending'))
 						}
@@ -959,18 +1050,26 @@ function sync_cancel(req,next){
 		},
 		function get_status_vt(stat,orderid_arr,cb){
 			if(stat == true){
-				var options = {
-					url:'https://commerce.jiggieapp.com/VT/production/status_all.php',
-					form:{
-						order_id:orderid_arr
+				if(orderid_arr.length > 0){
+					var options = {
+						url:'https://commerce.jiggieapp.com/VT/production/status_all.php',
+						form:{
+							order_id:orderid_arr
+						}
 					}
+					curl.post(options,function(err,resp,body){
+						if(!err && resp.statusCode == 200){
+							var all_statusdata = JSON.parse(body);
+							cb(null,true,all_statusdata);
+						}else{
+							debug.log('error line 973 cron commerce')
+							debug.log(err)
+							cb(null,false,[])
+						}
+					})
+				}else{
+					cb(null,false,[])
 				}
-				curl.post(options,function(err,resp,body){
-					if(!err){
-						var all_statusdata = JSON.parse(body);
-						cb(null,true,all_statusdata);
-					}
-				})
 			}else{
 				cb(null,false,[]);
 			}

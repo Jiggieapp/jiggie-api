@@ -905,13 +905,11 @@ function post_transaction_cc(req,next){
 									},
 									function send_notif(stat,cb2){
 										if(stat == true){
-											curl.get({url:'http://127.0.0.1:24534/notif_handle'},function(err,resp,body){})
-											
 											var form_post = new Object();
 											form_post.vt = vt;
 											form_post.email_to = dt.guest_detail.email;
 											var options = {
-												url:'http://127.0.0.1:24534/sendnotif',
+												url:'http://127.0.0.1:31456/sendnotif',
 												form:form_post
 											}
 											curl.post(options,function(err,resp,body){
@@ -1042,13 +1040,11 @@ function post_transaction_cc(req,next){
 								},
 								function send_notif(stat,cb2){
 									if(stat == true){
-										curl.get({url:'http://127.0.0.1:24534/notif_handle'},function(err,resp,body){})
-										
 										var form_post = new Object();
 										form_post.vt = vt;
 										form_post.email_to = dt.guest_detail.email;
 										var options = {
-											url:'http://127.0.0.1:24534/sendnotif',
+											url:'http://127.0.0.1:31456/sendnotif',
 											form:form_post
 										}
 										curl.post(options,function(err,resp,body){
