@@ -55,7 +55,7 @@ function get_data(req,next){
 				var cond1 = {
 					event_id:event_id,
 					active:{$ne:false},
-					status:'active'
+					status:{$ne:'inactive'}
 				}
 				tickettypes_coll.find(cond1).toArray(function(err,r){
 					if(r.length > 0){
@@ -91,6 +91,7 @@ function get_data(req,next){
 									json_data.purchase[n].payment_timelimit = v.payment_timelimit;
 								}
 								json_data.purchase[n].summary = v.summary;
+								json_data.purchase[n].status = v.status;
 								n++;
 							}else if(v.ticket_type == 'booking'){
 								json_data.reservation[m] = new Object();
@@ -116,6 +117,7 @@ function get_data(req,next){
 									json_data.reservation[m].payment_timelimit = v.payment_timelimit;
 								}
 								json_data.reservation[m].summary = v.summary;
+								json_data.reservation[m].status = v.status;
 								m++;
 							}
 						})

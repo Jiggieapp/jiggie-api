@@ -46,17 +46,18 @@
 			</table>
 		</div>
 
-		<!--
 		<div id="instruction">
-			<h3>payment_steps_header</h3>
+			<% for(var i=0; i<step_payment.length; i++){ %>
+			<h3><%=step_payment[i].header%></h3>
 			<p>
 				<ol>
-					<li><span class="float-left number">1</span><div class="float-left">step_1</div><div class="clear"></div></li>
-					<li><span class="float-left number">2</span><div class="float-left">step_2</div><div class="clear"></div></li>
+					<% for(var x=0; x<step_payment[i].steps.length; x++){%>
+						<li><span class="float-left number"><%=(x+1)%></span><div class="float-left"><%=step_payment[i].steps[x]%></div><div class="clear"></div></li>
+					<% } %>
 				</ol>
 			</p>
+			<% } %>
 		</div>
-		-->
 
 	</div>
 </div>
