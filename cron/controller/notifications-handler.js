@@ -40,7 +40,7 @@ function handling(req,next){
 			cb(null,true)
 		},
 		// cron for handle cancel payment from VT
-		function handle_cancel_payment_fromVT(stat,cb){
+		/*function handle_cancel_payment_fromVT(stat,cb){
 			var job = new cron({
 			  cronTime: '1 * * * * *',
 			  onTick: function() {
@@ -51,7 +51,7 @@ function handling(req,next){
 			});
 			job.start();
 			cb(null,true)
-		}
+		}*/
 	],function(err,merge){
 		try{
 			next(true);
@@ -130,16 +130,22 @@ function payment_timelimit(req,next){
 							}
 						})*/
 						
-						var created_at_plus = req.app.get('helpers').addHours(new Date(v.created_at).getTime(),timelimit);					
-						var now = new Date();
+						if(v.created_at_swipetopay == null || typeof v.created_at_swipetopay == 'undefined' || v.created_at_swipetopay == ''){
 							
-						if(now > created_at_plus){
-							debug.log('TimeLimit : '+timelimit);
-							debug.log('Time From DB :'+String(v.created_at));
-							debug.log('Time From DB add hours :'+created_at_plus)
-							debug.log('Time Now :'+now);
-							cancel_transaction(req,v,function(dtrt){})
+						}else{
+							var created_at_plus = req.app.get('helpers').addHours(new Date(v.created_at_swipetopay).getTime(),timelimit);					
+							var now = new Date();
+								
+							if(now > created_at_plus){
+								debug.log('TimeLimit : '+timelimit);
+								debug.log('Time From DB :'+String(v.created_at_swipetopay));
+								debug.log('Time From DB add hours :'+created_at_plus)
+								debug.log('Time Now :'+now);
+								cancel_transaction(req,v,function(dtrt){})
+							}
 						}
+						
+						
 						cb(null,true);
 					})
 				}catch(e){
@@ -311,6 +317,12 @@ function payment_vabp(req,next){
 												})
 												
 												/*update tickettype*/
+												var num_buy = 0;
+												if(v.product_list[0].ticket_type == 'booking'){
+													num_buy = 1
+												}else{
+													num_buy = v.product_list[0].num_buy
+												}
 												var condt = {
 													_id:new ObjectId(v.product_list[0].ticket_id)
 												}
@@ -318,7 +330,7 @@ function payment_vabp(req,next){
 													$push:{
 														sold:{
 															order_id:v.order_id,
-															num_buy:v.product_list[0].num_buy
+															num_buy:num_buy
 														}
 													},
 													$pull:{
@@ -454,37 +466,43 @@ function send_mail(req,email_to,vt,next){
 						if(rows_order.product_list[0].ticket_type == 'purchase'){
 							var is_send = true;
 							subject = 'Your Payment Success';
-							var payment_type = 'Credit Card'
+							var payment_type = 'CREDIT CARD'
 							
 							var product_name = rows_order.product_list[0].name+' (x'+rows_order.product_list[0].num_buy+')';
 							var amount_service = 'Rp. '+String(numeral(rows_order.total_adminfee).format('0,0'))
 							var amount_tax = 'Rp. '+String(numeral(rows_order.total_tax_amount).format('0,0'))
 							var product_price = 'Rp. '+String(numeral(rows_order.product_list[0].price*rows_order.product_list[0].num_buy).format('0,0'))
 							var total = 'Rp. '+String(numeral(rows_order.total_price).format('0,0'))
+							var instructions_event = '';
+							if(typeof rows_event.instruction == 'undefined' || rows_event.instruction == null){
+								instructions_event = ''
+							}else{
+								instructions_event = rows_event.instruction
+							}
 							
 							var parseTo = {
 								congrats_title:'Congrats',
-								first_name:capitalizeFirstLetter(rows_cust.first_name),
+								first_name:capitalizeFirstLetter(rows_order.guest_detail.name),
 								event_name:rows_event.title,
 								event_date:req.app.get('helpers').parseDate(rows_event.start_datetime,'ddd, DD MMM YYYY'),
 								rsvp_no:rows_order.code,
-								guest_name:rows_order.guest_detail.name,
-								status:'Paid',
+								guest_name:rows_order.guest_detail.name.toUpperCase(),
+								status:'PAID',
 								payment_method:payment_type,
-								event_datetime_word:req.app.get('helpers').parseDate(rows_order.start_datetime,'DD MMMM YYYY - HH:mm:ss'),
+								event_datetime_word:req.app.get('helpers').parseDate(rows_order.created_at,'DD MMMM YYYY - HH:mm:ss'),
 								product_name:product_name,
 								product_price:product_price,
 								amount_service:amount_service,
 								amount_tax:amount_tax,
 								total:total,
-								instructions:'BLA BLA BLA BLA BLA'
+								instructions:instructions_event
 							}
 							var template = new EmailTemplate(path.join(templateDir,'purchase','success_screen'))
 			
 						}else if(rows_order.product_list[0].ticket_type == 'booking'){
 							var is_send = true;
 							subject = 'Your Payment Success';
-							var payment_type = 'Credit Card'
+							var payment_type = 'CREDIT CARD'
 						
 							var product_name = rows_order.product_list[0].name;
 							var amount_service = 'Rp. '+String(numeral(rows_order.total_adminfee).format('0,0'))
@@ -496,17 +514,25 @@ function send_mail(req,email_to,vt,next){
 							var amount_deposit = 'Rp. '+String(numeral(rows_order.vt_response.gross_amount).format('0,0'))
 							var amount_balance = 'Rp. '+String(numeral(parseInt(rows_order.product_list[0].total_price_all)-parseInt(rows_order.vt_response.gross_amount)).format('0,0'))
 							
+							var instructions_event = '';
+							if(typeof rows_event.instruction == 'undefined' || rows_event.instruction == null){
+								instructions_event = ''
+							}else{
+								instructions_event = rows_event.instruction
+							}
+							
+							
 							var parseTo = {
 								congrats_title:'Congrats',
-								first_name:capitalizeFirstLetter(rows_cust.first_name),
+								first_name:capitalizeFirstLetter(rows_order.guest_detail.name),
 								event_name:rows_event.title,
 								event_date:req.app.get('helpers').parseDate(rows_event.start_datetime,'ddd, DD MMM YYYY'),
 								rsvp_no:rows_order.code,
-								guest_name:rows_order.guest_detail.name,
+								guest_name:rows_order.guest_detail.name.toUpperCase(),
 								total_guest:total_guest,
-								status:'Paid',
+								status:'PAID',
 								payment_method:payment_type,
-								event_datetime_word:req.app.get('helpers').parseDate(rows_order.start_datetime,'DD MMMM YYYY - HH:mm:ss'),
+								event_datetime_word:req.app.get('helpers').parseDate(rows_order.created_at,'DD MMMM YYYY - HH:mm:ss'),
 								product_name:product_name,
 								product_price:product_price,
 								amount_service:amount_service,
@@ -514,7 +540,7 @@ function send_mail(req,email_to,vt,next){
 								amount_estimated:amount_estimated,
 								amount_deposit:amount_deposit,
 								amount_balance:amount_balance,
-								instructions:'BLA BLA BLA BLA BLA'
+								instructions:instructions_event
 							}
 							var template = new EmailTemplate(path.join(templateDir,'booking','success_screen'))
 						}
@@ -527,9 +553,9 @@ function send_mail(req,email_to,vt,next){
 							var is_send = true;
 							subject = 'Your Payment Success';
 							if(typeof vt.permata_va_number != 'undefined'){
-								var payment_type = 'Bank Transfer Permata Bank'
+								var payment_type = 'BANK TRANSFER PERMATA BANK'
 							}else if(typeof vt.va_numbers[0].bank != 'undefined'){
-								var payment_type = 'Bank Transfer BCA Bank'
+								var payment_type = 'BANK TRANSFER BCA BANK'
 							}
 						
 							var product_name = rows_order.product_list[0].name+' (x'+rows_order.product_list[0].num_buy+')';
@@ -538,31 +564,38 @@ function send_mail(req,email_to,vt,next){
 							var product_price = 'Rp. '+String(numeral(rows_order.product_list[0].price*rows_order.product_list[0].num_buy).format('0,0'))
 							var total = 'Rp. '+String(numeral(rows_order.total_price).format('0,0'))
 							
+							var instructions_event = '';
+							if(typeof rows_event.instruction == 'undefined' || rows_event.instruction == null){
+								instructions_event = ''
+							}else{
+								instructions_event = rows_event.instruction
+							}
+							
 							var parseTo = {
 								congrats_title:'Congrats',
-								first_name:capitalizeFirstLetter(rows_cust.first_name),
+								first_name:capitalizeFirstLetter(rows_order.guest_detail.name),
 								event_name:rows_event.title,
 								event_date:req.app.get('helpers').parseDate(rows_event.start_datetime,'ddd, DD MMM YYYY'),
 								rsvp_no:rows_order.code,
-								guest_name:rows_order.guest_detail.name,
-								status:'Paid',
+								guest_name:rows_order.guest_detail.name.toUpperCase(),
+								status:'PAID',
 								payment_method:payment_type,
-								event_datetime_word:req.app.get('helpers').parseDate(rows_order.start_datetime,'DD MMMM YYYY - HH:mm:ss'),
+								event_datetime_word:req.app.get('helpers').parseDate(rows_order.created_at,'DD MMMM YYYY - HH:mm:ss'),
 								product_name:product_name,
 								product_price:product_price,
 								amount_service:amount_service,
 								amount_tax:amount_tax,
 								total:total,
-								instructions:'BLA BLA BLA BLA BLA'
+								instructions:instructions_event
 							}
 							var template = new EmailTemplate(path.join(templateDir,'purchase','success_screen'))
 						}else if(rows_order.product_list[0].ticket_type == 'booking'){
 							var is_send = true;
 							subject = 'Your Payment Success';
 							if(typeof vt.permata_va_number != 'undefined'){
-								var payment_type = 'Bank Transfer Permata Bank'
+								var payment_type = 'BANK TRANSFER PERMATA BANK'
 							}else if(typeof vt.va_numbers[0].bank != 'undefined'){
-								var payment_type = 'Bank Transfer BCA Bank'
+								var payment_type = 'BANK TRANSFER BCA BANK'
 							}
 						
 							var product_name = rows_order.product_list[0].name;
@@ -575,17 +608,24 @@ function send_mail(req,email_to,vt,next){
 							var amount_deposit = 'Rp. '+String(numeral(rows_order.vt_response.gross_amount).format('0,0'))
 							var amount_balance = 'Rp. '+String(numeral(parseInt(rows_order.product_list[0].total_price_all)-parseInt(rows_order.vt_response.gross_amount)).format('0,0'))
 							
+							var instructions_event = '';
+							if(typeof rows_event.instruction == 'undefined' || rows_event.instruction == null){
+								instructions_event = ''
+							}else{
+								instructions_event = rows_event.instruction
+							}
+							
 							var parseTo = {
 								congrats_title:'Congrats',
-								first_name:capitalizeFirstLetter(rows_cust.first_name),
+								first_name:capitalizeFirstLetter(rows_order.guest_detail.name),
 								event_name:rows_event.title,
 								event_date:req.app.get('helpers').parseDate(rows_event.start_datetime,'ddd, DD MMM YYYY'),
 								rsvp_no:rows_order.code,
-								guest_name:rows_order.guest_detail.name,
+								guest_name:rows_order.guest_detail.name.toUpperCase(),
 								total_guest:total_guest,
-								status:'Paid',
+								status:'PAID',
 								payment_method:payment_type,
-								event_datetime_word:req.app.get('helpers').parseDate(rows_order.start_datetime,'DD MMMM YYYY - HH:mm:ss'),
+								event_datetime_word:req.app.get('helpers').parseDate(rows_order.created_at,'DD MMMM YYYY - HH:mm:ss'),
 								product_name:product_name,
 								product_price:product_price,
 								amount_service:amount_service,
@@ -593,7 +633,7 @@ function send_mail(req,email_to,vt,next){
 								amount_estimated:amount_estimated,
 								amount_deposit:amount_deposit,
 								amount_balance:amount_balance,
-								instructions:'BLA BLA BLA BLA BLA'
+								instructions:instructions_event
 							}
 							var template = new EmailTemplate(path.join(templateDir,'booking','success_screen'))
 						}
@@ -602,7 +642,7 @@ function send_mail(req,email_to,vt,next){
 							var is_send = true;
 							subject = 'Your Payment Still Pending';
 							if(typeof vt.permata_va_number != 'undefined'){
-								var payment_type = 'Bank Transfer Permata Bank'
+								var payment_type = 'BANK TRANSFER PERMATA BANK'
 								var account_number = vt.permata_va_number;
 								var arr_steppayment = []
 								async.forEachOf(step_payment,function(v,k,e){
@@ -611,7 +651,7 @@ function send_mail(req,email_to,vt,next){
 									}
 								})
 							}else if(typeof vt.va_numbers[0].bank != 'undefined'){
-								var payment_type = 'Bank Transfer BCA Bank'
+								var payment_type = 'BANK TRANSFER BCA BANK'
 								var account_number = vt.va_numbers[0].va_number;
 								var arr_steppayment = []
 								async.forEachOf(step_payment,function(v,k,e){
@@ -640,7 +680,7 @@ function send_mail(req,email_to,vt,next){
 							
 							var parseTo = {
 								congrats_title:'Congrats',
-								first_name:capitalizeFirstLetter(rows_cust.first_name),
+								first_name:capitalizeFirstLetter(rows_order.guest_detail.name),
 								event_name:rows_event.title,
 								event_date:req.app.get('helpers').parseDate(rows_event.start_datetime,'ddd, DD MMM YYYY'),
 								rsvp_no:rows_order.code,
@@ -656,7 +696,7 @@ function send_mail(req,email_to,vt,next){
 							var is_send = true;
 							subject = 'Your Payment Still Pending';
 							if(typeof vt.permata_va_number != 'undefined'){
-								var payment_type = 'Bank Transfer Permata Bank'
+								var payment_type = 'BANK TRANSFER PERMATA BANK'
 								var account_number = vt.permata_va_number;
 								var arr_steppayment = []
 								async.forEachOf(step_payment,function(v,k,e){
@@ -665,7 +705,7 @@ function send_mail(req,email_to,vt,next){
 									}
 								})
 							}else if(typeof vt.va_numbers[0].bank != 'undefined'){
-								var payment_type = 'Bank Transfer BCA Bank'
+								var payment_type = 'BANK TRANSFER BCA BANK'
 								var account_number = vt.va_numbers[0].va_number;
 								var arr_steppayment = []
 								async.forEachOf(step_payment,function(v,k,e){
@@ -694,7 +734,7 @@ function send_mail(req,email_to,vt,next){
 							
 							var parseTo = {
 								congrats_title:'Congrats',
-								first_name:capitalizeFirstLetter(rows_cust.first_name),
+								first_name:capitalizeFirstLetter(rows_order.guest_detail.name),
 								event_name:rows_event.title,
 								event_date:req.app.get('helpers').parseDate(rows_event.start_datetime,'ddd, DD MMM YYYY'),
 								rsvp_no:rows_order.code,
@@ -714,7 +754,7 @@ function send_mail(req,email_to,vt,next){
 						if(rows_order.product_list[0].ticket_type == 'purchase'){
 							var is_send = true;
 							subject = 'Your Payment Success';
-							var payment_type = 'Mandiri Bill Payment';
+							var payment_type = 'MANDIRI BILL PAYMENT';
 							
 							var product_name = rows_order.product_list[0].name+' (x'+rows_order.product_list[0].num_buy+')';
 							var amount_service = 'Rp. '+String(numeral(rows_order.total_adminfee).format('0,0'))
@@ -722,22 +762,29 @@ function send_mail(req,email_to,vt,next){
 							var product_price = 'Rp. '+String(numeral(rows_order.product_list[0].price*rows_order.product_list[0].num_buy).format('0,0'))
 							var total = 'Rp. '+String(numeral(rows_order.total_price).format('0,0'))
 							
+							var instructions_event = '';
+							if(typeof rows_event.instruction == 'undefined' || rows_event.instruction == null){
+								instructions_event = ''
+							}else{
+								instructions_event = rows_event.instruction
+							}
+							
 							var parseTo = {
 								congrats_title:'Congrats',
-								first_name:capitalizeFirstLetter(rows_cust.first_name),
+								first_name:capitalizeFirstLetter(rows_order.guest_detail.name),
 								event_name:rows_event.title,
 								event_date:req.app.get('helpers').parseDate(rows_event.start_datetime,'ddd, DD MMM YYYY'),
 								rsvp_no:rows_order.code,
 								guest_name:rows_order.guest_detail.name,
 								status:'Paid',
 								payment_method:payment_type,
-								event_datetime_word:req.app.get('helpers').parseDate(rows_order.start_datetime,'DD MMMM YYYY - HH:mm:ss'),
+								event_datetime_word:req.app.get('helpers').parseDate(rows_order.created_at,'DD MMMM YYYY - HH:mm:ss'),
 								product_name:product_name,
 								product_price:product_price,
 								amount_service:amount_service,
 								amount_tax:amount_tax,
 								total:total,
-								instructions:'BLA BLA BLA BLA BLA'
+								instructions:instructions_event
 							}
 							var template = new EmailTemplate(path.join(templateDir,'purchase','success_screen'))
 						}else if(rows_order.product_list[0].ticket_type == 'booking'){
@@ -755,6 +802,13 @@ function send_mail(req,email_to,vt,next){
 							var amount_deposit = 'Rp. '+String(numeral(rows_order.vt_response.gross_amount).format('0,0'))
 							var amount_balance = 'Rp. '+String(numeral(parseInt(rows_order.product_list[0].total_price_all)-parseInt(rows_order.vt_response.gross_amount)).format('0,0'))
 							
+							var instructions_event = '';
+							if(typeof rows_event.instruction == 'undefined' || rows_event.instruction == null){
+								instructions_event = ''
+							}else{
+								instructions_event = rows_event.instruction
+							}
+							
 							var parseTo = {
 								congrats_title:'Congrats',
 								first_name:capitalizeFirstLetter(rows_cust.first_name),
@@ -765,7 +819,7 @@ function send_mail(req,email_to,vt,next){
 								total_guest:total_guest,
 								status:'Paid',
 								payment_method:payment_type,
-								event_datetime_word:req.app.get('helpers').parseDate(rows_order.start_datetime,'DD MMMM YYYY - HH:mm:ss'),
+								event_datetime_word:req.app.get('helpers').parseDate(rows_order.created_at,'DD MMMM YYYY - HH:mm:ss'),
 								product_name:product_name,
 								product_price:product_price,
 								amount_service:amount_service,
@@ -773,7 +827,7 @@ function send_mail(req,email_to,vt,next){
 								amount_estimated:amount_estimated,
 								amount_deposit:amount_deposit,
 								amount_balance:amount_balance,
-								instructions:'BLA BLA BLA BLA BLA'
+								instructions:instructions_event
 							}
 							var template = new EmailTemplate(path.join(templateDir,'booking','success_screen'))
 						}
@@ -833,6 +887,7 @@ function send_mail(req,email_to,vt,next){
 							subject = 'Your Payment Still Pending';
 							var payment_type = 'Mandiri Bill Payment'
 							var account_number = vt.bill_key;
+							var company_number = vt.biller_code;
 							
 							var arr_steppayment = []
 							async.forEachOf(step_payment,function(v,k,e){
@@ -843,10 +898,14 @@ function send_mail(req,email_to,vt,next){
 							
 							async.forEachOf(arr_steppayment,function(v,k,e){
 								var filter_steps = [];
+								var filter_steps2 = [];
 								async.forEachOf(v.steps,function(ve,ke,ee){
 									filter_steps.push(ve.replace('{{va_no}}',account_number))
 								})
-								arr_steppayment[k].steps = filter_steps
+								async.forEachOf(filter_steps,function(ve,ke,ee){
+									filter_steps2.push(ve.replace('{{co_no}}',company_number))
+								})
+								arr_steppayment[k].steps = filter_steps2
 							})
 						
 							var product_name = rows_order.product_list[0].name+' (x'+rows_order.product_list[0].num_buy+')';
@@ -906,7 +965,7 @@ function send_mail(req,email_to,vt,next){
 							guest_name:rows_order.guest_detail.name,
 							status:'Expired',
 							payment_method:payment_type,
-							event_datetime_word:req.app.get('helpers').parseDate(rows_order.start_datetime,'DD MMMM YYYY - HH:mm:ss'),
+							event_datetime_word:req.app.get('helpers').parseDate(rows_order.created_at,'DD MMMM YYYY - HH:mm:ss'),
 							product_name:product_name,
 							product_price:product_price,
 							amount_service:amount_service,
@@ -939,7 +998,7 @@ function send_mail(req,email_to,vt,next){
 							total_guest:total_guest,
 							status:'Expired',
 							payment_method:payment_type,
-							event_datetime_word:req.app.get('helpers').parseDate(rows_order.start_datetime,'DD MMMM YYYY - HH:mm:ss'),
+							event_datetime_word:req.app.get('helpers').parseDate(rows_order.created_at,'DD MMMM YYYY - HH:mm:ss'),
 							product_name:product_name,
 							product_price:product_price,
 							amount_service:amount_service,
@@ -1026,7 +1085,9 @@ function sync_cancel(req,next){
 	async.waterfall([
 		function getall_order(cb){
 			var cond = {
-				order_status:{$ne:'cancel'},
+				// order_status:{$ne:'cancel'},
+				order_status:'pending_payment',
+				payment_status:'awaiting_payment',
 				$or:[
 					{"vt_response.payment_type":'bank_transfer'},
 					{"vt_response.payment_type":'echannel'},

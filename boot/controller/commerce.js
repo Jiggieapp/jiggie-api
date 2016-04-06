@@ -63,8 +63,13 @@ exports.post_summary = function(req,res){
 				if (!err && resp.statusCode == 200) {
 					res.header("Content-type","application/json");
 					var json_data = JSON.parse(body);
+					console.log(json_data)
 					if(typeof json_data.code_error != 'undefined'){
-						res.status(json_data.code_error).send({});
+						var obj_err = new Object();
+						obj_err.response = 0;
+						obj_err.msg = json_data.msg;
+						obj_err.type = json_data.type;
+						res.send(obj_err);
 					}else{
 						hr.data = new Object();
 						hr.data.product_summary = JSON.parse(body);
@@ -134,11 +139,11 @@ exports.payment = function(req,res){
 				if (!err && resp.statusCode == 200) {
 					res.header("Content-type","application/json");
 					var json_data = JSON.parse(body);
-					console.log(json_data);
 					if(typeof json_data.code_error != 'undefined'){
 						var obj_err = new Object();
 						obj_err.response = 0;
-						obj_err.msg = json_data.msg.status_message;
+						obj_err.msg = json_data.msg;
+						obj_err.type = json_data.type;
 						res.send(obj_err);
 					}else{
 						hr.data = new Object();
