@@ -11,61 +11,123 @@ var comurl = 'https://commerce.jiggieapp.com/VT/production/';
 
 exports.index = function(req, res){
 	var type = req.body.type;
+	var post = req.body;
 	type = type.toLowerCase();
 	
-	if(type == 'cc'){
-		post_transaction_cc(req,function(dt){
-			if(dt == false){
-				res.json({
-					code_error:403,
-					msg:{
-						status_message:'Ticket Is Not Available'
+	async.waterfall([
+		function cek_ispaid(cb){
+			var order_id = String(post.order_id);
+			order_coll.findOne({order_id:order_id},function(err,r){
+				if(err){
+					debug.log(err)
+					debug.log('error commerce line 22')
+					cb(null,false,[],{msg:'Payment Has Already Paid',type:'paid'})
+				}else{
+					if(r == null){
+						debug.log('error line 26 commerce')
+						cb(null,false,[],{msg:'Payment Has Already Paid',type:'paid'})
+					}else{
+						if(typeof r.vt_response == 'undefined'){
+							debug.log('cek is paid true')
+							cb(null,true,r,[])
+						}else{
+							debug.log('cek is paid false')
+							cb(null,false,[],{msg:'Payment Has Already Paid',type:'paid'})
+						}
+					}
+				}
+				
+			})
+		},
+		function cek_quantity(stat,rows_order,ers,cb){
+			if(stat == true){
+				var ticket_id = rows_order.product_list[0].ticket_id
+				tickettypes_coll.findOne({_id:new ObjectId(ticket_id)},function(err,r){
+					if(err){
+						debug.log('error line 44 commerce')
+						debug.log(err)
+						cb(null,false,{msg:'Ticket Is Not Available',type:'quantity'})
+					}else{
+						if(r == null){
+							debug.log('error line 49 validation commerce')
+							cb(null,false,{msg:'Ticket Is Not Available',type:'quantity'})
+						}else{
+							if(r.status == 'sold out' || r.quantity == 0){
+								cb(null,false,{msg:'Sorry, this ticket is unavailable',type:'ticket_list'})
+							}else{
+								if(r.quantity >= rows_order.product_list[0].num_buy){
+									debug.log('cek quantity true')
+									cb(null,true,[])
+								}else{
+									debug.log('cek quantity false')
+									if(r.quantity == 1){
+										cb(null,false,{msg:'Sorry, we only have '+r.quantity+' ticket left',type:'ticket_details'})
+									}else if(r.quantity > 1){
+										cb(null,false,{msg:'Sorry, we only have '+r.quantity+' tickets left',type:'ticket_details'})
+									}
+								}
+							}
+						}
 					}
 				})
 			}else{
-				res.json(dt);
+				cb(null,false,ers)
 			}
-		})
-	}else if(type == 'va'){
-		post_transaction_va(req,function(dt){
-			if(dt == false){
-				res.json({
-					code_error:403,
-					msg:{
-						status_message:'Ticket Is Not Available'
-					}
-				})
+		},
+		function execute(stat,msg_errors,cb){
+			if(stat == true){
+				if(type == 'cc'){
+					post_transaction_cc(req,function(dt){
+						if(dt == false){
+							cb(null,false,{code_error:403});
+						}else{
+							cb(null,true,dt);
+						}
+					})
+				}else if(type == 'va'){
+					post_transaction_va(req,function(dt){
+						if(dt == false){
+							cb(null,false,{code_error:403});
+						}else{
+							cb(null,true,dt);
+						}
+					})
+				}else if(type == 'bp'){
+					post_transaction_va(req,function(dt){
+						if(dt == false){
+							cb(null,false,{code_error:403});
+						}else{
+							cb(null,true,dt);
+						}
+					})
+				}else if(type == 'bca'){
+					post_transaction_va(req,function(dt){
+						if(dt == false){
+							cb(null,false,{code_error:403});
+						}else{
+							cb(null,true,dt);
+						}
+					})
+				}
 			}else{
-				res.json(dt);
+				cb(null,false,msg_errors)
 			}
-		})
-	}else if(type == 'bp'){
-		post_transaction_va(req,function(dt){
-			if(dt == false){
-				res.json({
-					code_error:403,
-					msg:{
-						status_message:'Ticket Is Not Available'
-					}
-				})
-			}else{
-				res.json(dt);
-			}
-		})
-	}else if(type == 'bca'){
-		post_transaction_va(req,function(dt){
-			if(dt == false){
-				res.json({
-					code_error:403,
-					msg:{
-						status_message:'Ticket Is Not Available'
-					}
-				})
-			}else{
-				res.json(dt);
-			}
-		})
-	}
+		}
+	],function(err,stat,et){
+		if(stat == false){
+			res.json({
+				code_error:403,
+				msg:et.msg,
+				type:et.type
+			})
+		}else if(stat == true){
+			res.json(et)
+		}
+	})
+	
+	
+	
+	
 	
 };
 
@@ -80,6 +142,9 @@ function post_transaction_va(req,next){
 	
 	var schema = req.app.get('mongo_path');
 	var order = require(schema+'/order_product.js');
+	debug.log('DATA PAYMENT ###########################')
+	debug.log(post)
+	debug.log('//DATA PAYMENT ###########################')
 	
 	async.waterfall([
 		function get_order(cb){
@@ -113,7 +178,13 @@ function post_transaction_va(req,next){
 							debug.log('error line 109 payment commerce')
 							cb(null,false,[]);
 						}else{
-							cb(null,true,dt);
+							if(r.quantity >= dt.product_list[0].num_buy){
+								cb(null,true,dt);
+							}else{
+								debug.log('quantity limited')
+								cb(null,false,[]);
+							}
+							
 						}
 					}
 				})
@@ -177,10 +248,10 @@ function post_transaction_va(req,next){
 				async.forEachOf(dt.product_list,function(v,k,e){
 					items[n] = new Object();
 					items[n].id = v.ticket_id;
-					items[n].name = v.name;
+					items[n].name = v.name+'('+v.num_buy+'X)';
 					if(v.ticket_type == 'purchase'){
-						items[n].price = parseFloat(v.total_price_aftertax);
-						items[n].quantity = parseFloat(v.num_buy);
+						items[n].price = parseFloat(v.total_price_all);
+						items[n].quantity = parseFloat(1);
 					}else if(v.ticket_type == 'booking'){
 						items[n].price = parseInt(pay_deposit);
 						items[n].quantity = parseInt(1);
@@ -311,7 +382,7 @@ function post_transaction_va(req,next){
 			debug.log('updating vt');
 			if(stat == true){
 				var vt = JSON.parse(body);
-				order_coll.update({order_id:order_id},{$set:{vt_response:vt}},function(err,upd){
+				order_coll.update({order_id:order_id},{$set:{vt_response:vt,created_at_swipetopay:new Date()}},function(err,upd){
 					if(err){
 						debug.log('error line 180-> paymentjs');
 						cb2(null,false,[],[]);
@@ -325,6 +396,7 @@ function post_transaction_va(req,next){
 			}
 		},
 		function update_customers(stat,dtorder,vt,cb2){
+			debug.log('updating customers')
 			if(stat == true){
 				customers_coll.update({fb_id:dtorder.fb_id},{
 					$set:{last_cc:{payment_type:type}}
@@ -338,6 +410,7 @@ function post_transaction_va(req,next){
 			}
 		},
 		function send_notif(stat,dtorder,vt,cb2){
+			debug.log('send notif')
 			if(stat == true){
 				var form_post = new Object();
 				form_post.vt = vt;
@@ -396,9 +469,13 @@ function merge_data_va(req,body,next){
 						// update stock after success buy //
 						var num_buy = 0;
 						async.forEachOf(r.product_list,function(v,k,e){
-							num_buy = v.num_buy;
 							tickettypes_coll.findOne({_id:new ObjectId(v.ticket_id)},function(err2,r2){
 								var quantity_old = r2.quantity;
+								if(r2.ticket_type == 'booking'){
+									num_buy = 1;
+								}else{
+									num_buy = v.num_buy;
+								}
 								var new_qty = parseInt(quantity_old)-parseInt(num_buy);
 								
 								var form_update = {
@@ -514,7 +591,13 @@ function post_transaction_cc(req,next){
 						if(r == null){
 							cb(null,false,[]);
 						}else{
-							cb(null,true,dt);
+							if(r.quantity >= dt.product_list[0].num_buy){
+								cb(null,true,dt);
+							}else{
+								debug.log('quantity limited')
+								cb(null,false,[]);
+							}
+							
 						}
 					}
 				})
@@ -579,10 +662,10 @@ function post_transaction_cc(req,next){
 				async.forEachOf(dt.product_list,function(v,k,e){
 					items[n] = new Object();
 					items[n].id = v.ticket_id;
-					items[n].name = v.name;
+					items[n].name = v.name+'('+v.num_buy+'X)';
 					if(v.ticket_type == 'purchase'){
-						items[n].price = parseFloat(v.total_price_aftertax);
-						items[n].quantity = parseFloat(v.num_buy);
+						items[n].price = parseFloat(v.total_price_all);
+						items[n].quantity = parseFloat(1);
 					}else if(v.ticket_type == 'booking'){
 						items[n].price = parseInt(pay_deposit);
 						items[n].quantity = parseInt(1);
@@ -725,8 +808,13 @@ function post_transaction_cc(req,next){
 													// update stock after success buy //
 													var num_buy = 0;
 													async.forEachOf(r.product_list,function(v,k,e){
-														num_buy = v.num_buy;
 														tickettypes_coll.findOne({_id:new ObjectId(v.ticket_id)},function(err2,r2){
+															if(r2.ticket_type == 'booking'){
+																num_buy = 1
+															}else{
+																num_buy = v.num_buy;
+															}
+															
 															var quantity_old = r2.quantity;
 															var new_qty = parseInt(quantity_old)-parseInt(num_buy);
 															tickettypes_coll.update({_id:new ObjectId(v.ticket_id)},{$set:{quantity:new_qty}},function(err3,upd){
@@ -751,6 +839,12 @@ function post_transaction_cc(req,next){
 										if(stat == true){
 											order.findOne({order_id:order_id},function(err,r){
 												async.forEachOf(r.product_list,function(v,k,e){
+													var num_buy = 0;
+													if(v.ticket_type == 'booking'){
+														num_buy = 1
+													}else{
+														num_buy = v.num_buy
+													}
 													var condt = {
 														_id:new ObjectId(v.ticket_id)
 													}
@@ -758,7 +852,7 @@ function post_transaction_cc(req,next){
 														$push:{
 															sold:{
 																order_id:order_id,
-																num_buy:v.num_buy
+																num_buy:num_buy
 															}
 														}
 													}
@@ -795,6 +889,7 @@ function post_transaction_cc(req,next){
 												}
 											})
 										}else{
+											debug.log('error line 877 commerce')
 											cb2(null,false);
 										}
 									},
@@ -886,6 +981,7 @@ function post_transaction_cc(req,next){
 											
 											
 										}else{
+											debug.log('error line 968 commerce')
 											cb2(null,false);
 										}
 									},
@@ -900,26 +996,30 @@ function post_transaction_cc(req,next){
 												}
 											})
 										}else{
+											debug.log('error line 982 commerce')
 											cb2(null,false);
 										}
 									},
 									function send_notif(stat,cb2){
 										if(stat == true){
-											var form_post = new Object();
-											form_post.vt = vt;
-											form_post.email_to = dt.guest_detail.email;
-											var options = {
-												url:'http://127.0.0.1:31456/sendnotif',
-												form:form_post
-											}
-											curl.post(options,function(err,resp,body){
-												if(!err){
-													cb2(null,true)
-												}else{
-													cb2(null,false);
+											order_coll.findOne({order_id:order_id},function(err,r){
+												var form_post = new Object();
+												form_post.vt = vt;
+												form_post.email_to = r.guest_detail.email;
+												var options = {
+													url:'http://127.0.0.1:31456/sendnotif',
+													form:form_post
 												}
+												curl.post(options,function(err,resp,body){
+													if(!err){
+														cb2(null,true)
+													}else{
+														cb2(null,false);
+													}
+												})
 											})
 										}else{
+											debug.log('error line 1004 commerce send notif')
 											cb2(null,false)
 										}
 									}
@@ -942,7 +1042,7 @@ function post_transaction_cc(req,next){
 								function upd_order(cb2){
 									var form_upd = {
 										$set:{
-											order_status:'pending_shipment',
+											order_status:'completed',
 											payment_status:'paid'
 										}
 									}
@@ -965,12 +1065,16 @@ function post_transaction_cc(req,next){
 												// update stock after success buy //
 												var num_buy = 0;
 												async.forEachOf(r.product_list,function(v,k,e){
-													num_buy = v.num_buy;
 													tickettypes_coll.findOne({_id:new ObjectId(v.ticket_id)},function(err2,r2){
 														if(err2){
 															debug.log('error updating stok');
 															cb2(null,false);
 														}else{
+															if(r2.ticket_type == 'booking'){
+																num_buy = 1
+															}else{
+																num_buy = v.num_buy;
+															}
 															var quantity_old = r2.quantity;
 															var new_qty = parseInt(quantity_old)-parseInt(num_buy);
 															tickettypes_coll.update({_id:new ObjectId(v.ticket_id)},{$set:{quantity:new_qty}},function(err3,upd){
@@ -991,23 +1095,46 @@ function post_transaction_cc(req,next){
 										cb2(null,false);
 									}
 								},
-								function upd_vt(stat,cb2){
+								function updated_sold(stat,cb2){
 									if(stat == true){
-										order_coll.update({order_id:order_id},{$set:{vt_response:vt}},function(err,upd){
-											if(err){
-												debug.log('error line 283');
-												cb2(null,false);
-											}else{
-												cb2(null,true);
-											}
+										order.findOne({order_id:order_id},function(err,r){
+											async.forEachOf(r.product_list,function(v,k,e){
+												var num_buy = 0
+												if(v.ticket_type == 'booking'){
+													num_buy = 1
+												}else{
+													num_buy = v.num_buy
+												}
+												var condt = {
+													_id:new ObjectId(v.ticket_id)
+												}
+												var form_upd = {
+													$push:{
+														sold:{
+															order_id:order_id,
+															num_buy:num_buy
+														}
+													}
+												}
+												tickettypes_coll.update(condt,form_upd,function(err3,upd){
+													if(err3){
+														debug.log('error update sold line 1090');
+														cb2(null,false);
+													}else{
+														debug.log('updated sold');
+														cb2(null,true);
+													}
+												})
+											})
 										})
 									}else{
-										cb2(null,false);
+										debug.log('error commerce line 1077')
+										cb2(null,false)
 									}
 								},
 								function upd_customers(stat,cb2){
 									if(stat == true){
-										order.findOne({order_id:order_id},function(err,rt){
+										order_coll.findOne({order_id:order_id},function(err,rt){
 											if(err){
 												debug.log('error line 832');
 												cb2(null,false,{code_error:403});
@@ -1035,26 +1162,45 @@ function post_transaction_cc(req,next){
 											}
 										})
 									}else{
+										debug.log('error line 1147 commerce')
+										cb2(null,false);
+									}
+								},
+								function upd_vt(stat,cb2){
+									if(stat == true){
+										order_coll.update({order_id:order_id},{$set:{vt_response:vt}},function(err,upd){
+											if(err){
+												debug.log('error line 283');
+												cb2(null,false);
+											}else{
+												cb2(null,true);
+											}
+										})
+									}else{
+										debug.log('error line 1115 commerce')
 										cb2(null,false);
 									}
 								},
 								function send_notif(stat,cb2){
 									if(stat == true){
-										var form_post = new Object();
-										form_post.vt = vt;
-										form_post.email_to = dt.guest_detail.email;
-										var options = {
-											url:'http://127.0.0.1:31456/sendnotif',
-											form:form_post
-										}
-										curl.post(options,function(err,resp,body){
-											if(!err){
-												cb2(null,true)
-											}else{
-												cb2(null,false);
+										order_coll.findOne({order_id:order_id},function(err,r){
+											var form_post = new Object();
+											form_post.vt = vt;
+											form_post.email_to = r.guest_detail.email;
+											var options = {
+												url:'http://127.0.0.1:31456/sendnotif',
+												form:form_post
 											}
+											curl.post(options,function(err,resp,body){
+												if(!err){
+													cb2(null,true)
+												}else{
+													cb2(null,false);
+												}
+											})
 										})
 									}else{
+										debug.log('error line 1168 commerce send notif')
 										cb2(null,false)
 									}
 								}

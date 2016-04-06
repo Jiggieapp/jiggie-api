@@ -45,7 +45,8 @@ var varScheme = new Schema({
 	total_tip_amount:{type:String,required:true},
 	total_adminfee:{type:String,required:true},
 	total_price:{type:String,required:true},
-	created_at  :  { type: Date, default: Date.now }
+	created_at  :  { type: Date, default: Date.now },
+	created_at_swipetopay  :  { type: Date, default: '' },
 });
 
 module.exports = mongoose.model('order_product', varScheme);    

@@ -49,3 +49,10 @@ eventEmitter.on('database_connected',function(){
 		console.log("bt_instructions connected");
 	});
 });
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('venues',function(collection){
+		venues_coll = collection;
+		console.log("venues connected");
+	});
+});

@@ -50,7 +50,24 @@ function get_data(req,next){
 				cb(null,0,[]);
 			}
 		},
-		function get_ticket(cek,rows_event,cb){
+		function get_venue(cek,rows_event,cb){
+			if(cek == 1){
+				venues_coll.findOne({_id:new ObjectId(rows_event.venue_id)},function(err,r){
+					if(err){
+						cb(null,0,[],[])
+					}else{
+						if(r == null){
+							cb(null,0,[],[])
+						}else{
+							cb(null,1,rows_event,r)
+						}
+					}
+				})
+			}else{
+				cb(null,0,[],[])
+			}
+		},
+		function get_ticket(cek,rows_event,rows_venue,cb){
 			if(cek == 1){
 				var cond1 = {
 					event_id:event_id,
@@ -63,7 +80,12 @@ function get_data(req,next){
 						json_data.event_id = event_id;
 						json_data.event_name = rows_event.title;
 						json_data.venue_name = rows_event.venue_name;
+						json_data.venue_city = rows_venue.city;
 						json_data.start_datetime = rows_event.start_datetime;
+						json_data.end_datetime = rows_event.end_datetime;
+						json_data.tags = rows_event.tags;
+						json_data.description = rows_event.description;
+						
 						json_data.purchase = []
 						json_data.reservation = []
 						var n = 0;
@@ -139,9 +161,64 @@ function get_data(req,next){
 
 
 exports.post_summary = function(req,res){
-	get_summary(req,function(data){
-		res.json(data);
+	var post = req.body;
+	async.waterfall([
+		function cek_quantity(cb){
+			var ticket_id = post.product_list[0].ticket_id
+			var num_buy = post.product_list[0].num_buy
+			tickettypes_coll.findOne({_id:new ObjectId(ticket_id)},function(err,r){
+				if(err){
+					debug.log(err)
+					debug.log('error line 150 commerce productlist')
+					cb(null,false,{msg:'Ticket Is Not Available'})
+				}else{
+					if(r == null){
+						debug.log('error line 156 commerce productlist')
+						cb(null,false,{msg:'Ticket Is Not Available'})
+					}else{
+						if(r.status == 'sold out'){
+							msg = {msg:'Sorry, this ticket is unavailable',type:'ticket_list'}
+							cb(null,false,msg)
+						}else{
+							if(r.quantity >= num_buy){
+								cb(null,true,[])
+							}else{
+								var msg = '';
+								if(r.quantity == 1){
+									msg = {msg:'Sorry, we only have '+r.quantity+' ticket left',type:'ticket_details'}
+								}else if(r.quantity > 1){
+									msg = {msg:'Sorry, we only have '+r.quantity+' tickets left',type:'ticket_details'}
+								}else if(r.quantity <=0){
+									msg = {msg:'Sorry, this ticket is unavailable',type:'ticket_list'}
+								}
+								cb(null,false,msg)
+							}
+						}
+					}
+				}
+			})
+		},
+		function execute(stat,msg,cb){
+			if(stat == true){
+				get_summary(req,function(data){
+					cb(null,true,data)
+				})
+			}else{
+				cb(null,false,msg)
+			}
+		}
+	],function(err,stat,data){
+		if(stat == true){
+			res.json(data)
+		}else if(stat == false){
+			res.json({
+				code_error:403,
+				msg:data.msg,
+				type:data.type
+			})
+		}
 	})
+	
 }
 
 function get_summary(req,next){

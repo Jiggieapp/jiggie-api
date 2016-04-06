@@ -460,8 +460,8 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 		json_data.payment_type = 'bca';
 		if(stat == 'success'){
 			json_data.payment_timelimit = rorder.product_list[0].payment_timelimit;
-			json_data.created_at = rorder.created_at;
-			json_data.timelimit = req.app.get('helpers').addHours(new Date(rorder.created_at).getTime(),rorder.product_list[0].payment_timelimit);
+			json_data.created_at = rorder.created_at_swipetopay;
+			json_data.timelimit = req.app.get('helpers').addHours(new Date(rorder.created_at_swipetopay).getTime(),rorder.product_list[0].payment_timelimit);
 			
 			if(rorder.product_list[0].ticket_type == 'booking'){
 				json_data.amount = parseInt(rorder.vt_response.gross_amount);
@@ -492,6 +492,7 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 		
 		// bca //
 		json_data.step_payment = arr_steppayment;
+		json_data.summary = rorder;
 		
 	}else if(type == 'bca_success'){
 		json_data.payment_type = 'bca';
@@ -523,8 +524,8 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 		json_data.payment_type = 'va';
 		if(stat == 'success'){
 			json_data.payment_timelimit = rorder.product_list[0].payment_timelimit;
-			json_data.created_at = rorder.created_at;
-			json_data.timelimit = req.app.get('helpers').addHours(new Date(rorder.created_at).getTime(),rorder.product_list[0].payment_timelimit);
+			json_data.created_at = rorder.created_at_swipetopay;
+			json_data.timelimit = req.app.get('helpers').addHours(new Date(rorder.created_at_swipetopay).getTime(),rorder.product_list[0].payment_timelimit);
 			
 			if(rorder.product_list[0].ticket_type == 'booking'){
 				json_data.amount = parseInt(rorder.vt_response.gross_amount);
@@ -556,6 +557,7 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 		
 		// va //
 		json_data.step_payment = arr_steppayment;
+		json_data.summary = rorder;
 		
 	}else if(type == 'va_success'){
 		json_data.payment_type = 'va';
@@ -588,8 +590,8 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 		json_data.payment_type = 'bp';
 		if(stat == 'success'){
 			json_data.payment_timelimit = rorder.product_list[0].payment_timelimit;
-			json_data.created_at = rorder.created_at;
-			json_data.timelimit = req.app.get('helpers').addHours(new Date(rorder.created_at).getTime(),rorder.product_list[0].payment_timelimit);
+			json_data.created_at = rorder.created_at_swipetopay;
+			json_data.timelimit = req.app.get('helpers').addHours(new Date(rorder.created_at_swipetopay).getTime(),rorder.product_list[0].payment_timelimit);
 			
 			if(rorder.product_list[0].ticket_type == 'booking'){
 				json_data.amount = parseInt(rorder.vt_response.gross_amount);
@@ -630,6 +632,7 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 		})
 		
 		json_data.step_payment = arr_steppayment;
+		json_data.summary = rorder;
 		
 	}else if(type == 'bp_success'){
 		json_data.payment_type = 'bp';
