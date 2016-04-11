@@ -166,7 +166,7 @@ exports.post_summary = function(req,res){
 		function cek_quantity(cb){
 			var ticket_id = post.product_list[0].ticket_id
 			var num_buy = post.product_list[0].num_buy
-			tickettypes_coll.findOne({_id:new ObjectId(ticket_id)},function(err,r){
+			tickettypes_coll.findOne({_id:new ObjectId(ticket_id),active:{$ne:false},status:{$ne:'inactive'}},function(err,r){
 				if(err){
 					debug.log(err)
 					debug.log('error line 150 commerce productlist')
