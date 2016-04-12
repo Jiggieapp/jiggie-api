@@ -90,3 +90,26 @@ exports.match = function(req,res){
 		}
 	});
 }
+
+exports.likes = function(req,res){
+	var options = {
+		url : url+"/app/v3/event/likes/"+req.params.event_id+"/"+req.params.fb_id
+	}
+	curl.get(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body)
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				var rsp = {
+					response : 1,
+					msg : 'Success'
+				}
+				res.send(rsp);
+			}
+		}else{
+			res.send(err);
+		}
+	});
+}

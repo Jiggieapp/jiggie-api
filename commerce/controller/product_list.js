@@ -174,7 +174,7 @@ exports.post_summary = function(req,res){
 				}else{
 					if(r == null){
 						debug.log('error line 156 commerce productlist')
-						cb(null,false,{msg:'Ticket Is Not Available'})
+						cb(null,false,{msg:'Sorry, this ticket is already unavaiable'})
 					}else{
 						if(r.status == 'sold out'){
 							msg = {msg:'Sorry, this ticket is unavailable',type:'ticket_list'}

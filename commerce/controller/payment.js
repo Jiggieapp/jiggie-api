@@ -6,8 +6,11 @@ var ObjectId = require('mongodb').ObjectID;
 var ObjectIdM = require('mongoose').Types.ObjectId; 
 var curl = require('request');
 
-var comurl = 'https://commerce.jiggieapp.com/VT/production/';
-// var comurl = 'http://127.0.0.1/VT/examples/';
+var fs = require('fs-sync');
+var path = require('path');
+var ppt = path.join(__dirname,"../../global/commerce.json");
+var pkg = fs.readJSON(ppt);
+var comurl = pkg.uri
 
 exports.index = function(req, res){
 	var type = req.body.type;

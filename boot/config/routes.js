@@ -7,6 +7,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/app/v3/event/details/:event_id/:fb_id/:gender_interest',event.details);
   app.get('/app/v3/event/interest/:event_id/:fb_id/:gender_interest',event.interest);
   app.get('/app/v3/partyfeed/match/:fb_id/:guest_fb_id/approved',event.match);
+  app.get('/app/v3/event/likes/:event_id/:fb_id',event.likes);
   
   var social = require(path_controller+'social');
   app.get('/app/v3/partyfeed/list/:fb_id/:gender_interest',social.index); // List Social Feed
