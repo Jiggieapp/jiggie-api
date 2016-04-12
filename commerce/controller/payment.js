@@ -45,15 +45,15 @@ exports.index = function(req, res){
 		function cek_quantity(stat,rows_order,ers,cb){
 			if(stat == true){
 				var ticket_id = rows_order.product_list[0].ticket_id
-				tickettypes_coll.findOne({_id:new ObjectId(ticket_id)},function(err,r){
+				tickettypes_coll.findOne({_id:new ObjectId(ticket_id),active:{$ne:false},status:{$ne:'inactive'}},function(err,r){
 					if(err){
 						debug.log('error line 44 commerce')
 						debug.log(err)
-						cb(null,false,{msg:'Ticket Is Not Available',type:'quantity'})
+						cb(null,false,{msg:'Sorry, this ticket is already unavailable',type:'ticket_list'})
 					}else{
 						if(r == null){
 							debug.log('error line 49 validation commerce')
-							cb(null,false,{msg:'Ticket Is Not Available',type:'quantity'})
+							cb(null,false,{msg:'Sorry, this ticket is already unavailable',type:'ticket_list'})
 						}else{
 							if(r.status == 'sold out' || r.quantity == 0){
 								cb(null,false,{msg:'Sorry, this ticket is unavailable',type:'ticket_list'})
