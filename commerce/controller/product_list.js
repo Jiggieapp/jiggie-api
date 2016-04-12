@@ -174,15 +174,39 @@ exports.post_summary = function(req,res){
 				}else{
 					if(r == null){
 						debug.log('error line 156 commerce productlist')
-						cb(null,false,{msg:'Sorry, this ticket is already unavaiable'})
+						cb(null,false,{msg:'Sorry, this ticket is already unavailable',type:'ticket_list'})
 					}else{
 						if(r.status == 'sold out'){
 							msg = {msg:'Sorry, this ticket is unavailable',type:'ticket_list'}
 							cb(null,false,msg)
 						}else{
 							if(r.quantity >= num_buy){
-								cb(null,true,[])
+								
+								// cek acl fbid permission //
+								var exist_fbid = false;
+								if(typeof r.fb_id_acl == 'undefined' || r.fb_id_acl == ''){
+									exist_fbid = true
+								}else{
+									async.forEachOf(r.fb_id_acl,function(v,k,e){
+										if(v == post.fb_id){
+											exist_fbid = true
+										}else{
+											exist_fbid = false
+										}
+									})
+								}
+								// cek acl fbid permission //
+								
+								if(exist_fbid == true){
+									cb(null,true,[])
+								}else{
+									msg = {msg:'Sorry, this ticket is unavailable',type:'ticket_list'}
+									cb(null,false,msg)
+								}
+								
 							}else{
+								
+								
 								var msg = '';
 								if(r.quantity == 1){
 									msg = {msg:'Sorry, we only have '+r.quantity+' ticket left',type:'ticket_details'}
