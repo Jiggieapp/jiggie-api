@@ -264,6 +264,8 @@ function post_transaction_va(req,next){
 				json_data.items = items;
 				// e:items //
 				
+				json_data.ticket_name = dt.product_list[0].name;
+				
 				// s:billing address //
 				
 				// billing_address = new Object();
