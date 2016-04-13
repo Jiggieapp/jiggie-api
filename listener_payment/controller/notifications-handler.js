@@ -6,7 +6,12 @@ var ObjectId = require('mongodb').ObjectID;
 var ObjectIdM = require('mongoose').Types.ObjectId; 
 var curl = require('request');
 
-var comurl = 'https://commerce.jiggieapp.com/VT/production/';
+var fs = require('fs-sync');
+var path = require('path');
+var ppt = path.join(__dirname,"../../global/commerce.json");
+var pkg = fs.readJSON(ppt);
+var comurl = pkg.uri
+
 var cron = require('cron').CronJob;
 
 var crypto = require('crypto');
@@ -297,58 +302,61 @@ function payment_vabp(req,next){
 								}else{
 									var json_data = JSON.parse(body);
 									var results = json_data.results;
-									if(results.transaction_status == 'settlement'){
-										send_mail(req,v.guest_detail.email,results,function(mail_stat){
-											if(mail_stat == true){
-												// /*update order*/
-												var form_upd = {
-													$set:{
-														mail_status:true,
-														order_status:'completed',
-														payment_status:'paid',
-														vt_response:results
-													}
-												}
-												order_coll.update({order_id:v.order_id},form_upd,function(err,upd){
-													if(err){
-														debug.log('error line 86 => notif');
-														debug.log(err);
-													}
-												})
-												
-												/*update tickettype*/
-												var num_buy = 0;
-												if(v.product_list[0].ticket_type == 'booking'){
-													num_buy = 1
-												}else{
-													num_buy = v.product_list[0].num_buy
-												}
-												var condt = {
-													_id:new ObjectId(v.product_list[0].ticket_id)
-												}
-												var form_updt = {
-													$push:{
-														sold:{
-															order_id:v.order_id,
-															num_buy:num_buy
+									
+									if(typeof results != 'undefined'){
+										if(results.transaction_status == 'settlement'){
+											send_mail(req,v.guest_detail.email,results,function(mail_stat){
+												if(mail_stat == true){
+													// /*update order*/
+													var form_upd = {
+														$set:{
+															mail_status:true,
+															order_status:'completed',
+															payment_status:'paid',
+															vt_response:results
 														}
-													},
-													$pull:{
-														qty_hold:{order_id:v.order_id}
 													}
-												}
-												tickettypes_coll.update(condt,form_updt,function(err3,upd){
-													if(err3){
-														debug.log('error update sold');
+													order_coll.update({order_id:v.order_id},form_upd,function(err,upd){
+														if(err){
+															debug.log('error line 86 => notif');
+															debug.log(err);
+														}
+													})
+													
+													/*update tickettype*/
+													var num_buy = 0;
+													if(v.product_list[0].ticket_type == 'booking'){
+														num_buy = 1
 													}else{
-														debug.log('updated sold');
+														num_buy = v.product_list[0].num_buy
 													}
-												})
-											}else{
-												debug.log('error line 91 => notif handle');
-												debug.log(mail_stat);
-											}
-										})
+													var condt = {
+														_id:new ObjectId(v.product_list[0].ticket_id)
+													}
+													var form_updt = {
+														$push:{
+															sold:{
+																order_id:v.order_id,
+																num_buy:num_buy
+															}
+														},
+														$pull:{
+															qty_hold:{order_id:v.order_id}
+														}
+													}
+													tickettypes_coll.update(condt,form_updt,function(err3,upd){
+														if(err3){
+															debug.log('error update sold');
+														}else{
+															debug.log('updated sold');
+														}
+													})
+												}else{
+													debug.log('error line 91 => notif handle');
+													debug.log(mail_stat);
+												}
+											})
+										}
 									}
 								}
 							})
