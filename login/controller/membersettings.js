@@ -111,6 +111,13 @@ exports.memberinfo = function(req,res){
 				// 403 => Invalid ID
 				res.json({code_error:403})
 			}else{
+				// converts photos data to varnish //
+				var photos = [];
+				async.forEachOf(rows.photos,function(v,k,e){
+					photos[k] = 'http://img.jiggieapp.com/image/'+fb_id+'/'+k+'/?imgid='+v
+				})
+				rows.photos = photos;
+				// converts photos data to varnish //
 				res.json(rows);
 			}
 			

@@ -85,7 +85,13 @@ function get_data(req,next){
 						json_data.end_datetime = rows_event.end_datetime;
 						json_data.tags = rows_event.tags;
 						json_data.description = rows_event.description;
-						json_data.photos = rows_event.photos;
+						
+						if(rows_event.photos.length == 0){
+							json_data.photos = rows_venue.photos;
+						}else{
+							json_data.photos = rows_event.photos;
+						}
+						
 						
 						json_data.purchase = []
 						json_data.reservation = []
