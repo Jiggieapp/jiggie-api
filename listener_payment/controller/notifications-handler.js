@@ -473,7 +473,7 @@ function send_mail(req,email_to,vt,next){
 					if(vt.transaction_status == 'capture'){
 						if(rows_order.product_list[0].ticket_type == 'purchase'){
 							var is_send = true;
-							subject = 'Your Payment Success';
+							subject = 'Congrats on Your Booking!';
 							var payment_type = 'CREDIT CARD'
 							
 							var product_name = rows_order.product_list[0].name+' (x'+rows_order.product_list[0].num_buy+')';
@@ -509,7 +509,7 @@ function send_mail(req,email_to,vt,next){
 			
 						}else if(rows_order.product_list[0].ticket_type == 'booking'){
 							var is_send = true;
-							subject = 'Your Payment Success';
+							subject = 'Congrats on Your Booking!';
 							var payment_type = 'CREDIT CARD'
 						
 							var product_name = rows_order.product_list[0].name;
@@ -559,7 +559,7 @@ function send_mail(req,email_to,vt,next){
 					if(vt.transaction_status == 'settlement'){
 						if(rows_order.product_list[0].ticket_type == 'purchase'){
 							var is_send = true;
-							subject = 'Your Payment Success';
+							subject = 'Congrats on Your Booking!';
 							if(typeof vt.permata_va_number != 'undefined'){
 								var payment_type = 'BANK TRANSFER'
 							}else if(typeof vt.va_numbers[0].bank != 'undefined'){
@@ -599,7 +599,7 @@ function send_mail(req,email_to,vt,next){
 							var template = new EmailTemplate(path.join(templateDir,'purchase','success_screen'))
 						}else if(rows_order.product_list[0].ticket_type == 'booking'){
 							var is_send = true;
-							subject = 'Your Payment Success';
+							subject = 'Congrats on Your Booking!';
 							if(typeof vt.permata_va_number != 'undefined'){
 								var payment_type = 'BANK TRANSFER'
 							}else if(typeof vt.va_numbers[0].bank != 'undefined'){
@@ -648,7 +648,7 @@ function send_mail(req,email_to,vt,next){
 					}else if(vt.transaction_status == 'pending'){
 						if(rows_order.product_list[0].ticket_type == 'purchase'){
 							var is_send = true;
-							subject = 'Your Payment Still Pending';
+							subject = 'Congrats on Your Booking! Pending Payment.';
 							if(typeof vt.permata_va_number != 'undefined'){
 								var payment_type = 'BANK TRANSFER'
 								var account_number = vt.permata_va_number;
@@ -702,7 +702,7 @@ function send_mail(req,email_to,vt,next){
 							var template = new EmailTemplate(path.join(templateDir,'purchase','pending'))
 						}else if(rows_order.product_list[0].ticket_type == 'booking'){
 							var is_send = true;
-							subject = 'Your Payment Still Pending';
+							subject = 'Congrats on Your Booking! Pending Payment.';
 							if(typeof vt.permata_va_number != 'undefined'){
 								var payment_type = 'BANK TRANSFER'
 								var account_number = vt.permata_va_number;
@@ -761,7 +761,7 @@ function send_mail(req,email_to,vt,next){
 					if(vt.transaction_status == 'settlement'){
 						if(rows_order.product_list[0].ticket_type == 'purchase'){
 							var is_send = true;
-							subject = 'Your Payment Success';
+							subject = 'Congrats on Your Booking!';
 							var payment_type = 'MANDIRI BILL PAYMENT';
 							
 							var product_name = rows_order.product_list[0].name+' (x'+rows_order.product_list[0].num_buy+')';
@@ -797,7 +797,7 @@ function send_mail(req,email_to,vt,next){
 							var template = new EmailTemplate(path.join(templateDir,'purchase','success_screen'))
 						}else if(rows_order.product_list[0].ticket_type == 'booking'){
 							var is_send = true;
-							subject = 'Your Payment Success';
+							subject = 'Congrats on Your Booking!';
 							var payment_type = 'MANDIRI BILL PAYMENT';
 						
 							var product_name = rows_order.product_list[0].name;
@@ -842,7 +842,7 @@ function send_mail(req,email_to,vt,next){
 					}else if(vt.transaction_status == 'pending'){
 						if(rows_order.product_list[0].ticket_type == 'purchase'){
 							var is_send = true;
-							subject = 'Your Payment Still Pending';
+							subject = 'Congrats on Your Booking! Pending Payment.';
 							var payment_type = 'MANDIRI BILL PAYMENT'
 							var account_number = vt.bill_key;
 							var company_number = vt.biller_code;
@@ -892,7 +892,7 @@ function send_mail(req,email_to,vt,next){
 							var template = new EmailTemplate(path.join(templateDir,'purchase','pending'))
 						}else if(rows_order.product_list[0].ticket_type == 'booking'){
 							var is_send = true;
-							subject = 'Your Payment Still Pending';
+							subject = 'Congrats on Your Booking! Pending Payment.';
 							var payment_type = 'MANDIRI BILL PAYMENT'
 							var account_number = vt.bill_key;
 							var company_number = vt.biller_code;

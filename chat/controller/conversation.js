@@ -272,7 +272,8 @@ function post_message(req,next){
 					$set:{
 						"conversations.$.last_message":message,
 						"conversations.$.last_updated":new Date(),
-						"conversations.$.hasreplied":false
+						"conversations.$.hasreplied":false,
+						last_updated:new Date()
 					}
 				}
 				chatmessages_coll.update(cond,upd_data,function(err,upd){

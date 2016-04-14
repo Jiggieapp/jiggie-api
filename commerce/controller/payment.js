@@ -756,10 +756,10 @@ function post_transaction_cc(req,next){
 					cb(null,true,dt,dt2,body)	
 				}else{
 					debug.log("Error Code in VT Commerce CC");
-					cb(null,false,[],[],[]);
+					cb(null,false,dt,dt2,body);
 				}
 			}else{
-				cb(null,false,[],[],[]);
+				cb(null,false,dt,dt2,body);
 			}
 		},
 		function merge_data(stat,dt,dt2,body,cb){
@@ -1228,7 +1228,11 @@ function post_transaction_cc(req,next){
 				}
 			}else{
 				debug.log('error line 377');
-				cb(null,false);
+				var vts = JSON.parse(body)
+				var spmsg = vts.msg.replace('Veritrans Error (400):','')
+				vts.msg = spmsg;
+				vts.type = 'payment_validation_error'
+				cb(null,vts);
 			}
 			
 		}

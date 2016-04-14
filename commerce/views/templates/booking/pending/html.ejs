@@ -52,7 +52,7 @@
 			<p>
 				<ol>
 					<% for(var x=0; x<step_payment[i].steps.length; x++){%>
-						<li><span class="float-left number"><%=(x+1)%></span><div class="float-left"><%=step_payment[i].steps[x]%></div><div class="clear"></div></li>
+						<li><%=step_payment[i].steps[x]%></li>
 					<% } %>
 				</ol>
 			</p>
