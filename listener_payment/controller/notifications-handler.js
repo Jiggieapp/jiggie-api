@@ -170,7 +170,7 @@ function cancel_transaction(req,rows_order,next){
 	async.parallel([
 		function cancel_vt(cb){
 			var options = {
-				url:'https://commerce.jiggieapp.com/VT/production/cancel.php',
+				url:comurl+'/cancel.php',
 				form:{
 					order_id:rows_order.order_id
 				}
@@ -561,7 +561,7 @@ function send_mail(req,email_to,vt,next){
 							var is_send = true;
 							subject = 'Your Payment Success';
 							if(typeof vt.permata_va_number != 'undefined'){
-								var payment_type = 'BANK TRANSFER PERMATA BANK'
+								var payment_type = 'BANK TRANSFER'
 							}else if(typeof vt.va_numbers[0].bank != 'undefined'){
 								var payment_type = 'BANK TRANSFER BCA BANK'
 							}
@@ -601,7 +601,7 @@ function send_mail(req,email_to,vt,next){
 							var is_send = true;
 							subject = 'Your Payment Success';
 							if(typeof vt.permata_va_number != 'undefined'){
-								var payment_type = 'BANK TRANSFER PERMATA BANK'
+								var payment_type = 'BANK TRANSFER'
 							}else if(typeof vt.va_numbers[0].bank != 'undefined'){
 								var payment_type = 'BANK TRANSFER BCA BANK'
 							}
@@ -650,7 +650,7 @@ function send_mail(req,email_to,vt,next){
 							var is_send = true;
 							subject = 'Your Payment Still Pending';
 							if(typeof vt.permata_va_number != 'undefined'){
-								var payment_type = 'BANK TRANSFER PERMATA BANK'
+								var payment_type = 'BANK TRANSFER'
 								var account_number = vt.permata_va_number;
 								var arr_steppayment = []
 								async.forEachOf(step_payment,function(v,k,e){
@@ -704,7 +704,7 @@ function send_mail(req,email_to,vt,next){
 							var is_send = true;
 							subject = 'Your Payment Still Pending';
 							if(typeof vt.permata_va_number != 'undefined'){
-								var payment_type = 'BANK TRANSFER PERMATA BANK'
+								var payment_type = 'BANK TRANSFER'
 								var account_number = vt.permata_va_number;
 								var arr_steppayment = []
 								async.forEachOf(step_payment,function(v,k,e){
@@ -798,7 +798,7 @@ function send_mail(req,email_to,vt,next){
 						}else if(rows_order.product_list[0].ticket_type == 'booking'){
 							var is_send = true;
 							subject = 'Your Payment Success';
-							var payment_type = 'Mandiri Bill Payment';
+							var payment_type = 'MANDIRI BILL PAYMENT';
 						
 							var product_name = rows_order.product_list[0].name;
 							var amount_service = 'Rp. '+String(numeral(rows_order.total_adminfee).format('0,0'))
@@ -843,7 +843,7 @@ function send_mail(req,email_to,vt,next){
 						if(rows_order.product_list[0].ticket_type == 'purchase'){
 							var is_send = true;
 							subject = 'Your Payment Still Pending';
-							var payment_type = 'Mandiri Bill Payment'
+							var payment_type = 'MANDIRI BILL PAYMENT'
 							var account_number = vt.bill_key;
 							var company_number = vt.biller_code;
 							
@@ -893,7 +893,7 @@ function send_mail(req,email_to,vt,next){
 						}else if(rows_order.product_list[0].ticket_type == 'booking'){
 							var is_send = true;
 							subject = 'Your Payment Still Pending';
-							var payment_type = 'Mandiri Bill Payment'
+							var payment_type = 'MANDIRI BILL PAYMENT'
 							var account_number = vt.bill_key;
 							var company_number = vt.biller_code;
 							
@@ -944,14 +944,14 @@ function send_mail(req,email_to,vt,next){
 				}else if(vt.payment_type == 'expire'){
 					if(rows_order.vt_response.payment_type == 'bank_transfer'){
 						if(typeof vt.permata_va_number != 'undefined'){
-							var payment_type = 'Bank Transfer Permata Bank'
+							var payment_type = 'BANK TRANSFER'
 						}else if(typeof vt.va_numbers[0].bank != 'undefined'){
-							var payment_type = 'Bank Transfer BCA Bank'
+							var payment_type = 'BANK TRANSFER BCA BANK'
 						}
 					}else if(rows_order.vt_response.payment_type == 'credit_card'){
-						var payment_type = 'Credit Card'
+						var payment_type = 'CREDIT CARD'
 					}else if(rows_order.vt_response.payment_type == 'echannel'){
-						var payment_type = 'Mandiri Bill Payment'
+						var payment_type = 'MANDIRI BILL PAYMENT'
 					}
 					
 					if(rows_order.product_list[0].ticket_type == 'purchase'){
