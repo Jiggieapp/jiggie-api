@@ -324,3 +324,122 @@ exports.sync_countwalkthrough = function(req,res){
 		}
 	})
 }
+
+exports.upload_profileimage = function(req,res){
+	var fs = require('fs');
+	var async = require('async');
+	var Busboy = require('busboy');
+	var busboy = new Busboy({ headers: req.headers });
+	var app = req.app;
+	busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
+		if(mimetype == 'image/jpeg' || mimetype == 'image/png' || mimetype == 'image/jpg'){
+			var saveTo = __dirname + '/../public/uploads/';
+
+			var ext = filename.split('.');
+			var now = new Date();
+			var pt_file = now.getTime()+'.'+ext[1];
+			var pathfile = saveTo+pt_file;
+
+			console.log('Nama Tempat: '+pathfile);
+			file.pipe(fs.createWriteStream(pathfile));
+					
+			setTimeout(function(){
+				upload_s3(app,pathfile,pt_file,mimetype,encoding,function(res_aws){
+					console.log('send s3')
+					console.log(res_aws);
+					
+					fs.unlink(pathfile,function(err_unlink){
+						console.log('delete local')
+						res.json(hr)
+					})
+				});
+			},10000)
+			
+			busboy.on('field', function(fieldname, val, fieldnameTruncated, valTruncated, encoding, mimetype) {
+				console.log('save fbid photos')
+				console.log(fieldname)
+				console.log(val)
+				var options = {
+					url : url+"/app/v3/member/upload",
+					form : {
+						fb_id:val,
+						path_file:'https://s3-ap-southeast-1.amazonaws.com/jiggieprofileimage/'+pt_file
+					}
+				}
+				curl.post(options,function(err,resp,body){
+					if (!err && resp.statusCode == 200) {
+						console.log(body)
+					}
+				})
+			});
+				
+			
+		}else{
+			console.log('Not Images');
+		}
+	});
+	req.pipe(busboy);
+}
+
+function s3_config(callback){
+	var s3 = require('s3');
+	var client = s3.createClient({
+		maxAsyncS3: 200,     // this is the default
+		s3RetryCount: 300,    // this is the default
+		s3RetryDelay: 10000, // this is the default
+		multipartUploadThreshold: 2097152000, // this is the default (20 MB)
+		multipartUploadSize: 1572864000, // this is the default (15 MB)
+		s3Options: {
+			accessKeyId: "AKIAJGC4JWEYS64OOVUA",
+			secretAccessKey: "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",
+			region: "ap-southeast-1",
+		},
+	});
+	callback(client);
+}
+
+function upload_s3(app,pathfile,filename,mimitype,encoding,callback){
+	// var aws = require('aws-sdk');
+	// aws.config.update({accessKeyId: 'AKIAJGC4JWEYS64OOVUA', secretAccessKey: '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'});
+    // var s3 = new aws.S3();
+    // var s3_params = {
+        // Bucket: 'jiggieprofileimage',
+        // Key: filename,
+        Expires: 60,
+        // ContentType: mimitype,
+        // ACL: 'public-read'
+    // };
+    // s3.getSignedUrl('putObject', s3_params, function(err, data){
+        // if(err){
+            // console.log(err);
+        // }
+        // else{
+			// console.log(data)
+			// callback('Next DATA')
+        // }
+    // });
+	
+	s3_config(function(client){
+		var params = {
+			localFile: pathfile,
+			s3Params: {
+				Bucket: "jiggieprofileimage",
+				Key: filename,
+				ACL: 'public-read',
+				ContentType : mimitype,
+				// ContentEncoding: encoding
+			},
+		};
+		var uploader = client.uploadFile(params);
+		uploader.on('error', function(err) {
+			console.error("unable to upload:", err.stack);
+		});
+		uploader.on('progress', function() {
+			console.log("progress", uploader.progressMd5Amount,uploader.progressAmount, uploader.progressTotal);
+		});
+		uploader.on('end', function() {
+			console.log("done uploading");
+		});
+		callback('next upload s3');
+	})
+}

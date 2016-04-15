@@ -28,6 +28,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/app/v3/user/phone/verification/send/:fb_id/:phone',login.sendSMS);
   app.get('/app/v3/user/phone/verification/validate/:fb_id/:token',login.validateSMS);
   app.post('/app/v3/count_walkthrough',login.sync_countwalkthrough);
+  app.post('/app/v3/member/upload',login.upload_profileimage);
 
   var chat = require(path_controller+'chat');
   app.get('/app/v3/conversations',chat.list); // List Users Can be Chats;
@@ -55,6 +56,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/app/v3/product/order_list/:fb_id',commerce.order_list);
   app.get('/app/v3/product/success_screen/:order_id',commerce.success_screen);
   app.get('/app/v3/product/walkthrough_payment',commerce.walkthrough_payment);
+  app.get('/app/v3/product/payment_method',commerce.get_paymentmethod);
   
   var xmpp = require(path_controller+'xmpp');
   app.get('/xmpp/:user',xmpp.index);

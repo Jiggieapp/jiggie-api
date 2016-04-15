@@ -56,3 +56,10 @@ eventEmitter.on('database_connected',function(){
 		console.log("venues connected");
 	});
 });
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('payment_method',function(collection){
+		payment_method_coll = collection;
+		console.log("payment_method connected");
+	});
+});

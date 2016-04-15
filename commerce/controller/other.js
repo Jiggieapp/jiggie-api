@@ -687,3 +687,9 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 	}
 	return json_data;
 }
+
+exports.get_paymentmethod = function(req,res){
+	payment_method_coll.find({status:true}).toArray(function(err,r){
+		res.json(r)
+	})
+}
