@@ -4,6 +4,7 @@ var async = require('async');
 var NodeCache = require("node-cache");
 var cache = new NodeCache({ stdTTL: 100, checkperiod: 120 });
 var eventEmitter = mongo.eventEmitter;
+var fs = require('fs')
 
 eventEmitter.on('database_connected',function(){
 	mongo.getCollection('customers',function(collection)
@@ -111,13 +112,6 @@ exports.memberinfo = function(req,res){
 				// 403 => Invalid ID
 				res.json({code_error:403})
 			}else{
-				// converts photos data to varnish //
-				var photos = [];
-				async.forEachOf(rows.photos,function(v,k,e){
-					photos[k] = 'http://img.jiggieapp.com/image/'+fb_id+'/'+k+'/?imgid='+v
-				})
-				rows.photos = photos;
-				// converts photos data to varnish //
 				res.json(rows);
 			}
 			
@@ -197,4 +191,25 @@ function sendSMSConfirm(phone,dttoken,callback){
 		}
 		callback();
 	});
+}
+
+exports.upload_profileimage = function(req,res){
+	var post = req.body;
+	
+	var fb_id = post.fb_id;
+	var path_file = post.path_file;
+	
+	var upd_form = {
+		$push:{
+			photos:path_file
+		}
+	}
+	
+	customers_coll.update({fb_id:fb_id},upd_form,function(err,r){
+		if(err){
+			debug.log(err)
+		}
+		res.json({success:true})
+	})
+	
 }

@@ -20,4 +20,5 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/order_list/:fb_id',other.order_list);
   app.get('/success_screen/:order_id',other.success_screen);
   app.get('/walkthrough_payment',other.walkthrough_payment);
+  app.get('/app/v3/product/payment_method',other.get_paymentmethod);
 }
