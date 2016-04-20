@@ -30,7 +30,7 @@ exports.index = function(req, res){
 						debug.log('error line 26 commerce')
 						cb(null,false,[],{msg:'Payment Has Already Paid',type:'paid'})
 					}else{
-						if(typeof r.vt_response == 'undefined'){
+						if(r.order_status == 'checkout_incompleted'){
 							debug.log('cek is paid true')
 							cb(null,true,r,[])
 						}else{
@@ -230,7 +230,24 @@ function post_transaction_va(req,next){
 				cb(null,false,[],[]);
 			}
 		},
-		function sync_data(stat,dt,dt2,cb){
+		function get_event(stat,dt,dt2,cb){
+			if(stat == true){
+				events_detail_coll.findOne({_id:new ObjectId(dt.event_id)},function(err,r){
+					if(err){
+						cb(null,false,[],[],[]);
+					}else{
+						if(r == null){
+							cb(null,false,[],[],[]);
+						}else{
+							cb(null,true,dt,dt2,r);
+						}
+					}
+				})
+			}else{
+				cb(null,false,[],[],[]);
+			}
+		},
+		function sync_data(stat,dt,dt2,rows_event,cb){
 			if(stat == true){
 				var json_data = new Object();
 				
@@ -265,6 +282,9 @@ function post_transaction_va(req,next){
 				// e:items //
 				
 				json_data.ticket_name = dt.product_list[0].name;
+				json_data.event_name = rows_event.title;
+				json_data.guest_name = dt.guest_detail.name;
+				
 				
 				// s:billing address //
 				
@@ -1240,3 +1260,291 @@ function post_transaction_cc(req,next){
 		next(merge);
 	})
 }
+
+
+/*Start:Free Payment*/
+exports.free_charge = function(req,res){
+	var post = req.body;
+	
+	async.waterfall([
+		function cek_ispaid(cb){
+			var order_id = String(post.order_id);
+			order_coll.findOne({order_id:order_id},function(err,r){
+				if(err){
+					debug.log(err)
+					debug.log('error commerce line 22')
+					cb(null,false,[],{msg:'Payment Has Already Paid',type:'paid'})
+				}else{
+					if(r == null){
+						debug.log('error line 26 commerce')
+						cb(null,false,[],{msg:'Payment Has Already Paid',type:'paid'})
+					}else{
+						if(r.order_status == 'checkout_incompleted'){
+							debug.log('cek is paid true')
+							cb(null,true,r,[])
+						}else{
+							debug.log('cek is paid false')
+							cb(null,false,[],{msg:'Payment Has Already Paid',type:'paid'})
+						}
+					}
+				}
+				
+			})
+		},
+		function cek_quantity(stat,rows_order,ers,cb){
+			if(stat == true){
+				var ticket_id = rows_order.product_list[0].ticket_id
+				tickettypes_coll.findOne({_id:new ObjectId(ticket_id),active:{$ne:false},status:{$ne:'inactive'}},function(err,r){
+					if(err){
+						debug.log('error line 44 commerce')
+						debug.log(err)
+						cb(null,false,{msg:'Sorry, this ticket is already unavailable',type:'ticket_list'})
+					}else{
+						if(r == null){
+							debug.log('error line 49 validation commerce')
+							cb(null,false,{msg:'Sorry, this ticket is already unavailable',type:'ticket_list'})
+						}else{
+							if(r.status == 'sold out' || r.quantity == 0){
+								cb(null,false,{msg:'Sorry, this ticket is unavailable',type:'ticket_list'})
+							}else{
+								if(r.quantity >= rows_order.product_list[0].num_buy){
+									debug.log('cek quantity true')
+									cb(null,true,[])
+								}else{
+									debug.log('cek quantity false')
+									if(r.quantity == 1){
+										cb(null,false,{msg:'Sorry, we only have '+r.quantity+' ticket left',type:'ticket_details'})
+									}else if(r.quantity > 1){
+										cb(null,false,{msg:'Sorry, we only have '+r.quantity+' tickets left',type:'ticket_details'})
+									}
+								}
+							}
+						}
+					}
+				})
+			}else{
+				cb(null,false,ers)
+			}
+		},
+		function execute(stat,msg_errors,cb){
+			if(stat == true){
+				paid_free(req,function(dt){
+					if(dt == false){
+						cb(null,false,{code_error:403});
+					}else{
+						cb(null,true,dt);
+					}
+				})
+			}else{
+				cb(null,false,msg_errors)
+			}
+		}
+	],function(err,stat,et){
+		if(stat == false){
+			res.json({
+				code_error:403,
+				msg:et.msg,
+				type:et.type
+			})
+		}else if(stat == true){
+			res.json(et)
+		}
+	})
+}
+
+function paid_free(req,next){
+	var post = req.body;
+	var order_id = String(post.order_id);
+	var pay_deposit = post.pay_deposit;
+	
+	var schema = req.app.get('mongo_path');
+	var order = require(schema+'/order_product.js');
+	debug.log('DATA PAYMENT ###########################')
+	debug.log(post)
+	debug.log('//DATA PAYMENT ###########################')
+	
+	async.waterfall([
+		function get_order(cb){
+			order.findOne({order_id:order_id},function(err,r){
+				if(err){
+					debug.log("error get order product data va")
+					cb(null,false,{code_error:401})
+				}else{
+					if(r == null){
+						debug.log("order product data null va")
+						cb(null,false,{code_error:403})
+					}else{
+						cb(null,true,r);
+					}
+				}
+			})
+		},
+		function is_ticket_exist(stat,dt,cb){
+			if(stat == true){
+				var cond22 = {
+					_id:new ObjectId(dt.product_list[0].ticket_id),
+					active:{$ne:false},
+					status:'active'
+				}
+				tickettypes_coll.findOne(cond22,function(err,r){
+					if(err){
+						debug.log('error line 105 payment commerce')
+						cb(null,false,[]);
+					}else{
+						if(r == null){
+							debug.log('error line 109 payment commerce')
+							cb(null,false,[]);
+						}else{
+							if(r.quantity >= dt.product_list[0].num_buy){
+								cb(null,true,dt);
+							}else{
+								debug.log('quantity limited')
+								cb(null,false,[]);
+							}
+							
+						}
+					}
+				})
+			}else{
+				cb(null,false,[]);
+			}
+		},
+		function cek_valid_min_deposit_booking(stat,dt,cb){
+			if(stat == true){
+				if(dt.product_list[0].ticket_type == 'booking'){
+					if(parseInt(pay_deposit) == 0){
+						cb(null,true,dt);
+					}else{
+						debug.log('errorr min deposit required for booking');
+						cb(null,false,[]);
+					}
+				}else{
+					cb(null,true,dt);
+				}
+			}else{
+				cb(null,false,[]);
+			}
+		},
+		function merge_data(stat,dtorder,cb){
+			debug.log('merging data payment')
+			if(stat == true){
+				merge_data_free(req,function(dt){
+					if(dt == true){
+						cb(null,true,dtorder);
+					}else{
+						debug.log('error line 160 => paymentjs');
+						cb(null,false,[])
+					}
+				})
+			}else{
+				debug.log('error line 165 => paymentjs');
+				cb(null,false,[]);
+			}
+		},
+		function send_notif(stat,dtorder,cb2){
+			debug.log('send notif')
+			if(stat == true){
+				var vt = new Object();
+				vt.payment_type = 'free'
+				vt.order_id = order_id
+				var form_post = new Object();
+				
+				form_post.vt = vt;
+				form_post.email_to = dtorder.guest_detail.email;
+				var options = {
+					url:'http://127.0.0.1:31456/sendnotif',
+					form:form_post
+				}
+				curl.post(options,function(err,resp,body){
+					if(!err){
+						cb2(null,true,vt);
+					}else{
+						cb2(null,false,[]);
+					}
+				})
+			}else{
+				cb2(null,false,[]);
+			}
+		}
+	],function(err,merge){
+		if(merge == true){
+			var str = '';
+			str = {success:true,status:'capture',method:'Free Payment'}
+			next(str)
+		}else{
+			next(false);
+		}
+	})
+}
+
+function merge_data_free(req,next){
+	var post = req.body;
+	var order_id = post.order_id;
+	
+	var schema = req.app.get('mongo_path');
+	var order = require(schema+'/order_product.js');
+	
+	async.waterfall([
+		function get_stock(cb2){
+			order.findOne({order_id:order_id},function(err,r){
+				if(err){
+					debug.log('error line 182');
+					cb2(null,false,{code_error:403});
+				}else{
+					// update stock after success buy //
+					var num_buy = 0;
+					async.forEachOf(r.product_list,function(v,k,e){
+						tickettypes_coll.findOne({_id:new ObjectId(v.ticket_id)},function(err2,r2){
+							var quantity_old = r2.quantity;
+							if(r2.ticket_type == 'booking'){
+								num_buy = 1;
+							}else{
+								num_buy = v.num_buy;
+							}
+							var new_qty = parseInt(quantity_old)-parseInt(num_buy);
+							
+							var form_update = {
+								$set:{quantity:new_qty},
+								$push:{sold:{order_id:order_id,num_buy:num_buy}}
+							}
+							
+							tickettypes_coll.update({_id:new ObjectId(v.ticket_id)},form_update,function(err3,upd){
+								if(err3){
+									debug.log('error update stock va');
+									cb2(null,false);
+								}else{
+									cb2(null,true);
+								}
+							})
+						})
+					})
+				
+				}
+			})
+		},
+		function upd_order(stat,cb2){
+			if(stat == true){
+				var form_upd = {
+					$set:{
+						order_status:'completed',
+						payment_status:'paid'
+					}
+				}
+				order.update({order_id:order_id},form_upd,function(err,upd){
+					if(err){
+						debug.log('error line 222');
+						cb2(null,false);
+					}else{
+						cb2(null,true);
+					}
+				})
+			}else{
+				cb2(null,false);
+			}
+		},
+	],function(err,merge){
+		next(merge);
+	})
+	
+}
+/*End:Free Payment*/

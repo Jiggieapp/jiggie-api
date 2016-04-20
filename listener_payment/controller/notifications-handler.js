@@ -941,6 +941,88 @@ function send_mail(req,email_to,vt,next){
 							var template = new EmailTemplate(path.join(templateDir,'booking','pending'))
 						}
 					}
+				}else if(vt.payment_type == 'free'){
+					if(rows_order.product_list[0].ticket_type == 'purchase'){
+						var is_send = true;
+						subject = 'Congrats on Your Booking!';
+						var payment_type = 'free'
+						
+						var product_name = rows_order.product_list[0].name+' (x'+rows_order.product_list[0].num_buy+')';
+						var amount_service = 'Rp. '+String(numeral(rows_order.total_adminfee).format('0,0'))
+						var amount_tax = 'Rp. '+String(numeral(rows_order.total_tax_amount).format('0,0'))
+						var product_price = 'Rp. '+String(numeral(rows_order.product_list[0].price*rows_order.product_list[0].num_buy).format('0,0'))
+						var total = 'Rp. '+String(numeral(rows_order.total_price).format('0,0'))
+						var instructions_event = '';
+						if(typeof rows_event.instruction == 'undefined' || rows_event.instruction == null){
+							instructions_event = ''
+						}else{
+							instructions_event = rows_event.instruction
+						}
+						
+						var parseTo = {
+							congrats_title:'Congrats',
+							first_name:capitalizeFirstLetter(rows_order.guest_detail.name),
+							event_name:rows_event.title,
+							event_date:req.app.get('helpers').parseDate(rows_event.start_datetime,'ddd, DD MMM YYYY'),
+							rsvp_no:rows_order.code,
+							guest_name:rows_order.guest_detail.name.toUpperCase(),
+							status:'PAID',
+							payment_method:payment_type,
+							event_datetime_word:req.app.get('helpers').parseDate(rows_order.created_at,'DD MMMM YYYY - HH:mm:ss'),
+							product_name:product_name,
+							product_price:product_price,
+							amount_service:amount_service,
+							amount_tax:amount_tax,
+							total:total,
+							instructions:instructions_event
+						}
+						var template = new EmailTemplate(path.join(templateDir,'purchase','success_screen'))
+		
+					}else if(rows_order.product_list[0].ticket_type == 'booking'){
+						var is_send = true;
+						subject = 'Congrats on Your Booking!';
+						var payment_type = 'free'
+					
+						var product_name = rows_order.product_list[0].name;
+						var amount_service = 'Rp. '+String(numeral(rows_order.total_adminfee).format('0,0'))
+						var amount_tax = 'Rp. '+String(numeral(rows_order.total_tax_amount).format('0,0'))
+						var product_price = 'Rp. '+String(numeral(rows_order.product_list[0].price).format('0,0'))
+						var total_guest = rows_order.product_list[0].num_buy
+						
+						var amount_estimated = 'Rp. '+String(numeral(rows_order.product_list[0].total_price_all).format('0,0'))
+						var amount_deposit = 'Rp. '+String(numeral(0).format('0,0'))
+						var amount_balance = 'Rp. '+String(numeral(parseInt(rows_order.product_list[0].total_price_all)-parseInt(0)).format('0,0'))
+						
+						var instructions_event = '';
+						if(typeof rows_event.instruction == 'undefined' || rows_event.instruction == null){
+							instructions_event = ''
+						}else{
+							instructions_event = rows_event.instruction
+						}
+						
+						
+						var parseTo = {
+							congrats_title:'Congrats',
+							first_name:capitalizeFirstLetter(rows_order.guest_detail.name),
+							event_name:rows_event.title,
+							event_date:req.app.get('helpers').parseDate(rows_event.start_datetime,'ddd, DD MMM YYYY'),
+							rsvp_no:rows_order.code,
+							guest_name:rows_order.guest_detail.name.toUpperCase(),
+							total_guest:total_guest,
+							status:'PAID',
+							payment_method:payment_type,
+							event_datetime_word:req.app.get('helpers').parseDate(rows_order.created_at,'DD MMMM YYYY - HH:mm:ss'),
+							product_name:product_name,
+							product_price:product_price,
+							amount_service:amount_service,
+							amount_tax:amount_tax,
+							amount_estimated:amount_estimated,
+							amount_deposit:amount_deposit,
+							amount_balance:amount_balance,
+							instructions:instructions_event
+						}
+						var template = new EmailTemplate(path.join(templateDir,'booking','success_screen'))
+					}
 				}else if(vt.payment_type == 'expire'){
 					if(rows_order.vt_response.payment_type == 'bank_transfer'){
 						if(typeof vt.permata_va_number != 'undefined'){
@@ -1260,4 +1342,48 @@ function parseTimelimit(tm){
 	var m = tm%60;
 	var h = parseInt(tm/60)
 	return h+'h '+m+' m';
+}
+
+exports.forward_mail = function(req,res){
+	var host = req.app.get('mail_host');
+	var port = req.app.get('mail_port');
+	var user = req.app.get('mail_user');
+	var pass = req.app.get('mail_pass');
+	
+	if(typeof req.body.mandrill_events != 'undefined'){
+		var mandrill_events = JSON.parse(req.body.mandrill_events);
+		
+		var email_to = 'support@jiggieapp.com';
+		var from = mandrill_events[0].msg.from_email
+		var subject = 'Support';
+		var html = mandrill_events[0].msg.html;
+		
+		var nodemailer = require('nodemailer');
+		var transporter = nodemailer.createTransport({
+			host: host,
+			port: port,
+			auth: {
+				user: user,
+				pass: pass
+			}
+		});
+		var mailOptions = {
+			from: from, 
+			to: email_to, 
+			subject: subject, 
+			text: subject, 
+			html: html
+		};
+		transporter.sendMail(mailOptions, function(error, info){
+			if(error){
+				debug.log(error)
+				debug.log('error sending mail')
+			}else{
+				console.log('EMAIL SENT TO '+email_to+' '+info.response)
+				res.json(req.body)
+			}
+		});
+	}else{
+		res.json({code_error:403})
+	}
 }

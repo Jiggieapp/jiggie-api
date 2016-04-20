@@ -438,3 +438,148 @@ exports.get_paymentmethod = function(req,res){
 	// });
 }
 
+exports.support = function(req,res){
+	var head = req.headers;
+	var token = head.authorization;
+	
+	// jwt.verify(token,datakey,function(err,decode){
+		// if(err){
+			// if(err.name == 'JsonWebTokenError'){
+				// res.status(401).send({});
+			// }else if(err.name == 'TokenExpiredError'){
+				// res.status(410).send({});
+			// }
+		// }else{
+			var post = req.body;
+			var options = {
+				url : url+"/app/v3/product/support"
+			}
+			curl.get(options,function(err,resp,body){
+				if (!err && resp.statusCode == 200) {
+					res.header("Content-type","application/json");
+					var json_data = JSON.parse(body);
+					if(typeof json_data.code_error != 'undefined'){
+						res.status(json_data.code_error).send({});
+					}else{
+						hr.data = new Object();
+						hr.data.support = JSON.parse(body);
+						res.send(hr);
+					}
+				}else{
+					res.send(err);
+				}
+			});
+		// }
+	// });
+}
+
+exports.forward_mail = function(req,res){
+	var head = req.headers;
+	var token = head.authorization;
+	
+	// jwt.verify(token,datakey,function(err,decode){
+		// if(err){
+			// if(err.name == 'JsonWebTokenError'){
+				// res.status(401).send({});
+			// }else if(err.name == 'TokenExpiredError'){
+				// res.status(410).send({});
+			// }
+		// }else{
+			var options = {
+				url : "http://127.0.0.1:31456/forward_support/",
+				form:req.body
+			}
+			curl.post(options,function(err,resp,body){
+				if (!err && resp.statusCode == 200) {
+					res.header("Content-type","application/json");
+					var json_data = JSON.parse(body);
+					if(typeof json_data.code_error != 'undefined'){
+						res.status(json_data.code_error).send({});
+					}else{
+						hr.data = new Object();
+						hr.data.forward_mail = JSON.parse(body);
+						res.send(hr);
+					}
+				}else{
+					res.send(err);
+				}
+			});
+		// }
+	// });
+}
+
+exports.guest_info = function(req,res){
+	var head = req.headers;
+	var token = head.authorization;
+	
+	// jwt.verify(token,datakey,function(err,decode){
+		// if(err){
+			// if(err.name == 'JsonWebTokenError'){
+				// res.status(401).send({});
+			// }else if(err.name == 'TokenExpiredError'){
+				// res.status(410).send({});
+			// }
+		// }else{
+			var post = req.body;
+			var options = {
+				url : url+"/app/v3/product/guest_info/"+req.params.fb_id
+			}
+			curl.get(options,function(err,resp,body){
+				if (!err && resp.statusCode == 200) {
+					res.header("Content-type","application/json");
+					var json_data = JSON.parse(body);
+					if(typeof json_data.code_error != 'undefined'){
+						res.status(json_data.code_error).send({});
+					}else{
+						hr.data = new Object();
+						hr.data.guest_detail = JSON.parse(body);
+						res.send(hr);
+					}
+				}else{
+					res.send(err);
+				}
+			});
+		// }
+	// });
+}
+
+exports.free_charge = function(req,res){
+	var head = req.headers;
+	var token = head.authorization;
+	
+	// jwt.verify(token,datakey,function(err,decode){
+		// if(err){
+			// if(err.name == 'JsonWebTokenError'){
+				// res.status(401).send({});
+			// }else if(err.name == 'TokenExpiredError'){
+				// res.status(410).send({});
+			// }
+		// }else{
+			var post = req.body;
+			var options = {
+				url : url+"/app/v3/product/free_payment",
+				form : post
+			}
+			curl.post(options,function(err,resp,body){
+				if (!err && resp.statusCode == 200) {
+					res.header("Content-type","application/json");
+					var json_data = JSON.parse(body);
+					if(typeof json_data.code_error != 'undefined'){
+						var obj_err = new Object();
+						obj_err.response = 0;
+						obj_err.msg = json_data.msg;
+						obj_err.type = json_data.type;
+						console.log(obj_err)
+						res.send(obj_err);
+					}else{
+						hr.data = new Object();
+						hr.data.payment_informations = JSON.parse(body);
+						res.send(hr);
+					}
+				}else{
+					res.send(err);
+				}
+			});
+		// }
+	// });
+}

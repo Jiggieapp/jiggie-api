@@ -39,7 +39,8 @@ var varScheme = new Schema({
 	guest_detail:{
 		name:{type:String,required:true},
 		email:{type:String,required:true},
-		phone:{type:String,default:''}
+		phone:{type:String,default:''},
+		dial_code:{type:String,default:''}
 	},
 	total_tax_amount:{type:String,required:true},
 	total_tip_amount:{type:String,required:true},

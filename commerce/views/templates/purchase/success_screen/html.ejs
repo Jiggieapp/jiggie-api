@@ -5,10 +5,14 @@
 <body>
 <div id="container">
 	<div id="inner_container">
+	
+		<div id="header_image_holder">
+			<img src="https://s3-ap-southeast-1.amazonaws.com/jiggieimages/emails/img-check.png" id="header_image" />
+		</div>
 
 		<div id="header">
 			<h1>Congratulations <%=first_name%>!</h1>
-			<p>You have successfully booked a ticket for</p>
+			<p>You have booked a ticket for the event below.</p>
 		</div>
 
 		<div id="event">
@@ -29,12 +33,18 @@
 					</tr>
 					<tr>
 						<th>STATUS</th>
-						<td><%=status%></td>
+						<% if(payment_method == "free"){ %>
+							<td>FREE</td>
+						<% }else{%>
+							<td><%=status%></td>
+						<% } %>
 					</tr>
+					<% if(payment_method != "free"){ %>
 					<tr>
 						<th>PAYMENT METHOD</th>
 						<td><%=payment_method%></td>
 					</tr>
+					<% } %>
 				</tbody>
 			</table>
 		</div>
@@ -49,8 +59,13 @@
 				<tbody>
 					<tr>
 						<th><%=product_name%></th>
-						<td><%=product_price%></td>
+						<% if(payment_method == "free"){ %>
+							<td>FREE</td>
+						<% }else{%>
+							<td><%=product_price%></td>
+						<% } %>
 					</tr>
+					<% if(payment_method != "free"){ %>
 					<tr>
 						<th>ADMINISTRATIVE FEE</th>
 						<td><%=amount_service%></td>
@@ -59,9 +74,14 @@
 						<th>TAX</th>
 						<td class="bot-bor"><%=amount_tax%></td>
 					</tr>
+					<% } %>
 					<tr class="total">
 						<th>TOTAL</th>
-						<td><%=total%></td>
+						<% if(payment_method == "free"){ %>
+							<td>FREE</td>
+						<% }else{%>
+							<td><%=total%></td>
+						<% } %>
 					</tr>
 				</tbody>
 			</table>

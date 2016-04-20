@@ -39,23 +39,8 @@ function doall(req,event_details_id,fb_id,gender_interest,next){
 	gender_interest = gender_interest.toLowerCase();
 	async.series([
 		function getalldata(callback){
-			client.get("event_"+gender_interest+"_"+fb_id+'_'+event_details_id,function(err,val){
-				if(val == null){
-					getdata(req,event_details_id,fb_id,gender_interest,function(rows){
-						client.set("event_"+gender_interest+"_"+fb_id+'_'+event_details_id,JSON.stringify(rows),function(err,suc){
-							if(!err){
-								debug.log("not cached");
-								client.expire("event_"+gender_interest+"_"+fb_id+'_'+event_details_id,120);
-								callback(null,rows);
-							}else{
-								debug.log("Data Not Cached");
-							}
-						});	
-					})
-				}else{
-					debug.log("cached")
-					callback(null,JSON.parse(val));
-				}
+			getsyncdata(req,event_details_id,fb_id,gender_interest,function(alldata){
+				callback(null,alldata)
 			})
 		},
 		function updating(callback){
@@ -83,6 +68,58 @@ function doall(req,event_details_id,fb_id,gender_interest,next){
 	],function(err,merge){
 		next(merge[0]);
 	})
+}
+
+function getsyncdata(req,event_details_id,fb_id,gender_interest,next){
+	async.waterfall([
+		function get_likes(callback){
+			events_detail_coll.findOne({_id:new ObjectId(event_details_id)},function(err,rows_event){
+				var dt = new Object()
+				dt.is_liked = false
+				if(typeof rows_event.likes != 'undefined'){
+					dt.likes = rows_event.likes.length
+					async.forEachOf(rows_event.likes,function(vv,kk,ee){
+						if(vv.fb_id == fb_id){
+							dt.is_liked = true
+						}
+					})
+				}else{
+					dt.likes = 0;
+				}
+				callback(null,dt)
+			})
+		},
+		function getalldata(dt_likes,callback){
+			client.get("event_"+gender_interest+"_"+fb_id+'_'+event_details_id,function(err,val){
+				var all_data = new Object()
+				if(val == null){
+					getdata(req,event_details_id,fb_id,gender_interest,function(rows){
+						client.set("event_"+gender_interest+"_"+fb_id+'_'+event_details_id,JSON.stringify(rows),function(err,suc){
+							if(!err){
+								debug.log("not cached");
+								client.expire("event_"+gender_interest+"_"+fb_id+'_'+event_details_id,120);
+								all_data = rows
+								all_data.is_liked = dt_likes.is_liked
+								all_data.likes = dt_likes.likes
+								callback(null,all_data)
+							}else{
+								debug.log("Data Not Cached");
+							}
+						});	
+					})
+				}else{
+					debug.log("cached")
+					all_data = JSON.parse(val)
+					all_data.is_liked = dt_likes.is_liked
+					all_data.likes = dt_likes.likes
+					callback(null,all_data)
+				}
+			})
+		}
+	],function(err,data){
+		next(data)
+	})
+	
 }
 
 function cleansocfed(fb_id,next){

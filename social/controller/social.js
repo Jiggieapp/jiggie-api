@@ -75,14 +75,25 @@ function get_data(req,fb_id,gender_interest,next){
 				callback(null,[],[]);
 			}
 		},
-		function show_data(socfed_users,rows_cust,callback){
+		function get_likesparse(socfed_users,rows_cust,callback){
+			get_likesdata(fb_id,function(likes_fbid){
+				callback(null,socfed_users,rows_cust,likes_fbid)
+			})
+		},
+		function show_data(socfed_users,rows_cust,likes_fbid,callback){
+			var ppt = path.join(__dirname,"../../global/img.json");
+			var pkg = require('fs-sync').readJSON(ppt);
+			var imgurl = pkg.uri
+			
 			if(socfed_users.length > 0){
 				async.forEachOf(rows_cust,function(v,k,e){
 					async.forEachOf(socfed_users,function(v2,k2,e2){
 						if(v.fb_id == v2.fb_id){
 							if(v.matchme == undefined || v.matchme == true){
 								socfed_users[k2].matchme = true;
+								socfed_users[k2].photos = imgurl+'image/'+v.fb_id+'/0/?imgid='+v.photos[0];
 							}else{
+								socfed_users[k2].photos = imgurl+'image/'+v.fb_id+'/0/?imgid='+v.photos[0];
 								socfed_users[k2].matchme = false;
 							}
 						}
@@ -126,7 +137,17 @@ function get_data(req,fb_id,gender_interest,next){
 												json_data[n].points = v.points;
 											}
 											
+											json_data[n].likes = 0;
+											if(likes_fbid.length > 0){
+												async.forEachOf(likes_fbid,function(vk,kk,ek){
+													if(vk == v.fb_id){
+														json_data[n].likes = 1
+													}
+												})
+											}
+											
 											json_data[n].last_updated = v.last_viewed;
+											json_data[n].image = v.photos;
 											n++;
 										}else if(gender_interest == 'male'){
 											if(v.gender == 'male'){
@@ -149,7 +170,18 @@ function get_data(req,fb_id,gender_interest,next){
 												}else{
 													json_data[n].points = v.points;
 												}
+												
+												json_data[n].likes = 0;
+												if(likes_fbid.length > 0){
+													async.forEachOf(likes_fbid,function(vk,kk,ek){
+														if(vk == v.fb_id){
+															json_data[n].likes = 1
+														}
+													})
+												}
+												
 												json_data[n].last_updated = v.last_viewed;
+												json_data[n].image = v.photos;
 												n++;
 											}
 										}else if(gender_interest == 'female'){
@@ -173,7 +205,18 @@ function get_data(req,fb_id,gender_interest,next){
 												}else{
 													json_data[n].points = v.points;
 												}
+												
+												json_data[n].likes = 0;
+												if(likes_fbid.length > 0){
+													async.forEachOf(likes_fbid,function(vk,kk,ek){
+														if(vk == v.fb_id){
+															json_data[n].likes = 1
+														}
+													})
+												}
+												
 												json_data[n].last_updated = v.last_viewed;
+												json_data[n].image = v.photos;
 												n++;
 											}
 										}
@@ -216,6 +259,51 @@ function get_data(req,fb_id,gender_interest,next){
 	})
 }
 
+function get_likesdata(fb_id,next2){
+	var _ = require('underscore')
+	async.waterfall([
+		function get_cust(cb){
+			customers_coll.findOne({fb_id:fb_id},function(err,r){
+				cb(null,r)
+			})
+		},
+		function get_sync_event(rows_customers,cb){
+			if(typeof rows_customers.likes_event != 'undefined' && rows_customers.likes_event != null && rows_customers.likes_event.length > 0){
+				var in_eventid = [];
+				var n = 0;
+				async.forEachOf(rows_customers.likes_event,function(v,k,e){
+					in_eventid[n] = new ObjectId(v.event_id)
+					n++;
+				})
+				events_detail_coll.find({_id:{$in:in_eventid}}).toArray(function(err,r){
+					if(err){
+						debug.log('error social line 245');
+						debug.log(err);
+						cb(null,[])
+					}else{
+						var in_fbid = [];
+						var m = 0;
+						async.forEachOf(r,function(v,k,e){
+							if(v.likes != null && typeof v.likes != 'undefined'){
+								async.forEachOf(v.likes,function(ve,ke,ee){
+									in_fbid[m] = ve.fb_id
+									m++;
+								})
+							}
+						})
+						in_fbid = _.uniq(in_fbid)
+						cb(null,in_fbid)
+					}
+				})
+			}else{
+				cb(null,[])
+			}
+		}
+	],function(err,merge_data){
+		next2(merge_data)
+	})
+}
+
 // sort desc by last_updated Date
 var sortDate = function (a, b){
 	if(a.type_rank < b.type_rank) return 1;
@@ -223,6 +311,9 @@ var sortDate = function (a, b){
 	
 	if(a.points < b.points) return 1;
 	if(a.points > b.points) return -1;
+	
+	if(a.likes < b.likes) return 1;
+	if(a.likes > b.likes) return -1;
 	
 	
 	if(a.last_updated == undefined)
@@ -266,23 +357,25 @@ function do_connect_n_updchat(req,fb_id,member_fb_id,match,next){
 			if(cekcon == 1){
 				socialfeed_coll.findOne({fb_id:fb_id},function(err,rows){
 					var cek = "";
+					var event_id = "";
 					async.forEachOf(rows.users,function(v,k,e){
 						if(v.fb_id == member_fb_id){
 							if(v.from_state == "approved" && v.to_state == "approved"){
 								cek = 1;
+								event_id = v.event_id;
 							}else{
 								cek = 0;
 							}
 						}
 					});
-					cb(null,cek);
+					cb(null,cek,event_id);
 				});
 			}else{
 				req.app.get("helpers").logging("error","get","Function Error On First Function do_connect_n_updchat.connecting",req);
-				cb(null,"err")
+				cb(null,"err",[])
 			}
 		},
-		function updating_chat(cek_isMatch,cb){
+		function updating_chat(cek_isMatch,event_id,cb){
 			if(cek_isMatch == 1){
 				var ddcond = {
 					fb_id:fb_id,
@@ -290,7 +383,7 @@ function do_connect_n_updchat(req,fb_id,member_fb_id,match,next){
 				}
 				chatmessages_coll.findOne(ddcond,function(errs,cek_is_exist){
 					if(cek_is_exist == undefined){
-						update_chat(req,fb_id,member_fb_id,function(upd){})
+						update_chat(req,fb_id,member_fb_id,event_id,function(upd){})
 					}
 				})
 				
@@ -483,7 +576,7 @@ function cleaning_data(fb_id,member_fb_id,next){
 	})
 }
 
-function update_chat(req,fb_id,member_fb_id,next){
+function update_chat(req,fb_id,member_fb_id,event_id,next){
 	async.parallel([
 		function upd_self(cb){
 			var json_data = new Object();
@@ -501,6 +594,7 @@ function update_chat(req,fb_id,member_fb_id,next){
 						data_conv.unread = 1;
 						data_conv.hasreplied = false;
 						data_conv.fb_id = member_fb_id;
+						data_conv.event_id = event_id;
 						
 						chatmessages_coll.update(
 							{_id:new ObjectId(rows[0]._id)},
@@ -526,6 +620,7 @@ function update_chat(req,fb_id,member_fb_id,next){
 							data_conv.unread = 1;
 							data_conv.hasreplied = false;
 							data_conv.fb_id = member_fb_id;
+							data_conv.event_id = event_id;
 						
 						json_data.conversations = [];
 						json_data.conversations[0] = data_conv;
@@ -560,6 +655,7 @@ function update_chat(req,fb_id,member_fb_id,next){
 						data_conv.unread = 1;
 						data_conv.hasreplied = false;
 						data_conv.fb_id = fb_id;
+						data_conv.event_id = event_id;
 						
 						chatmessages_coll.update(
 							{_id:new ObjectId(rows[0]._id)},
@@ -583,6 +679,7 @@ function update_chat(req,fb_id,member_fb_id,next){
 							data_conv.unread = 1;
 							data_conv.hasreplied = false;
 							data_conv.fb_id = fb_id;
+							data_conv.event_id = event_id;
 						
 						json_data.conversations = [];
 						json_data.conversations[0] = data_conv;
@@ -788,4 +885,49 @@ exports.upd_matchme = function(req,res){
 
 String.prototype.capitalizeFirstLetter = function() {
     return this.charAt(0).toUpperCase() + this.slice(1);
+}
+
+exports.parseDataChatEventId = function(req,res){
+	// socialfeed_coll.find({}).toArray(function(err,r){
+		// async.forEachOf(r,function(v,k,e){
+			// async.forEachOf(v.users,function(ve,ke,ee){
+				// var cond = {
+					// fb_id:v.fb_id,
+					// "conversations.fb_id":ve.fb_id
+				// }
+				// var form_upd = {
+					// $set:{
+						// "conversations.$.event_id":ve.event_id
+					// }
+				// }
+				// chatmessages_coll.update(cond,form_upd,function(err,upd){
+					// if(!err){
+						// debug.log('updated '+v.fb_id+' => '+ve.fb_id)
+					// }
+				// })
+			// })
+		// })
+	// })
+	
+	partyfeed_coll.find({}).toArray(function(err,r){
+		async.forEachOf(r,function(v,k,e){
+			var cond = {
+				fb_id : v.fb_id,
+				"conversations.fb_id":v.from_fb_id,
+				"conversations.event_id":{$exists:false},
+			}
+			var form_upd = {
+				$set:{
+					"conversations.$.event_id":v.event_id
+				}
+			}
+			chatmessages_coll.update(cond,form_upd,function(err,upd){
+				if(!err){
+					debug.log('updated '+v.fb_id+' => '+v.from_fb_id)
+				}
+			})
+		})
+	})
+	
+	res.json({success:true})
 }

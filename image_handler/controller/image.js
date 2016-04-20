@@ -35,10 +35,12 @@ exports.preload_profile = function(req,res){
 			async.forEachOf(r,function(v,k,e){
 				if(typeof v.photos != 'undefined'){
 					async.forEachOf(v.photos,function(ve,ke,ee){
+						var url_def = 'http://img.jiggieapp.com/image/'+v.fb_id+'/'+ke+'/?imgid='+ve
 						var options = {
-							url:'http://img.jiggieapp.com/image/'+v.fb_id+'/'+ke+'/?imgid='+ve
+							url:url_def
 						}
 						request.get(options,function(err,resp,body){
+							debug.log(url_def)
 							debug.log(resp.statusCode)
 						})
 					})

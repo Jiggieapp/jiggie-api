@@ -13,6 +13,7 @@ exports.do_like = function(req, res){
 function do_like(req,next){
 	var event_id = req.params.event_id;
 	var fb_id = req.params.fb_id;
+	var likes = req.params.likes
 	
 	async.waterfall([
 		function get_event(cb){
@@ -53,42 +54,112 @@ function do_like(req,next){
 				}
 				events_detail_coll.findOne(cond,function(err,r){
 					if(err){
-						cb(null,false,[],[])
+						cb(null,false,false,[],[])
 					}else{
 						if(r == null){
-							cb(null,true,rows_event,rows_cust)
+							cb(null,true,false,rows_event,rows_cust)
 						}else{
 							debug.log('fb_id already likes event')
-							cb(null,false,[],[])
+							cb(null,true,true,[],[])
 						}
 					}
 				})
 			}else{
+				cb(null,false,false,[],[])
+			}
+		},
+		function upd_event(stat,fbid_exist,rows_event,rows_cust,cb){
+			if(stat == true){
+				if(likes == 'yes'){
+					if(fbid_exist == false){
+						var cond = {
+							_id:new ObjectId(event_id)
+						}
+						var form_upd = {
+							$push:{
+								'likes':{
+									fb_id:fb_id,
+									gender:rows_cust.gender
+								}
+							}
+						}
+						events_detail_coll.update(cond,form_upd,function(err,upd){
+							if(err){
+								debug.log(err)
+								debug.log('error line 88 likes event')
+								cb(null,false,[],[])
+							}else{
+								cb(null,true,rows_event,rows_cust)
+							}
+						})
+					}else{
+						cb(null,false,[],[])
+					}
+				}else if(likes == 'no'){
+					if(fbid_exist == true){
+						var cond = {
+							_id:new ObjectId(event_id),
+							"likes.fb_id":fb_id
+						}
+						var form_upd = {
+							$pull:{
+								'likes':{
+									fb_id:fb_id
+								}
+							}
+						}
+						events_detail_coll.update(cond,form_upd,function(err,upd){
+							if(err){
+								debug.log(err)
+								debug.log('error line 109 likes event')
+								cb(null,false,[],[])
+							}else{
+								cb(null,true,rows_event,rows_cust)
+							}
+						})
+					}else{
+						cb(null,false,[],[])
+					}
+				}
+			}else{
 				cb(null,false,[],[])
 			}
 		},
-		function upd_event(stat,rows_event,rows_cust,cb){
+		function upd_cust(stat,rows_event,rows_cust,cb){
 			if(stat == true){
-				var cond = {
-					_id:new ObjectId(event_id)
-				}
-				var form_upd = {
-					$push:{
-						'likes':{
-							fb_id:fb_id,
-							gender:rows_cust.gender
+				if(likes == 'yes'){
+					customers_coll.update({fb_id:fb_id},{
+						$push:{
+							'likes_event':{
+								event_id:rows_event._id
+							}
 						}
-					}
+					},function(err,upd){
+						if(err){
+							debug.log(err);
+							debug.log('error line 107')
+							cb(null,false)
+						}else{
+							cb(null,true)
+						}
+					})
+				}else if(likes == 'no'){
+					customers_coll.update({fb_id:fb_id,"likes_event.event_id":rows_event._id},{
+						$pull:{
+							'likes_event':{
+								event_id:rows_event._id
+							}
+						}
+					},function(err,upd){
+						if(err){
+							debug.log(err);
+							debug.log('error line 148')
+							cb(null,false)
+						}else{
+							cb(null,true)
+						}
+					})
 				}
-				events_detail_coll.update(cond,form_upd,function(err,upd){
-					if(err){
-						debug.log(err)
-						debug.log('error line 88 likes event')
-						cb(null,false)
-					}else{
-						cb(null,true)
-					}
-				})
 			}else{
 				cb(null,false)
 			}

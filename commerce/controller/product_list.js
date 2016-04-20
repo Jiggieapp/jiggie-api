@@ -318,7 +318,16 @@ function get_summary(req,next){
 						}else{
 							dt.last_payment = r.last_cc
 						}
-						cb(null,dt);
+						if(r.last_cc != null && typeof r.last_cc != 'undefined'){
+							payment_method_coll.findOne({type:dt.last_payment.payment_type},function(err,rt){
+								if(rt.status == false){
+									dt.last_payment = {};
+								}
+								cb(null,dt);
+							})
+						}else{
+							cb(null,dt)
+						}
 					}
 				})
 			}
@@ -332,6 +341,7 @@ function post_summary(req,next){
 	var schema = req.app.get('mongo_path');
 	var order = require(schema+'/order_product.js');
 	var post = req.body;
+	debug.log(post)
 	
 	async.waterfall([
 		function get_ticketdata(callback){
@@ -353,7 +363,6 @@ function post_summary(req,next){
 							}
 						})
 					})
-					debug.log(r);
 					callback(null,true,r)
 				}
 			})

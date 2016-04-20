@@ -13,5 +13,5 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/app/v3/partyfeed/match/:fb_id/:guest_fb_id/approved',interest.connect); // Sent Invitation To Connect
   
   var countlikes = require(path_controller+'event_countlike');
-  app.get('/app/v3/event/likes/:event_id/:fb_id',countlikes.do_like);
+  app.get('/app/v3/event/likes/:event_id/:fb_id/:likes',countlikes.do_like);
 }

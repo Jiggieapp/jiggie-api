@@ -35,3 +35,10 @@ eventEmitter.on('database_connected',function(){
 		console.log("event_details connected");
 	});
 });
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('partyfeed',function(collection){
+		partyfeed_coll = collection;
+		console.log("partyfeed connected");
+	});
+});

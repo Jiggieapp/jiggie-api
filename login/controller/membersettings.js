@@ -112,6 +112,21 @@ exports.memberinfo = function(req,res){
 				// 403 => Invalid ID
 				res.json({code_error:403})
 			}else{
+				var path = require('path');
+				var ppt = path.join(__dirname,"../../global/img.json");
+				var pkg = require('fs-sync').readJSON(ppt);
+				var imgurl = pkg.uri
+				var photos = []
+				async.forEachOf(rows.photos,function(v,k,e){
+					photos[k] = imgurl+'image/'+fb_id+'/'+k+'/?imgid='+v
+				})
+				rows.photos = photos;
+				if(typeof rows.country_code == 'undefined'){
+					rows.country_code = new Object()
+				}else{
+					rows.country_code.dial_code = rows.country_code.country_code
+					delete rows.country_code.country_code
+				}
 				res.json(rows);
 			}
 			
@@ -120,11 +135,43 @@ exports.memberinfo = function(req,res){
 }
 
 exports.sendSMS = function(req,res){
+	var countries        = require('country-data').countries,
+    currencies       = require('country-data').currencies,
+    regions          = require('country-data').regions,
+    languages        = require('country-data').languages,
+    callingCountries = require('country-data').callingCountries;
+	
 	var phone = req.params.phone;
 	var fb_id = req.params.fb_id;
+	var dial_code = req.params.dial_code;
+	
+	var country_code = new Object();
+	async.forEachOf(countries.all,function(v,k,e){
+		if(v.countryCallingCodes[0] == '+'+dial_code){
+			country_code = {
+				phone : phone,
+				country_code: dial_code,
+				currencies : v.currencies[0],
+				alpha2:v.alpha2,
+				alpha3:v.alpha3,
+				languages:v.languages[0],
+				name:v.name,
+				status:v.status,
+				fb_id:fb_id
+			};
+			
+		}
+	})
+	
+	if(JSON.stringify(country_code) == '{}'){
+		debug.log('country code error')
+		res.json({code_error:403});
+		return;
+	}
 	
 	if(phone == undefined){
-		res.json({"success":false,"reason":"phone is undefined"});
+		debug.log('phone error')
+		res.json({code_error:403});
 		return;
 	}
 	var phone = String(req.params.phone).replace( /[^0-9]/g, '' )
@@ -135,7 +182,7 @@ exports.sendSMS = function(req,res){
 		token += String(Math.round(Math.random() * 9));
 	};
 
-	customers_coll.update({fb_id:fb_id},{$set:{tmp_phone:phone,twilio_token:token}},function(err,upd){
+	customers_coll.update({fb_id:fb_id},{$set:{tmp_phone:phone,twilio_token:token,country_code:country_code}},function(err,upd){
 		if(err){
 			console.log(err)
 		}else{
@@ -149,28 +196,36 @@ exports.sendSMS = function(req,res){
 exports.validateSMS = function(req,res){
 	var fb_id = req.params.fb_id;
 	var token = String(req.params.token).replace( /[^0-9]/g, '' )
+	debug.log(fb_id)
+	debug.log(token)
 	
 	customers_coll.findOne({fb_id:fb_id},function(err,r){
 		if(err){
 			res.json({code_error:503})
 		}else{
-			if(typeof r.twilio_token != 'undefined' && r.twilio_token != '' && r.tmp_phone != '' && typeof r.tmp_phone != 'undefined'){
-				debug.log(r.twilio_token);
-				debug.log(token);
-				if(token == r.twilio_token){
-					customers_coll.update({fb_id:fb_id},{$set:{phone:r.tmp_phone,verifiedbyphone:true}},function(err2,upd){
-						res.json({success:true})
-					})
+			if(r != null){
+				if(typeof r.twilio_token != 'undefined' && r.twilio_token != '' && r.tmp_phone != '' && typeof r.tmp_phone != 'undefined'){
+					debug.log(r.twilio_token);
+					debug.log(token);
+					if(token == r.twilio_token){
+						customers_coll.update({fb_id:fb_id},{$set:{phone:r.tmp_phone,verifiedbyphone:true}},function(err2,upd){
+							res.json({success:true})
+						})
+					}else{
+						debug.log('Twilio Token Error')
+						res.json({code_error:401})
+					}
+					
 				}else{
-					debug.log('Twilio Token Error')
+					debug.log('data empty')
 					res.json({code_error:401})
 				}
-				
 			}else{
-				debug.log('data empty')
-				res.json({code_error:401})
+				debug.log('data null')
+				res.json({code_error:403})
 			}
 		}
+		
 	})
 }
 
@@ -193,6 +248,98 @@ function sendSMSConfirm(phone,dttoken,callback){
 	});
 }
 
+exports.list_countryCode = function(req,res){
+	var countries        = require('country-data').countries,
+    currencies       = require('country-data').currencies,
+    regions          = require('country-data').regions,
+    languages        = require('country-data').languages,
+    callingCountries = require('country-data').callingCountries;
+	
+	var dt = [];
+	var n = 0;
+	
+	async.forEachOf(countries.all,function(v,k,e){
+		dt[k] = new Object();
+		dt[k].alpha2 = v.alpha2
+		dt[k].alpha3 = v.alpha3
+		dt[k].countryCallingCodes = v.countryCallingCodes[0]
+		dt[k].currencies = v.currencies[0]
+		dt[k].ioc = v.ioc
+		dt[k].languages = v.languages[0]
+		dt[k].name = v.name
+		dt[k].status = v.status
+	})
+	
+	res.json(dt)
+}
+
+exports.parseCountryCode = function(req,res){
+	var countries        = require('country-data').countries,
+    currencies       = require('country-data').currencies,
+    regions          = require('country-data').regions,
+    languages        = require('country-data').languages,
+    callingCountries = require('country-data').callingCountries;
+	
+	var sift = require('sift');
+	
+	customers_coll.find({}).toArray(function(err,r){
+		var tmp_phone = [];
+		var arr_fbid = [];
+		var n = 0;
+		async.forEachOf(r,function(v,k,e){
+			if(v.tmp_phone != '' && typeof v.tmp_phone != 'undefined' && v.tmp_phone != null){
+				tmp_phone[n] = v.tmp_phone;
+				arr_fbid[n] = v.fb_id
+				n++;
+			}
+		})
+		
+		var country_code = []
+		var m = 0
+		
+		async.forEachOf(countries.all,function(v,k,e){
+			var str = String(v.countryCallingCodes[0])
+			var cc = str.replace('+','');
+			async.forEachOf(tmp_phone,function(ve,ke,ee){
+				if(cc != 'undefined' && typeof cc != 'undefined'){
+					var phone_cc = sift({$regex:"^"+cc},[ve])
+					if(phone_cc.length > 0){
+						country_code[m] = {
+							phone:phone_cc[0],
+							country_code : cc,
+							currencies : v.currencies[0],
+							alpha2:v.alpha2,
+							alpha3:v.alpha3,
+							languages : v.languages[0],
+							name:v.name,
+							status:v.status,
+							fb_id:arr_fbid[ke]
+						}
+						m++;
+					}
+				}
+			})
+		})
+		
+		async.forEachOf(country_code,function(v,k,e){
+			var cond = {
+				fb_id:v.fb_id
+			}
+			var form_upd = {
+				$set:{country_code:v}
+			}
+			customers_coll.update(cond,form_upd,function(err,upd){
+				if(!err){
+					debug.log('updated '+v.fb_id)
+				}
+			})
+		})
+		
+		res.json(country_code)
+	})
+	
+}
+
 exports.upload_profileimage = function(req,res){
 	var post = req.body;
 	
@@ -212,4 +359,32 @@ exports.upload_profileimage = function(req,res){
 		res.json({success:true})
 	})
 	
+}
+
+exports.save_longlat = function(req,res){
+	var post = req.body;
+	var longitude = parseFloat(post.longitude);
+	var latitude = parseFloat(post.latitude);
+	var fb_id = post.fb_id;
+	
+	var cond = {
+		fb_id:fb_id
+	}
+	var upd_form = {
+		$set:{
+			position:{
+				type:'Point',
+				coordinates:[longitude,latitude]
+			}
+		}
+	}
+	customers_coll.update(cond,upd_form,function(err,upd){
+		if(err){
+			debug.log(err);
+			debug.log('error line 369 login savelanglot')
+			res.json({code_error:403})
+		}else{
+			res.json({success:true})
+		}
+	})
 }

@@ -7,7 +7,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/app/v3/event/details/:event_id/:fb_id/:gender_interest',event.details);
   app.get('/app/v3/event/interest/:event_id/:fb_id/:gender_interest',event.interest);
   app.get('/app/v3/partyfeed/match/:fb_id/:guest_fb_id/approved',event.match);
-  app.get('/app/v3/event/likes/:event_id/:fb_id',event.likes);
+  app.get('/app/v3/event/likes/:event_id/:fb_id/:likes',event.likes);
   
   var social = require(path_controller+'social');
   app.get('/app/v3/partyfeed/list/:fb_id/:gender_interest',social.index); // List Social Feed
@@ -25,10 +25,14 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.post('/app/v3/userlogin',login.userlogin); // Auth Token
   app.get('/app/v3/user/tagslist',login.tagslist);
   app.get('/app/v3/apntoken/:fb_id/:apn',login.sync_apntoken);
-  app.get('/app/v3/user/phone/verification/send/:fb_id/:phone',login.sendSMS);
+  app.get('/app/v3/user/phone/verification/send/:fb_id/:phone/:dial_code',login.sendSMS);
   app.get('/app/v3/user/phone/verification/validate/:fb_id/:token',login.validateSMS);
   app.post('/app/v3/count_walkthrough',login.sync_countwalkthrough);
   app.post('/app/v3/member/upload',login.upload_profileimage);
+  app.get('/preload_profileimage',login.preload_profileimage);
+  app.get('/parse_countrycode',login.parseCountryCode);
+  app.get('/app/v3/list_countrycode',login.list_countryCode);
+  app.post('/app/v3/save_longlat',login.save_longlat);
 
   var chat = require(path_controller+'chat');
   app.get('/app/v3/conversations',chat.list); // List Users Can be Chats;
@@ -57,6 +61,10 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/app/v3/product/success_screen/:order_id',commerce.success_screen);
   app.get('/app/v3/product/walkthrough_payment',commerce.walkthrough_payment);
   app.get('/app/v3/product/payment_method',commerce.get_paymentmethod);
+  app.get('/app/v3/product/support',commerce.support);
+  app.post('/app/v3/product/forward_support',commerce.forward_mail)
+  app.get('/app/v3/product/guest_info/:fb_id',commerce.guest_info);
+  app.post('/app/v3/product/free_payment',commerce.free_charge);
   
   var xmpp = require(path_controller+'xmpp');
   app.get('/xmpp/:user',xmpp.index);

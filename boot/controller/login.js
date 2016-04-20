@@ -1,4 +1,5 @@
 var async = require('async');
+var async = require('async');
 var url = "http://127.0.0.1:1234";
 var curl = require('request');
 
@@ -251,9 +252,10 @@ exports.sync_apntoken = function(req,res){
 exports.sendSMS = function(req,res){
 	var fb_id = req.params.fb_id;
 	var phone = req.params.phone;
+	var dial_code = req.params.dial_code;
 	
 	var options = {
-		url : url+'/app/v3/user/phone/verification/send/'+fb_id+'/'+phone
+		url : url+'/app/v3/user/phone/verification/send/'+fb_id+'/'+phone+'/'+dial_code
 	}
 	curl.get(options,function(err,resp,body){
 		if (!err && resp.statusCode == 200) {
@@ -350,7 +352,7 @@ exports.upload_profileimage = function(req,res){
 					
 					fs.unlink(pathfile,function(err_unlink){
 						console.log('delete local')
-						res.json(hr)
+						res.json({response:1})
 					})
 				});
 			},10000)
@@ -399,26 +401,6 @@ function s3_config(callback){
 }
 
 function upload_s3(app,pathfile,filename,mimitype,encoding,callback){
-	// var aws = require('aws-sdk');
-	// aws.config.update({accessKeyId: 'AKIAJGC4JWEYS64OOVUA', secretAccessKey: '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'});
-    // var s3 = new aws.S3();
-    // var s3_params = {
-        // Bucket: 'jiggieprofileimage',
-        // Key: filename,
-        Expires: 60,
-        // ContentType: mimitype,
-        // ACL: 'public-read'
-    // };
-    // s3.getSignedUrl('putObject', s3_params, function(err, data){
-        // if(err){
-            // console.log(err);
-        // }
-        // else{
-			// console.log(data)
-			// callback('Next DATA')
-        // }
-    // });
-	
 	s3_config(function(client){
 		var params = {
 			localFile: pathfile,
@@ -441,5 +423,102 @@ function upload_s3(app,pathfile,filename,mimitype,encoding,callback){
 			console.log("done uploading");
 		});
 		callback('next upload s3');
+	})
+}
+
+exports.preload_profileimage = function(req,res){
+	var fb_id = req.params.fb_id;
+	var token = req.params.token;
+	
+	var options = {
+		url : 'http://127.0.0.1:10897/preload/profile'
+	}
+	curl.get(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				var rsp = {
+					response : 1,
+					msg : 'Success'
+				}
+				res.send(rsp);
+			}
+		}else{
+			res.send(err);
+		}
+	})
+}
+
+exports.parseCountryCode = function(req,res){
+	var fb_id = req.params.fb_id;
+	var token = req.params.token;
+	
+	var options = {
+		url : url+'/parse_countrycode'
+	}
+	curl.get(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				res.send(json_data);
+			}
+		}else{
+			res.send(err);
+		}
+	})
+}
+
+exports.list_countryCode = function(req,res){
+	var fb_id = req.params.fb_id;
+	var token = req.params.token;
+	
+	var options = {
+		url : url+'/app/v3/list_countrycode'
+	}
+	curl.get(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				hr.data = new Object();
+				hr.data.list_countryCode = JSON.parse(body);
+				res.send(hr);
+			}
+		}else{
+			res.send(err);
+		}
+	})
+}
+
+exports.save_longlat = function(req,res){
+	var post = req.body;
+	var options = {
+		url : url+"/app/v3/save_longlat",
+		form : post
+	}
+	curl.post(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				var rsp = {
+					response : 1,
+					msg : 'Success'
+				}
+				res.send(rsp);
+			}
+		}else{
+			res.send(err);
+		}
 	})
 }
