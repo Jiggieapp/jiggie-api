@@ -93,7 +93,7 @@ exports.match = function(req,res){
 
 exports.likes = function(req,res){
 	var options = {
-		url : url+"/app/v3/event/likes/"+req.params.event_id+"/"+req.params.fb_id
+		url : url+"/app/v3/event/likes/"+req.params.event_id+"/"+req.params.fb_id+"/"+req.params.likes
 	}
 	curl.get(options,function(err,resp,body){
 		if (!err && resp.statusCode == 200) {

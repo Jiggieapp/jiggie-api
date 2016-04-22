@@ -289,7 +289,15 @@ exports.success_screen = function(req,res){
 
 function get_success_screen(req,next){
 	var order_id = req.params.order_id;
-	var cond = {order_id:order_id}
+	var cond = {
+		order_id:order_id,
+		$or:[
+			{order_status:'completed'},
+			{order_status:'pending_payment'},
+			{order_status:'cancel'}
+		]
+		
+	}
 	async.waterfall([
 		function get_order(cb){
 			order_coll.findOne(cond,function(err,r){
@@ -298,6 +306,7 @@ function get_success_screen(req,next){
 					delete r.mail_status;
 					cb(null,true,r)
 				}else{
+					debug.log('')
 					cb(null,false,[])
 				}
 			})
@@ -352,8 +361,9 @@ function get_success_screen(req,next){
 		function sync_data(stat,rorder,revent,rcust,step_payment,cb){
 			if(stat == true){
 				if(typeof rorder.vt_response == 'undefined' || rorder.vt_response == null || rorder.vt_response == ''){
-					debug.log('data vt null line 171 other commerce')
-					cb(null,false,[]);
+					var type = 'free';
+					var template = template_success_screen(req,rorder,revent,rcust,type,step_payment,'success');
+					cb(null,true,template);
 				}else{
 					var type = '';
 					if(rorder.vt_response.payment_type == 'bank_transfer'){
@@ -684,6 +694,31 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 		json_data.fine_print[0] = "Lorem Ipsum copy in various charsets and langauges for layouts";
 		json_data.fine_print[1] = "Lorem Ipsum copy in various charsets and langauges for layouts";
 		json_data.fine_print[2] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+	}else if(type == 'free'){
+		json_data.payment_type = 'free';
+		json_data.event = revent;
+		if(rorder.product_list[0].ticket_type == 'booking'){
+			rorder.pay_deposit = parseInt(0);
+			json_data.summary = rorder;
+		}else if(rorder.product_list[0].ticket_type == 'purchase'){
+			json_data.summary = rorder;
+		}
+		
+		if(typeof revent.instruction == 'undefined' || revent.instruction == null){
+			json_data.instructions = ''
+		}else{
+			json_data.instructions = revent.instruction
+		}
+		
+		json_data.ticket_include = [];
+		json_data.ticket_include[0] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.ticket_include[1] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.ticket_include[2] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		
+		json_data.fine_print = [];
+		json_data.fine_print[0] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.fine_print[1] = "Lorem Ipsum copy in various charsets and langauges for layouts";
+		json_data.fine_print[2] = "Lorem Ipsum copy in various charsets and langauges for layouts";
 	}
 	return json_data;
 }
@@ -691,5 +726,38 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 exports.get_paymentmethod = function(req,res){
 	payment_method_coll.find({status:true}).toArray(function(err,r){
 		res.json(r)
+	})
+}
+
+exports.support = function(req,res){
+	support_coll.find({}).toArray(function(err,r){
+		delete r[0]._id;
+		res.json(r[0])
+	})
+}
+
+exports.guest_info = function(req,res){
+	var fb_id = req.params.fb_id
+	
+	var countries        = require('country-data').countries,
+    currencies       = require('country-data').currencies,
+    regions          = require('country-data').regions,
+    languages        = require('country-data').languages,
+    callingCountries = require('country-data').callingCountries;
+	
+	order_coll.find({fb_id:fb_id}).sort({created_at:-1}).toArray(function(err,r){
+		if(!err){
+			if(r.length > 0){
+				var last_data = r[0];
+				res.json(last_data.guest_detail)
+			}else{
+				res.json({
+					"email": "",
+					"name": "",
+					"dial_code": "",
+					"phone": ""
+				})
+			}
+		}
 	})
 }

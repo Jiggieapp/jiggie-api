@@ -8,6 +8,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   
   var payment = require(path_controller+'payment');
   app.post('/app/v3/product/payment',payment.index);
+  app.post('/app/v3/product/free_payment',payment.free_charge);
   
   // var notif = require(path_controller+'notifications-handler');
   // app.get('/notif_handle',notif.index);
@@ -21,4 +22,6 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/success_screen/:order_id',other.success_screen);
   app.get('/walkthrough_payment',other.walkthrough_payment);
   app.get('/app/v3/product/payment_method',other.get_paymentmethod);
+  app.get('/app/v3/product/support',other.support);
+  app.get('/app/v3/product/guest_info/:fb_id',other.guest_info);
 }

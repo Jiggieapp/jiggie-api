@@ -63,3 +63,10 @@ eventEmitter.on('database_connected',function(){
 		console.log("payment_method connected");
 	});
 });
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('support',function(collection){
+		support_coll = collection;
+		console.log("support connected");
+	});
+});

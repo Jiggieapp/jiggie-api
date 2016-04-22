@@ -1,4 +1,5 @@
 var async = require('async');
+var async = require('async');
 var url = "http://127.0.0.1:1234";
 var curl = require('request');
 
@@ -190,7 +191,8 @@ exports.userlogin = function(req,res){
 			}else{
 				var rsp = {
 					response : 1,
-					msg : 'Success'
+					msg : 'Success',
+					data:json_data
 				}
 				res.send(rsp);
 			}
@@ -251,9 +253,10 @@ exports.sync_apntoken = function(req,res){
 exports.sendSMS = function(req,res){
 	var fb_id = req.params.fb_id;
 	var phone = req.params.phone;
+	var dial_code = req.params.dial_code;
 	
 	var options = {
-		url : url+'/app/v3/user/phone/verification/send/'+fb_id+'/'+phone
+		url : url+'/app/v3/user/phone/verification/send/'+fb_id+'/'+phone+'/'+dial_code
 	}
 	curl.get(options,function(err,resp,body){
 		if (!err && resp.statusCode == 200) {
@@ -331,6 +334,14 @@ exports.upload_profileimage = function(req,res){
 	var Busboy = require('busboy');
 	var busboy = new Busboy({ headers: req.headers });
 	var app = req.app;
+	
+	var fs_sync = require('fs-sync');
+	var path = require('path');
+	var ppt = path.join(__dirname,"../../global/domain.json");
+	var pkg = fs_sync.readJSON(ppt);
+	var domain = pkg.uri
+	
+	
 	busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
 		if(mimetype == 'image/jpeg' || mimetype == 'image/png' || mimetype == 'image/jpg'){
 			var saveTo = __dirname + '/../public/uploads/';
@@ -343,19 +354,7 @@ exports.upload_profileimage = function(req,res){
 			console.log('Nama Tempat: '+pathfile);
 			file.pipe(fs.createWriteStream(pathfile));
 					
-			setTimeout(function(){
-				upload_s3(app,pathfile,pt_file,mimetype,encoding,function(res_aws){
-					console.log('send s3')
-					console.log(res_aws);
-					
-					fs.unlink(pathfile,function(err_unlink){
-						console.log('delete local')
-						res.json(hr)
-					})
-				});
-			},10000)
-			
-			busboy.on('field', function(fieldname, val, fieldnameTruncated, valTruncated, encoding, mimetype) {
+			busboy.on('field', function(fieldname, val, fieldnameTruncated, valTruncated, encoding, mimetypetxt) {
 				console.log('save fbid photos')
 				console.log(fieldname)
 				console.log(val)
@@ -363,17 +362,19 @@ exports.upload_profileimage = function(req,res){
 					url : url+"/app/v3/member/upload",
 					form : {
 						fb_id:val,
-						path_file:'https://s3-ap-southeast-1.amazonaws.com/jiggieprofileimage/'+pt_file
+						url_img:domain+'/image/'+pt_file,
+						filename:pt_file,
+						mimetype:mimetype,
+						encoding:encoding
 					}
 				}
 				curl.post(options,function(err,resp,body){
 					if (!err && resp.statusCode == 200) {
 						console.log(body)
+						res.json({response:1})
 					}
 				})
 			});
-				
-			
 		}else{
 			console.log('Not Images');
 		}
@@ -381,65 +382,113 @@ exports.upload_profileimage = function(req,res){
 	req.pipe(busboy);
 }
 
-function s3_config(callback){
-	var s3 = require('s3');
-	var client = s3.createClient({
-		maxAsyncS3: 200,     // this is the default
-		s3RetryCount: 300,    // this is the default
-		s3RetryDelay: 10000, // this is the default
-		multipartUploadThreshold: 2097152000, // this is the default (20 MB)
-		multipartUploadSize: 1572864000, // this is the default (15 MB)
-		s3Options: {
-			accessKeyId: "AKIAJGC4JWEYS64OOVUA",
-			secretAccessKey: "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",
-			region: "ap-southeast-1",
-		},
-	});
-	callback(client);
+exports.show_image = function(req,res){
+	var img_file = req.params.img_file;
+	var ext = img_file.split('.');
+	
+	var fs = require('fs');
+	var path = require('path');
+	var ppt = path.join(__dirname,"../public//uploads/"+img_file);
+	
+	fs.readFile(ppt,function(err,data){
+		res.writeHead(200, {'Content-Type': 'image/'+ext[1]});
+		res.end(data);
+	})
 }
 
-function upload_s3(app,pathfile,filename,mimitype,encoding,callback){
-	// var aws = require('aws-sdk');
-	// aws.config.update({accessKeyId: 'AKIAJGC4JWEYS64OOVUA', secretAccessKey: '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'});
-    // var s3 = new aws.S3();
-    // var s3_params = {
-        // Bucket: 'jiggieprofileimage',
-        // Key: filename,
-        Expires: 60,
-        // ContentType: mimitype,
-        // ACL: 'public-read'
-    // };
-    // s3.getSignedUrl('putObject', s3_params, function(err, data){
-        // if(err){
-            // console.log(err);
-        // }
-        // else{
-			// console.log(data)
-			// callback('Next DATA')
-        // }
-    // });
+exports.preload_profileimage = function(req,res){
+	var fb_id = req.params.fb_id;
+	var token = req.params.token;
 	
-	s3_config(function(client){
-		var params = {
-			localFile: pathfile,
-			s3Params: {
-				Bucket: "jiggieprofileimage",
-				Key: filename,
-				ACL: 'public-read',
-				ContentType : mimitype,
-				// ContentEncoding: encoding
-			},
-		};
-		var uploader = client.uploadFile(params);
-		uploader.on('error', function(err) {
-			console.error("unable to upload:", err.stack);
-		});
-		uploader.on('progress', function() {
-			console.log("progress", uploader.progressMd5Amount,uploader.progressAmount, uploader.progressTotal);
-		});
-		uploader.on('end', function() {
-			console.log("done uploading");
-		});
-		callback('next upload s3');
+	var options = {
+		url : 'http://127.0.0.1:10897/preload/profile'
+	}
+	curl.get(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				var rsp = {
+					response : 1,
+					msg : 'Success'
+				}
+				res.send(rsp);
+			}
+		}else{
+			res.send(err);
+		}
+	})
+}
+
+exports.parseCountryCode = function(req,res){
+	var fb_id = req.params.fb_id;
+	var token = req.params.token;
+	
+	var options = {
+		url : url+'/parse_countrycode'
+	}
+	curl.get(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				res.send(json_data);
+			}
+		}else{
+			res.send(err);
+		}
+	})
+}
+
+exports.list_countryCode = function(req,res){
+	var fb_id = req.params.fb_id;
+	var token = req.params.token;
+	
+	var options = {
+		url : url+'/app/v3/list_countrycode'
+	}
+	curl.get(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				hr.data = new Object();
+				hr.data.list_countryCode = JSON.parse(body);
+				res.send(hr);
+			}
+		}else{
+			res.send(err);
+		}
+	})
+}
+
+exports.save_longlat = function(req,res){
+	var post = req.body;
+	var options = {
+		url : url+"/app/v3/save_longlat",
+		form : post
+	}
+	curl.post(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				var rsp = {
+					response : 1,
+					msg : 'Success'
+				}
+				res.send(rsp);
+			}
+		}else{
+			res.send(err);
+		}
 	})
 }

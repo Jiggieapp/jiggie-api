@@ -5,10 +5,18 @@
 <body>
 <div id="container">
 	<div id="inner_container">
+	
+		<div id="header_image_holder">
+			<img src="https://s3-ap-southeast-1.amazonaws.com/jiggieimages/emails/img-check.png" id="header_image" />
+		</div>
 
 		<div id="header">
 			<h1>Congratulations <%=first_name%>!</h1>
-			<p>You have successfully placed a reservation for</p>
+			<% if(payment_method == "free"){ %>
+			<p>You have booked a table for the event below.</p>
+			<% }else{ %>
+			<p>Your payment has been received and you have booked a table for the event below.</p>
+			<% } %>
 		</div>
 
 		<div id="event">
@@ -31,6 +39,7 @@
 						<th>TOTAL GUEST</th>
 						<td><%=total_guest%></td>
 					</tr>
+					<% if(payment_method != "free"){ %>
 					<tr>
 						<th>STATUS</th>
 						<td><%=status%></td>
@@ -39,6 +48,7 @@
 						<th>PAYMENT METHOD</th>
 						<td><%=payment_method%></td>
 					</tr>
+					<% } %>
 				</tbody>
 			</table>
 		</div>

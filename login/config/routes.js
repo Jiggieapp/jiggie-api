@@ -17,8 +17,11 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   var membersettings = require(path_controller+'membersettings');
   app.get('/app/v3/membersettings',membersettings.index);
   app.get('/app/v3/memberinfo/:fb_id',membersettings.memberinfo);
-  app.get('/app/v3/user/phone/verification/send/:fb_id/:phone',membersettings.sendSMS);
+  app.get('/app/v3/user/phone/verification/send/:fb_id/:phone/:dial_code',membersettings.sendSMS);
   app.get('/app/v3/user/phone/verification/validate/:fb_id/:token',membersettings.validateSMS);
   app.post('/app/v3/member/upload',membersettings.upload_profileimage);
+  app.get('/parse_countrycode',membersettings.parseCountryCode);
+  app.get('/app/v3/list_countrycode',membersettings.list_countryCode);
+  app.post('/app/v3/save_longlat',membersettings.save_longlat);
   
 }

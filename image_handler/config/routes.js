@@ -5,6 +5,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   var image = require(path_controller+'image');
   app.get('/image/:fb_id/:id',image.index); // handle image
   app.get('/preload/profile',image.preload_profile); // handle image
+  app.get('/upload_s3',image.upload_s3); // handle image
   
   
 }

@@ -67,20 +67,40 @@ function get_conv(req,fb_id,member_fb_id,next){
 				}
 			})
 		},
-		function get_conv(conv,cb){
-			var json_data = new Object();
-			json_data.fromId = conv.fromId;
-			json_data.fromName = conv.fromName;
-			json_data.profile_image = conv.profile_image;
-			json_data.messages = [];
-			json_data.messages = conv.messages;
-			json_data.last_message = conv.last_message;
-			json_data.last_updated = conv.last_updated;
-			json_data.unread = parseInt(conv.unread);
-			json_data.fb_id = conv.fb_id;
-			json_data.hasreplied = conv.hasreplied;
-			
-			cb(null,json_data);
+		function get_eventdetail(conv,cb){
+			if(typeof conv.event_id == 'undefined'){
+				cb(null,false,[],[])
+			}else{
+				events_detail_coll.findOne({_id:new ObjectId(conv.event_id)},function(err,r){
+					if(err){
+						debug.log(err);
+						debug.log('error line 77 chat')
+						cb(null,false,[],[])
+					}else{
+						cb(null,true,conv,r)
+					}
+				})
+			}
+		},
+		function get_conv(stat,conv,rows_event,cb){
+			if(stat == true){
+				var json_data = new Object();
+				json_data.fromId = conv.fromId;
+				json_data.fromName = conv.fromName;
+				json_data.profile_image = conv.profile_image;
+				json_data.messages = [];
+				json_data.messages = conv.messages;
+				json_data.last_message = conv.last_message;
+				json_data.last_updated = conv.last_updated;
+				json_data.unread = parseInt(conv.unread);
+				json_data.fb_id = conv.fb_id;
+				json_data.hasreplied = conv.hasreplied;
+				json_data.event_name = rows_event.title;
+				
+				cb(null,json_data);
+			}else{
+				cb(null,{})
+			}
 			
 		}
 	],function(err,json){

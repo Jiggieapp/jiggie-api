@@ -79,7 +79,7 @@ function get_chatlist(req,fb_id,next){
 		if(rows != undefined){
 			if(typeof rows.conversations != 'undefined'){
 				async.forEachOf(rows.conversations,function(v,k,e){
-					if(v.block == true || v.delete == true){
+					if(v.block == true || v.delete == true || typeof v.event_id == 'undefined'){
 						debug.log("jgn munculin");
 					}else{
 						json_data[n] = new Object();
