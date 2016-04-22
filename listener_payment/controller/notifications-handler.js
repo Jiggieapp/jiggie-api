@@ -386,7 +386,7 @@ function send_mail(req,email_to,vt,next){
 	var path = require('path')
 	var templateDir = path.resolve(__dirname,'../../commerce','views','templates');
 	
-	var from = 'info@jiggiemail.com';
+	var from = 'Jiggie Orders <info@jiggiemail.com>';
 	var to = email_to;
 	var subject = '';
 	var html = '';

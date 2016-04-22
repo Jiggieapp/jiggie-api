@@ -320,7 +320,11 @@ function get_summary(req,next){
 						}
 						if(r.last_cc != null && typeof r.last_cc != 'undefined'){
 							payment_method_coll.findOne({type:dt.last_payment.payment_type},function(err,rt){
-								if(rt.status == false){
+								if(rt != null){
+									if(rt.status == false){
+										dt.last_payment = {};
+									}
+								}else{
 									dt.last_payment = {};
 								}
 								cb(null,dt);

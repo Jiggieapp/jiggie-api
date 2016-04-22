@@ -677,7 +677,7 @@ exports.userlogin = function(req,res){
 	}
 	var options = {
 		algoritm:'ES512',
-		expiresIn:'1m'
+		expiresIn:'2m'
 	}
 	
 	jwt.sign(json_data,datakey,options,function(token){

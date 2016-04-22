@@ -8,32 +8,68 @@ var util = require("util");
 var Mixpanel = require('mixpanel');
 var mixpanel = Mixpanel.init('39ae6be779ffea77ea2b2a898305f560');
 
+var redis   = require("redis");
+var client  = redis.createClient(6379,"jiggieappsredis.futsnq.0001.apse1.cache.amazonaws.com");
 
 exports.index = function(req, res){
-	req.app.get("helpers").logging("request","get","",req);
-	
 	var fb_id = req.params.fb_id;
 	var gender_interest = req.params.gender_interest;
 	
-	customers_coll.findOne({fb_id:fb_id},function(errs,cek_fbid){
-		if(cek_fbid == undefined){
-			// 403 => Invalid ID
-			res.json({code_error:403})
-		}else if(['male','female','both'].indexOf(gender_interest) == -1){
-			// 403 => Invalid ID
-			res.json({code_error:403})
-		}else{
-			get_data(req,fb_id,gender_interest,function(data){
-				if(data.length == 0){
-					res.json({code_error:204})
+	async.waterfall([
+		function get_socfed_data(cb){
+			customers_coll.findOne({fb_id:fb_id},function(errs,cek_fbid){
+				if(cek_fbid == undefined){
+					// 403 => Invalid ID
+					cb(null,false,{code_error:403})
+				}else if(['male','female','both'].indexOf(gender_interest) == -1){
+					// 403 => Invalid ID
+					cb(null,false,{code_error:403})
 				}else{
-					res.json(data);
+					get_data(req,fb_id,gender_interest,function(data){
+						if(data.length == 0){
+							cb(null,false,{code_error:204})
+						}else{
+							cb(null,true,data)
+						}
+					})
 				}
 			})
+		},
+		function nin_fbid(stat,dt_socfed,cb){
+			if(stat == true){
+				client.get("social_list_"+fb_id,function(err,val){
+					if(val == null){
+						cb(null,dt_socfed)
+					}else{
+						var nin_fbid = JSON.parse(val)
+						
+						async.forEachOf(dt_socfed,function(v,k,e){
+							async.forEachOf(nin_fbid,function(ve,ke,ee){
+								if(v.from_fb_id == ve){
+									delete dt_socfed[k]
+								}
+							})
+						})
+						
+						var dt_socfed2 = [];
+						var n = 0;
+						async.forEachOf(dt_socfed,function(v,k,e){
+							if(v != null){
+								dt_socfed2[n] = v;
+								n++;
+							}
+						})
+						
+						cb(null,dt_socfed2)
+					}
+				})
+			}else{
+				cb(null,dt_socfed)
+			}
 		}
-	})	
-	
-	
+	],function(err,merge){
+		res.json(merge)
+	})
 };
 
 function get_data(req,fb_id,gender_interest,next){
@@ -333,11 +369,25 @@ var sortDate = function (a, b){
 
 
 exports.connect = function(req,res){
-	req.app.get("helpers").logging("request","get","",req);
-	
 	var fb_id = req.params.fb_id;
 	var member_fb_id = req.params.member_fb_id;
 	var match = req.params.match;
+	
+	client.get("social_list_"+fb_id,function(err,val){
+		if(val == null){
+			var nin_socfed = []
+		}else{
+			var nin_socfed = JSON.parse(val);
+		}
+		nin_socfed.push(member_fb_id)
+		client.set("social_list_"+fb_id,JSON.stringify(nin_socfed),function(err,suc){
+			if(!err){
+				client.expire("social_list_"+fb_id,120);
+			}
+		})
+	})
+	
+	
 	
 	do_connect_n_updchat(req,fb_id,member_fb_id,match,function(upd){
 		req.app.get("helpers").logging("response","get","{success:true}",req);

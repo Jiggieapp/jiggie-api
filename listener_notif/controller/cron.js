@@ -92,18 +92,18 @@ function start_jobs(req,next){
 				// });
 				// job.start();
 			}else if(v.type == 'event'){
-				var job = new cron({
-				  cronTime: v.schedule,
-				  onTick: function() {
-					eventdetails_startnotif(req,function(dt){
-						debug.log('START EVENT NOTIF');
-						debug.log(dt);
-					})
-				  },
-				  start: true,
-				  timeZone: 'Asia/Jakarta'
-				});
-				job.start();
+				// var job = new cron({
+				  // cronTime: v.schedule,
+				  // onTick: function() {
+					// eventdetails_startnotif(req,function(dt){
+						// debug.log('START EVENT NOTIF');
+						// debug.log(dt);
+					// })
+				  // },
+				  // start: true,
+				  // timeZone: 'Asia/Jakarta'
+				// });
+				// job.start();
 			}
 			
 		})

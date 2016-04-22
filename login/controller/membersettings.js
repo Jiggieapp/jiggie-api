@@ -22,6 +22,13 @@ eventEmitter.on('database_connected',function(){
 	});
 });
 
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('image_temp',function(collection){
+		image_temp_coll = collection;
+		console.log("image_temp connected");
+	});
+});
+
 exports.index = function(req,res){
 	req.app.get("helpers").logging("request","get","",req);
 	
@@ -344,21 +351,47 @@ exports.upload_profileimage = function(req,res){
 	var post = req.body;
 	
 	var fb_id = post.fb_id;
-	var path_file = post.path_file;
+	var url_img = post.url_img;
+	var filename = post.filename;
+	var mimetype = post.mimetype;
+	var encoding = post.encoding;
 	
-	var upd_form = {
-		$push:{
-			photos:path_file
+	async.series([
+		function push_cust(cb){
+			var upd_form = {
+				$push:{
+					photos:url_img
+				}
+			}
+			
+			customers_coll.update({fb_id:fb_id},upd_form,function(err,r){
+				if(err){
+					debug.log(err)
+				}
+				cb(null,'next')
+			})
+		},
+		function insert_photo_temp(cb){
+			var form_insert = {
+				fb_id:fb_id,
+				url_img:url_img,
+				filename:filename,
+				mimetype:mimetype,
+				encoding:encoding,
+				is_upload:false
+			}
+			if(fb_id != ''){
+				image_temp_coll.insert(form_insert,function(err,upd){
+					if(err){
+						debug.log(err)
+					}
+				})
+			}
+			cb(null,'next')
 		}
-	}
-	
-	customers_coll.update({fb_id:fb_id},upd_form,function(err,r){
-		if(err){
-			debug.log(err)
-		}
+	],function(err,merge){
 		res.json({success:true})
 	})
-	
 }
 
 exports.save_longlat = function(req,res){

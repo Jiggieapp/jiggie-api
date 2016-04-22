@@ -1396,7 +1396,16 @@ function paid_free(req,next){
 							cb(null,false,[]);
 						}else{
 							if(r.quantity >= dt.product_list[0].num_buy){
-								cb(null,true,dt);
+								if(dt.product_list[0].ticket_type == 'purchase'){
+									if(parseInt(r.total) == 0){
+										cb(null,true,dt);
+									}else{
+										debug.log('payment free ticket purchase total must 0')
+										cb(null,false,[])
+									}
+								}else{
+									cb(null,true,dt);
+								}
 							}else{
 								debug.log('quantity limited')
 								cb(null,false,[]);

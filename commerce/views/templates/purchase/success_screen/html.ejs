@@ -12,7 +12,12 @@
 
 		<div id="header">
 			<h1>Congratulations <%=first_name%>!</h1>
+			<% if(payment_method == "free"){ %>
 			<p>You have booked a ticket for the event below.</p>
+			<% }else{ %>
+			<p>Your payment has been received and you have booked a ticket for the event below.</p>
+			<% } %>
+			
 		</div>
 
 		<div id="event">

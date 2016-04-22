@@ -86,16 +86,17 @@ exports.setting = function(app,express,helmet,hpp,xssFilters,validator,http,http
 	// error handler //
 
 	app.use(function(req, res, next){
-	  res.status(404);
-	  if (req.accepts('html')) {
-	    res.render('404', { url: req.url });
-	    return;
-	  }
-	  if (req.accepts('json')) {
-	    res.send({ error: 'Not found' });
-	    return;
-	  }
-	  res.type('txt').send('Not found');
+	  // res.status(404);
+	  // if (req.accepts('html')) {
+	    // res.render('404', { url: req.url });
+	    // return;
+	  // }
+	  // if (req.accepts('json')) {
+	    // res.send({ error: 'Not found' });
+	    // return;
+	  // }
+	  // res.type('txt').send('Not found');
+	  res.status(403)
 	});
 
 	// development only //

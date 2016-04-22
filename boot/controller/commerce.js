@@ -12,6 +12,8 @@ exports.index = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
+	var static_event_id = '56b1a0bf89bfed03005c50f0'
+	
 	// jwt.verify(token,datakey,function(err,decode){
 		// if(err){
 			// if(err.name == 'JsonWebTokenError'){
@@ -29,6 +31,8 @@ exports.index = function(req,res){
 					var json_data = JSON.parse(body);
 					if(typeof json_data.code_error != 'undefined'){
 						res.status(json_data.code_error).send({});
+					}else if(req.params.event_id == static_event_id){
+						res.status(400).send({});
 					}else{
 						hr.data = new Object();
 						hr.data.product_lists = JSON.parse(body);
@@ -372,14 +376,14 @@ exports.walkthrough_payment = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
-	// jwt.verify(token,datakey,function(err,decode){
-		// if(err){
-			// if(err.name == 'JsonWebTokenError'){
-				// res.status(401).send({});
-			// }else if(err.name == 'TokenExpiredError'){
-				// res.status(410).send({});
-			// }
-		// }else{
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
 			var post = req.body;
 			var options = {
 				url : url+"/walkthrough_payment"
@@ -399,8 +403,8 @@ exports.walkthrough_payment = function(req,res){
 					res.send(err);
 				}
 			});
-		// }
-	// });
+		}
+	});
 }
 
 exports.get_paymentmethod = function(req,res){

@@ -293,7 +293,8 @@ function get_success_screen(req,next){
 		order_id:order_id,
 		$or:[
 			{order_status:'completed'},
-			{order_status:'pending_payment'}
+			{order_status:'pending_payment'},
+			{order_status:'cancel'}
 		]
 		
 	}
@@ -697,7 +698,7 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 		json_data.payment_type = 'free';
 		json_data.event = revent;
 		if(rorder.product_list[0].ticket_type == 'booking'){
-			rorder.pay_deposit = parseInt(rorder.vt_response.gross_amount);
+			rorder.pay_deposit = parseInt(0);
 			json_data.summary = rorder;
 		}else if(rorder.product_list[0].ticket_type == 'purchase'){
 			json_data.summary = rorder;

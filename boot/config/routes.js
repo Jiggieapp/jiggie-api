@@ -33,6 +33,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/parse_countrycode',login.parseCountryCode);
   app.get('/app/v3/list_countrycode',login.list_countryCode);
   app.post('/app/v3/save_longlat',login.save_longlat);
+  app.get('/image/:img_file',login.show_image);
 
   var chat = require(path_controller+'chat');
   app.get('/app/v3/conversations',chat.list); // List Users Can be Chats;
