@@ -42,3 +42,10 @@ eventEmitter.on('database_connected',function(){
 		console.log("socialfeed connected");
 	});
 });
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('tickettypes',function(collection){
+		tickettypes_coll = collection;
+		console.log("tickettypes connected");
+	});
+});

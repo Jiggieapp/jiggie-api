@@ -14,14 +14,14 @@ exports.index = function(req,res){
 	
 	var static_event_id = '56b1a0bf89bfed03005c50f0'
 	
-	// jwt.verify(token,datakey,function(err,decode){
-		// if(err){
-			// if(err.name == 'JsonWebTokenError'){
-				// res.status(401).send({});
-			// }else if(err.name == 'TokenExpiredError'){
-				// res.status(410).send({});
-			// }
-		// }else{
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
 			var options = {
 				url : url+"/app/v3/product/list/"+req.params.event_id
 			}
@@ -42,22 +42,22 @@ exports.index = function(req,res){
 					res.send(err);
 				}
 			});
-		// }
-	// });
+		}
+	});
 }
 
 exports.post_summary = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
-	// jwt.verify(token,datakey,function(err,decode){
-		// if(err){
-			// if(err.name == 'JsonWebTokenError'){
-				// res.status(401).send({});
-			// }else if(err.name == 'TokenExpiredError'){
-				// res.status(410).send({});
-			// }
-		// }else{
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
 			var post = req.body;
 			var options = {
 				url : url+"/app/v3/product/summary",
@@ -83,22 +83,22 @@ exports.post_summary = function(req,res){
 					res.send(err);
 				}
 			});
-		// }
-	// });
+		}
+	});
 }
 
 exports.term = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
-	// jwt.verify(token,datakey,function(err,decode){
-		// if(err){
-			// if(err.name == 'JsonWebTokenError'){
-				// res.status(401).send({});
-			// }else if(err.name == 'TokenExpiredError'){
-				// res.status(410).send({});
-			// }
-		// }else{
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
 			var options = {
 				url : url+"/app/v3/product/term/"+req.params.codeid
 			}
@@ -118,22 +118,22 @@ exports.term = function(req,res){
 					res.send(err);
 				}
 			});
-		// }
-	// });
+		}
+	});
 }
 
 exports.payment = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
-	// jwt.verify(token,datakey,function(err,decode){
-		// if(err){
-			// if(err.name == 'JsonWebTokenError'){
-				// res.status(401).send({});
-			// }else if(err.name == 'TokenExpiredError'){
-				// res.status(410).send({});
-			// }
-		// }else{
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
 			var post = req.body;
 			var options = {
 				url : url+"/app/v3/product/payment",
@@ -159,22 +159,22 @@ exports.payment = function(req,res){
 					res.send(err);
 				}
 			});
-		// }
-	// });
+		}
+	});
 }
 
 exports.cc_info = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
-	// jwt.verify(token,datakey,function(err,decode){
-		// if(err){
-			// if(err.name == 'JsonWebTokenError'){
-				// res.status(401).send({});
-			// }else if(err.name == 'TokenExpiredError'){
-				// res.status(410).send({});
-			// }
-		// }else{
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
 			var options = {
 				url : url+"/credit_card/"+req.params.fb_id
 			}
@@ -193,22 +193,22 @@ exports.cc_info = function(req,res){
 					res.send(err);
 				}
 			});
-		// }
-	// });
+		}
+	});
 }
 
 exports.post_cc = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
-	// jwt.verify(token,datakey,function(err,decode){
-		// if(err){
-			// if(err.name == 'JsonWebTokenError'){
-				// res.status(401).send({});
-			// }else if(err.name == 'TokenExpiredError'){
-				// res.status(410).send({});
-			// }
-		// }else{
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
 			var options = {
 				url : url+"/post_cc/",
 				form:req.body
@@ -228,22 +228,22 @@ exports.post_cc = function(req,res){
 					res.send(err);
 				}
 			});
-		// }
-	// });
+		}
+	});
 }
 
 exports.delete_cc = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
-	// jwt.verify(token,datakey,function(err,decode){
-		// if(err){
-			// if(err.name == 'JsonWebTokenError'){
-				// res.status(401).send({});
-			// }else if(err.name == 'TokenExpiredError'){
-				// res.status(410).send({});
-			// }
-		// }else{
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
 			var options = {
 				url : url+"/delete_cc/",
 				form:req.body
@@ -263,22 +263,22 @@ exports.delete_cc = function(req,res){
 					res.send(err);
 				}
 			});
-		// }
-	// });
+		}
+	});
 }
 
 exports.notifications_handler = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
-	// jwt.verify(token,datakey,function(err,decode){
-		// if(err){
-			// if(err.name == 'JsonWebTokenError'){
-				// res.status(401).send({});
-			// }else if(err.name == 'TokenExpiredError'){
-				// res.status(410).send({});
-			// }
-		// }else{
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
 			var post = req.body;
 			var options = {
 				url : url+"/notif_handle/",
@@ -298,22 +298,22 @@ exports.notifications_handler = function(req,res){
 					res.send(err);
 				}
 			});
-		// }
-	// });
+		}
+	});
 }
 
 exports.order_list = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
-	// jwt.verify(token,datakey,function(err,decode){
-		// if(err){
-			// if(err.name == 'JsonWebTokenError'){
-				// res.status(401).send({});
-			// }else if(err.name == 'TokenExpiredError'){
-				// res.status(410).send({});
-			// }
-		// }else{
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
 			var post = req.body;
 			var options = {
 				url : url+"/order_list/"+req.params.fb_id,
@@ -333,22 +333,22 @@ exports.order_list = function(req,res){
 					res.send(err);
 				}
 			});
-		// }
-	// });
+		}
+	});
 }
 
 exports.success_screen = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
-	// jwt.verify(token,datakey,function(err,decode){
-		// if(err){
-			// if(err.name == 'JsonWebTokenError'){
-				// res.status(401).send({});
-			// }else if(err.name == 'TokenExpiredError'){
-				// res.status(410).send({});
-			// }
-		// }else{
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
 			var post = req.body;
 			var options = {
 				url : url+"/success_screen/"+req.params.order_id,
@@ -368,8 +368,8 @@ exports.success_screen = function(req,res){
 					res.send(err);
 				}
 			});
-		// }
-	// });
+		}
+	});
 }
 
 exports.walkthrough_payment = function(req,res){
@@ -411,14 +411,14 @@ exports.get_paymentmethod = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
-	// jwt.verify(token,datakey,function(err,decode){
-		// if(err){
-			// if(err.name == 'JsonWebTokenError'){
-				// res.status(401).send({});
-			// }else if(err.name == 'TokenExpiredError'){
-				// res.status(410).send({});
-			// }
-		// }else{
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
 			var post = req.body;
 			var options = {
 				url : url+"/app/v3/product/payment_method"
@@ -438,22 +438,22 @@ exports.get_paymentmethod = function(req,res){
 					res.send(err);
 				}
 			});
-		// }
-	// });
+		}
+	});
 }
 
 exports.support = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
-	// jwt.verify(token,datakey,function(err,decode){
-		// if(err){
-			// if(err.name == 'JsonWebTokenError'){
-				// res.status(401).send({});
-			// }else if(err.name == 'TokenExpiredError'){
-				// res.status(410).send({});
-			// }
-		// }else{
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
 			var post = req.body;
 			var options = {
 				url : url+"/app/v3/product/support"
@@ -473,22 +473,22 @@ exports.support = function(req,res){
 					res.send(err);
 				}
 			});
-		// }
-	// });
+		}
+	});
 }
 
 exports.forward_mail = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
-	// jwt.verify(token,datakey,function(err,decode){
-		// if(err){
-			// if(err.name == 'JsonWebTokenError'){
-				// res.status(401).send({});
-			// }else if(err.name == 'TokenExpiredError'){
-				// res.status(410).send({});
-			// }
-		// }else{
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
 			var options = {
 				url : "http://127.0.0.1:31456/forward_support/",
 				form:req.body
@@ -508,22 +508,22 @@ exports.forward_mail = function(req,res){
 					res.send(err);
 				}
 			});
-		// }
-	// });
+		}
+	});
 }
 
 exports.guest_info = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
-	// jwt.verify(token,datakey,function(err,decode){
-		// if(err){
-			// if(err.name == 'JsonWebTokenError'){
-				// res.status(401).send({});
-			// }else if(err.name == 'TokenExpiredError'){
-				// res.status(410).send({});
-			// }
-		// }else{
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
 			var post = req.body;
 			var options = {
 				url : url+"/app/v3/product/guest_info/"+req.params.fb_id
@@ -543,22 +543,22 @@ exports.guest_info = function(req,res){
 					res.send(err);
 				}
 			});
-		// }
-	// });
+		}
+	});
 }
 
 exports.free_charge = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
-	// jwt.verify(token,datakey,function(err,decode){
-		// if(err){
-			// if(err.name == 'JsonWebTokenError'){
-				// res.status(401).send({});
-			// }else if(err.name == 'TokenExpiredError'){
-				// res.status(410).send({});
-			// }
-		// }else{
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
 			var post = req.body;
 			var options = {
 				url : url+"/app/v3/product/free_payment",
@@ -584,6 +584,6 @@ exports.free_charge = function(req,res){
 					res.send(err);
 				}
 			});
-		// }
-	// });
+		}
+	});
 }

@@ -74,6 +74,10 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   var cron = require(path_controller+'cron');
   app.get('/start_autoschedule',cron.index)
   
+  var admin = require(path_controller+'admin');
+  app.post('/admin/venue',admin.venue)
+  app.post('/admin/event',admin.admin_event);
+  
   
   
   // Notif //

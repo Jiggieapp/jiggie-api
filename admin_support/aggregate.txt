@@ -1,0 +1,11 @@
+db.socialfeed.aggregate(
+	{$unwind:'$users'},
+	{
+		$match:{
+			$and:[
+				{fb_id:'10207797537711905'},
+				{'users.fb_id':{$in:['10153723669192953','10153566395261999']}}
+			]
+		}
+	}
+).pretty()
