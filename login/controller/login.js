@@ -6,6 +6,9 @@ var cache = new NodeCache({ stdTTL: 100, checkperiod: 120 });
 var eventEmitter = mongo.eventEmitter;
 var ObjectId = require('mongodb').ObjectID;
 
+var redis   = require("redis");
+var client  = redis.createClient(6379,"jiggieappsredis.futsnq.0001.apse1.cache.amazonaws.com");
+
 
 eventEmitter.on('database_connected',function(){
 	mongo.getCollection('customers',function(collection)
@@ -489,6 +492,17 @@ exports.sync_membersettings = function(req,res){
 		customers_coll.update({fb_id:post.fb_id},{$set:dt},function(){});
 	}
 	
+	if(typeof post.age != 'undefined'){
+		dt.age = post.age;
+		customers_coll.update({fb_id:post.fb_id},{$set:dt},function(){});
+	}
+	
+	if(typeof post.distance != 'undefined'){
+		dt.distance = post.distance;
+		customers_coll.update({fb_id:post.fb_id},{$set:dt},function(){});
+	}
+	
+	
 	
 	var json_data = new Object();
 	if(typeof post.fb_id != 'undefined'){json_data.fb_id = post.fb_id;}
@@ -527,7 +541,7 @@ exports.sync_membersettings = function(req,res){
 	}
 	
 	if(typeof post.gender_interest != 'undefined'){json_data.gender_interest = post.gender_interest;}
-			
+	
 	if(typeof post.fb_id != 'undefined'){
 		membersettings_coll.find(cond).toArray(function(err,rows){
 			if(rows.length > 0){
@@ -672,18 +686,37 @@ exports.userlogin = function(req,res){
 	var post = req.body;
 	var fb_token = post.fb_token;
 	
-	var json_data = {
-		fb_token : fb_token
-	}
-	var options = {
-		algoritm:'ES512',
-		expiresIn:'30s'
-	}
-	
-	jwt.sign(json_data,datakey,options,function(token){
-		debug.log(token);
-		res.json({"success":true,token:token});
+	client.get('token_'+fb_token,function(err,val){
+		if(val == null){
+			var json_data = {
+				fb_token : fb_token
+			}
+			var options = {
+				algoritm:'ES512',
+				expiresIn:'120m'
+			}
+			
+			jwt.sign(json_data,datakey,options,function(token){
+				client.set('token_'+fb_token,JSON.stringify(token),function(err,suc){
+					if(!err){
+						debug.log('token requested success');
+						client.expire('token_'+fb_token,7000);
+						res.json({"success":true,token:token});
+					}else{
+						debug.log('server problem')
+						res.json({"success":false,msg:"Server Problem"});
+					}
+				})
+				
+			})
+			
+		}else{
+			debug.log('token still active')
+			res.json({"success":false,msg:"Token Not Expired"});
+		}
 	})
+	
+	
 }
 
 
