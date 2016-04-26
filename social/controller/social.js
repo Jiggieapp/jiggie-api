@@ -11,6 +11,8 @@ var mixpanel = Mixpanel.init('39ae6be779ffea77ea2b2a898305f560');
 var redis   = require("redis");
 var client  = redis.createClient(6379,"jiggieappsredis.futsnq.0001.apse1.cache.amazonaws.com");
 
+var geolib = require('geolib')
+
 exports.index = function(req, res){
 	var fb_id = req.params.fb_id;
 	var gender_interest = req.params.gender_interest;
@@ -39,7 +41,7 @@ exports.index = function(req, res){
 			if(stat == true){
 				client.get("social_list_"+fb_id,function(err,val){
 					if(val == null){
-						cb(null,dt_socfed)
+						cb(null,true,dt_socfed)
 					}else{
 						var nin_fbid = JSON.parse(val)
 						
@@ -60,14 +62,50 @@ exports.index = function(req, res){
 							}
 						})
 						
-						cb(null,dt_socfed2)
+						cb(null,true,dt_socfed2)
 					}
 				})
 			}else{
-				cb(null,dt_socfed)
+				cb(null,false,dt_socfed)
+			}
+		},
+		function nin_fbid_last3(stat,dt_socfed,cb){
+			if(stat == true){
+				client.get("social_list_last3_"+fb_id,function(err,val){
+					if(val == null){
+						cb(null,true,dt_socfed)
+					}else{
+						if(dt_socfed.length > 3){
+							var nin_fbid = JSON.parse(val)
+								
+							async.forEachOf(dt_socfed,function(v,k,e){
+								async.forEachOf(nin_fbid,function(ve,ke,ee){
+									if(v.from_fb_id == ve){
+										delete dt_socfed[k]
+									}
+								})
+							})
+							
+							var dt_socfed2 = [];
+							var n = 0;
+							async.forEachOf(dt_socfed,function(v,k,e){
+								if(v != null){
+									dt_socfed2[n] = v;
+									n++;
+								}
+							})
+							
+							cb(null,true,dt_socfed2)
+						}else{
+							cb(null,true,dt_socfed)
+						}
+					}
+				})
+			}else{
+				cb(null,false,dt_socfed)
 			}
 		}
-	],function(err,merge){
+	],function(err,stat,merge){
 		res.json(merge)
 	})
 };
@@ -92,7 +130,12 @@ function get_data(req,fb_id,gender_interest,next){
 				}
 			})
 		},
-		function get_matche(socfed_users,callback){
+		function get_cust_self(socfed_users,callback){
+			customers_coll.findOne({fb_id:fb_id},function(err,r){
+				callback(null,socfed_users,r);
+			})
+		},
+		function get_matche(socfed_users,rows_self_users,callback){
 			if(socfed_users.length > 0){
 				var in_fbid = [];
 				var n = 0;
@@ -105,18 +148,18 @@ function get_data(req,fb_id,gender_interest,next){
 					fb_id:{$in:in_fbid}
 				}
 				customers_coll.find(cond_cust).toArray(function(err,rows){
-					callback(null,socfed_users,rows);
+					callback(null,socfed_users,rows,rows_self_users);
 				})
 			}else{
-				callback(null,[],[]);
+				callback(null,[],[],[]);
 			}
 		},
-		function get_likesparse(socfed_users,rows_cust,callback){
+		function get_likesparse(socfed_users,rows_cust,rows_self_users,callback){
 			get_likesdata(fb_id,function(likes_fbid){
-				callback(null,socfed_users,rows_cust,likes_fbid)
+				callback(null,socfed_users,rows_cust,likes_fbid,rows_self_users)
 			})
 		},
-		function show_data(socfed_users,rows_cust,likes_fbid,callback){
+		function show_data(socfed_users,rows_cust,likes_fbid,rows_self_users,callback){
 			var ppt = path.join(__dirname,"../../global/img.json");
 			var pkg = require('fs-sync').readJSON(ppt);
 			var imgurl = pkg.uri
@@ -127,6 +170,13 @@ function get_data(req,fb_id,gender_interest,next){
 						if(v.fb_id == v2.fb_id){
 							if(v.matchme == undefined || v.matchme == true){
 								socfed_users[k2].matchme = true;
+								if(typeof rows_self_users.position != 'undefined' && typeof v.position != 'undefined'){
+									socfed_users[k2].distance = geolib.getDistance(
+										{latitude:rows_self_users.position.coordinates[1],longitude:rows_self_users.position.coordinates[0]},
+										{latitude:v.position.coordinates[1],longitude:v.position.coordinates[0]}
+									)
+								}
+								
 								socfed_users[k2].photos = imgurl+'image/'+v.fb_id+'/0/?imgid='+v.photos[0];
 							}else{
 								socfed_users[k2].photos = imgurl+'image/'+v.fb_id+'/0/?imgid='+v.photos[0];
@@ -184,6 +234,9 @@ function get_data(req,fb_id,gender_interest,next){
 											
 											json_data[n].last_updated = v.last_viewed;
 											json_data[n].image = v.photos;
+											if(typeof v.distance != 'undefined'){
+												json_data[n].distance = v.distance;
+											}
 											n++;
 										}else if(gender_interest == 'male'){
 											if(v.gender == 'male'){
@@ -218,6 +271,9 @@ function get_data(req,fb_id,gender_interest,next){
 												
 												json_data[n].last_updated = v.last_viewed;
 												json_data[n].image = v.photos;
+												if(typeof v.distance != 'undefined'){
+													json_data[n].distance = v.distance;
+												}
 												n++;
 											}
 										}else if(gender_interest == 'female'){
@@ -253,6 +309,9 @@ function get_data(req,fb_id,gender_interest,next){
 												
 												json_data[n].last_updated = v.last_viewed;
 												json_data[n].image = v.photos;
+												if(typeof v.distance != 'undefined'){
+													json_data[n].distance = v.distance;
+												}
 												n++;
 											}
 										}
@@ -272,10 +331,20 @@ function get_data(req,fb_id,gender_interest,next){
 						return typeof n.fb_id != 'undefined';
 					})
 					
-					if(json_data.length > 20){
-						json_data.length = 20;
+					if(json_data.length > 40){
+						json_data.length = 40;
 					}
 					
+					if(json_data.length > 3){
+						var fb_id_arr_last3 = [];
+						var nn = 0;
+						async.forEachOf(json_data,function(v,k,e){
+							fb_id_arr_last3[nn] = v.from_fb_id;
+							nn++;
+						})
+						var fb_id_arr_last3 = fb_id_arr_last3.slice(Math.max(fb_id_arr_last3.length - 3, 1))
+						client.set("social_list_last3_"+fb_id,JSON.stringify(fb_id_arr_last3),function(err,suc){})
+					}
 					
 					// debug.log(json_data);
 					if(JSON.stringify(json_data) == '[{}]'){

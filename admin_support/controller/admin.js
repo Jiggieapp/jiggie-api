@@ -84,12 +84,17 @@ exports.venue = function(req, res){
 				var final_results = []
 				var n = 0;
 				async.forEachOf(tmp,function(v,k,e){
-					var num_bookings = 0;
+					var num_bookings_sold = 0;
+					var num_bookings_hold = 0;
 					async.forEachOf(v,function(ve,ke,ee){
 						if(typeof ve.sold != 'undefined'){
-							num_bookings += ve.sold.length
+							num_bookings_hold += ve.qty_hold.length
+						}
+						if(typeof ve.sold != 'undefined'){
+							num_bookings_sold += ve.sold.length
 						}
 					})
+					var num_bookings = num_bookings_sold+num_bookings_hold;
 					final_results[n] = {venue_id:v[0].venue_id,count : num_bookings}
 					n++
 				})
@@ -135,7 +140,46 @@ exports.admin_event = function(req,res){
 				}
 			})
 		},
-		function sync_data(stat,rows_ticket,cb){
+		function get_order(stat,rows_ticket,cb){
+			if(stat == true){
+				var order_id_sold = [];				
+				var order_id_hold = [];
+				var n = 0
+				var m = 0
+				async.forEachOf(rows_ticket,function(v,k,e){
+					if(typeof v.sold != 'undefined'){
+						if(v.sold.length != 0){
+							async.forEachOf(v.sold,function(vs,ks,es){
+								order_id_sold[n] = vs.order_id;
+								n++;
+							})
+						}
+					}
+					if(typeof v.qty_hold != 'undefined'){
+						if(v.qty_hold.length != 0){
+							async.forEachOf(v.qty_hold,function(vq,kq,eq){
+								order_id_hold[m] = vq.order_id;
+								m++
+							})
+						}
+					}
+				})
+				var order_idarr = _.union(order_id_sold,order_id_hold)
+				
+				order_coll.find({order_id:{$in:order_idarr}}).toArray(function(err,r){
+					if(err){
+						debug.log('error line 171 admin')
+						debug.log(err)
+						cb(null,false,[],[])
+					}else{
+						cb(null,true,rows_ticket,r)
+					}
+				})
+			}else{
+				cb(null,false,[],[])
+			}
+		},
+		function sync_data(stat,rows_ticket,rows_order,cb){
 			if(stat == true){
 				var groupby_event = _.groupBy(rows_ticket,function(d){
 					return d['event_id']
@@ -152,12 +196,23 @@ exports.admin_event = function(req,res){
 					var table = 0;
 					var table_stock = 0;
 					var gross_sale = 0;
+					var gross_sale_tickets = 0;
+					var gross_sale_tables = 0;
 					async.forEachOf(v,function(ve,ke,ee){
 						if(ve.ticket_type == 'purchase'){
 							
 							var num_tickets_qty_hold = 0;
 							if(typeof ve.qty_hold != 'undefined'){
 								async.forEachOf(ve.qty_hold,function(vt,kt,et){
+									
+									async.forEachOf(rows_order,function(vo,ko,eo){
+										if(vo.order_id == vt.order_id){
+											if(typeof vo.vt_response != 'undefined'){
+												gross_sale_tickets += parseInt(vo.vt_response.gross_amount)
+											}
+										}
+									})
+									
 									num_tickets_qty_hold += parseInt(vt.qty)
 								})
 							}
@@ -165,6 +220,15 @@ exports.admin_event = function(req,res){
 							var num_tickets_sold = 0
 							if(typeof ve.sold != 'undefined'){
 								async.forEachOf(ve.sold,function(vs,ks,es){
+									
+									async.forEachOf(rows_order,function(vo,ko,eo){
+										if(vo.order_id == vs.order_id){
+											if(typeof vo.vt_response != 'undefined'){
+												gross_sale_tickets += parseInt(vo.vt_response.gross_amount)
+											}
+										}
+									})
+									
 									num_tickets_sold += parseInt(vs.num_buy)
 								})
 							}
@@ -177,6 +241,15 @@ exports.admin_event = function(req,res){
 							var num_bookings_qty_hold = 0;
 							if(typeof ve.qty_hold != 'undefined'){
 								async.forEachOf(ve.qty_hold,function(vt,kt,et){
+									
+									async.forEachOf(rows_order,function(vo,ko,eo){
+										if(vo.order_id == vt.order_id){
+											if(typeof vo.vt_response != 'undefined'){
+												gross_sale_tables += parseInt(vo.vt_response.gross_amount)
+											}
+										}
+									})
+									
 									num_bookings_qty_hold += parseInt(vt.qty)
 								})
 							}
@@ -184,6 +257,15 @@ exports.admin_event = function(req,res){
 							var num_bookings_sold = 0
 							if(typeof ve.sold != 'undefined'){
 								async.forEachOf(ve.sold,function(vs,ks,es){
+									
+									async.forEachOf(rows_order,function(vo,ko,eo){
+										if(vo.order_id == vs.order_id){
+											if(typeof vo.vt_response != 'undefined'){
+												gross_sale_tables += parseInt(vo.vt_response.gross_amount)
+											}
+										}
+									})
+									
 									num_bookings_sold += parseInt(vs.num_buy)
 								})
 							}
@@ -191,14 +273,12 @@ exports.admin_event = function(req,res){
 							table += parseInt(num_bookings_sold)
 							table_stock += (parseInt(ve.quantity)+parseInt(num_bookings_qty_hold)+parseInt(num_bookings_sold))
 						}
-						
-						gross_sale += parseInt(ve.total);
 					})
 					fin[n].tickets = tickets;
 					fin[n].tickets_stock = tickets_stock;
 					fin[n].table = table;
 					fin[n].table_stock = table_stock;
-					fin[n].gross_sale = gross_sale;
+					fin[n].gross_sale = parseInt(gross_sale_tables) + parseInt(gross_sale_tickets);
 					
 					n++;
 				})
