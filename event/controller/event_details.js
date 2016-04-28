@@ -460,7 +460,11 @@ function getdata(req,event_details_id,fb_id,gender_interest,next){
 		async.forEachOf(rows_venue.photos,function(v,k,e){
 			photos.push(v);
 		});
-		dt.photos = photos;
+		var pt = []
+		async.forEachOf(photos,function(v,k,e){
+			pt[k] = "http://img.jiggieapp.com/event?url="+v
+		})
+		dt.photos = pt;
 		
 		dt.guests_viewed = rows_event.guests_viewed;
 		dt.description = rows_event.description;

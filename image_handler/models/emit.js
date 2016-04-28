@@ -21,3 +21,17 @@ eventEmitter.on('database_connected',function(){
 		console.log("image_temp connected");
 	});
 });
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('events_details',function(collection){
+		events_detail_coll = collection;
+		console.log("events_detail connected");
+	});
+});
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('venues',function(collection){
+		venues_coll = collection;
+		console.log("venues connected");
+	});
+});

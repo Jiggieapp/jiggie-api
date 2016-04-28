@@ -112,32 +112,42 @@ exports.memberinfo = function(req,res){
 	var fb_id = req.params.fb_id;
 	
 	customers_coll.findOne({fb_id:fb_id},function(err,rows){
-		if(err){
-			debug.log(err)
-		}else{
-			if(rows == null){
-				// 403 => Invalid ID
-				res.json({code_error:403})
+		membersettings_coll.findOne({fb_id:fb_id},function(err2,rows_mems){
+			if(err){
+				debug.log(err)
 			}else{
-				var path = require('path');
-				var ppt = path.join(__dirname,"../../global/img.json");
-				var pkg = require('fs-sync').readJSON(ppt);
-				var imgurl = pkg.uri
-				var photos = []
-				async.forEachOf(rows.photos,function(v,k,e){
-					photos[k] = imgurl+'image/'+fb_id+'/'+k+'/?imgid='+v
-				})
-				rows.photos = photos;
-				if(typeof rows.country_code == 'undefined'){
-					rows.country_code = new Object()
+				if(rows == null){
+					// 403 => Invalid ID
+					res.json({code_error:403})
 				}else{
-					rows.country_code.dial_code = rows.country_code.country_code
-					delete rows.country_code.country_code
+					var path = require('path');
+					var ppt = path.join(__dirname,"../../global/img.json");
+					var pkg = require('fs-sync').readJSON(ppt);
+					var imgurl = pkg.uri
+					var photos = []
+					async.forEachOf(rows.photos,function(v,k,e){
+						photos[k] = imgurl+'image/'+fb_id+'/'+k+'/?imgid='+v
+					})
+					rows.photos = photos;
+					if(typeof rows.country_code == 'undefined'){
+						rows.country_code = new Object()
+					}else{
+						rows.country_code.dial_code = rows.country_code.country_code
+						delete rows.country_code.country_code
+					}
+
+					if(typeof rows_mems.area_event != 'undefined'){
+						rows.area_event = rows_mems.area_event;
+					}else{
+						rows.area_event = "";
+					}
+					
+					
+					res.json(rows);
 				}
-				res.json(rows);
+				
 			}
-			
-		}
+		})
 	})
 }
 

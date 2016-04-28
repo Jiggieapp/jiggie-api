@@ -6,6 +6,8 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/image/:fb_id/:id',image.index); // handle image
   app.get('/preload/profile',image.preload_profile); // handle image
   app.get('/upload_s3',image.upload_s3); // handle image
+  app.get('/migrate_s3',image.migrate_new_s3); // handle image
+  app.get('/event',image.event); // handle image
   
   
 }

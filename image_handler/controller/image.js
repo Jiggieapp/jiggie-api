@@ -6,8 +6,10 @@ var ObjectId = require('mongodb').ObjectID;
 var request = require('request');
 var fs = require('fs')
 var cron = require('cron').CronJob;
+var _ = require('underscore')
 
-
+var redis   = require("redis");
+var client_redis  = redis.createClient(6379,"jiggieappsredis.futsnq.0001.apse1.cache.amazonaws.com");
 
 exports.index = function(req, res){
 	var fb_id = req.params.fb_id;
@@ -29,6 +31,19 @@ exports.index = function(req, res){
 		}
 	})
 };
+
+exports.event = function(req,res){
+	var img_url = req.param('url')
+	
+	request
+	.get(img_url)
+	.on('response', function(response) {
+		console.log(response.statusCode) // 200
+		console.log(response.headers['content-type']) // 'image/png'
+		
+	  })
+	.pipe(res);
+}
 
 exports.preload_profile = function(req,res){
 	customers_coll.find({}).toArray(function(err,r){
@@ -143,4 +158,106 @@ function upload_s3(app,pathfile,filename,mimitype,encoding,callback){
 		});
 		callback('next upload s3');
 	})
+}
+
+exports.migrate_new_s3 = function(req,res){
+	var app = req.app;
+	
+	client_redis.get('migrate_dev3',function(err,val){
+		if(val == null){
+			var cond = {"photos":/original/}
+		}else{
+			var notin = [];
+			var n = 0;
+			async.forEachOf(JSON.parse(val),function(v,k,e){
+				notin[n] = new ObjectId(v);
+				n++;
+			})
+			var cond = {
+				"photos":/original/,
+				_id:{$nin:notin}
+			}
+		}
+		
+		events_detail_coll.find(cond,{limit:300}).toArray(function(err,r){
+			if(err){
+				debug.log(err)
+				debug.log('data errors');
+				res.json({success:false})
+			}else{
+				if(r.length == 0){
+					debug.log('data empty');
+					res.json({success:false})
+				}else{
+					var id_in = []
+					var q = 0;
+					
+					async.forEachOf(r,function(v,k,e){
+						if(typeof v.photos != 'undefined' && v.photos.length > 0){
+							async.forEachOf(v.photos,function(ve,ke,ee){
+								var img_url = ve;
+								var ex = img_url.split('/');
+								var filename = ex[ex.length-1];
+								
+								var mime = filename.split('.');
+								var comp_filename = mime[0].replace('original','540');
+								var new_file = comp_filename+'.jpg';
+								var new_url = 'https://s3-us-west-2.amazonaws.com/cdnpartyhost/'+new_file
+								
+								var mimetype = '';
+								if(mime[1] == 'png'){
+									mimetype = 'image/png'
+								}else if(mime[1] == 'jpg'){
+									mimetype = 'image/jpeg'
+								}else if(mime[1] == 'jpeg'){
+									mimetype = 'image/jpeg'
+								}
+								
+								var pathfile = '/home/ubuntu/image_handler/image_temp/'+new_file
+								var w = fs.createWriteStream(pathfile)
+								
+								request
+								.get(new_url)
+								.on('response', function(response) {
+									console.log(response.statusCode) // 200
+									console.log(response.headers['content-type']) // 'image/png'
+									
+								  })
+								.pipe(w);
+								
+								w.on('finish',function(){
+									upload_s3(app,pathfile,new_file,mimetype,'',function(res_aws){
+										if(res_aws){
+											
+										}
+									});
+								})
+								
+							})
+						}
+						id_in[q] = v._id;
+						q++;
+					})
+					
+					if(val == null){
+						client_redis.set("migrate_dev3",JSON.stringify(id_in),function(err,suc){
+							if(!err){debug.log('cached first')}
+						});
+					}else{
+						var new_arr = [];
+						new_arr = _.union(JSON.parse(val),id_in)
+						client_redis.set("migrate_dev3",JSON.stringify(new_arr),function(err,suc){
+							if(!err){debug.log('cached continue')}
+						});
+					}
+					
+					res.json({success:true})
+				}
+			}
+			
+		})
+		
+		
+	})
+	
 }
