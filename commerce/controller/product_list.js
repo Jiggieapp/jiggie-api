@@ -87,9 +87,17 @@ function get_data(req,next){
 						json_data.description = rows_event.description;
 						
 						if(rows_event.photos.length == 0){
-							json_data.photos = rows_venue.photos;
+							var pt = [];
+							async.forEachOf(rows_venue.photos,function(v,k,e){
+								pt[k] = "http://img.jiggieapp.com/event?url="+v
+							})
+							json_data.photos = pt
 						}else{
-							json_data.photos = rows_event.photos;
+							var pt = [];
+							async.forEachOf(rows_event.photos,function(v,k,e){
+								pt[k] = "http://img.jiggieapp.com/event?url="+v
+							})
+							json_data.photos = pt
 						}
 						
 						

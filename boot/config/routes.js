@@ -24,6 +24,7 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.post('/app/v3/updateuserabout',login.sync_about);
   app.post('/app/v3/userlogin',login.userlogin); // Auth Token
   app.get('/app/v3/user/tagslist',login.tagslist);
+  app.get('/app/v3/user/citylist',login.citylist);
   app.get('/app/v3/apntoken/:fb_id/:apn',login.sync_apntoken);
   app.get('/app/v3/user/phone/verification/send/:fb_id/:phone/:dial_code',login.sendSMS);
   app.get('/app/v3/user/phone/verification/validate/:fb_id/:token',login.validateSMS);

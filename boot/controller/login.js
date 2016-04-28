@@ -225,6 +225,29 @@ exports.tagslist = function(req,res){
 	})
 }
 
+exports.citylist = function(req,res){
+	var fb_id = req.params.fb_id;
+	
+	var options = {
+		url : url+'/app/v3/user/citylist'
+	}
+	curl.get(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				hr.data = new Object();
+				hr.data.citylist = JSON.parse(body);
+				res.send(hr);
+			}
+		}else{
+			res.send(err);
+		}
+	})
+}
+
 exports.sync_apntoken = function(req,res){
 	var fb_id = req.params.fb_id;
 	
@@ -388,7 +411,7 @@ exports.show_image = function(req,res){
 	
 	var fs = require('fs');
 	var path = require('path');
-	var ppt = path.join(__dirname,"../public//uploads/"+img_file);
+	var ppt = path.join(__dirname,"../public/uploads/"+img_file);
 	
 	fs.readFile(ppt,function(err,data){
 		res.writeHead(200, {'Content-Type': 'image/'+ext[1]});

@@ -34,6 +34,14 @@ eventEmitter.on('database_connected',function(){
 	});
 });
 
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('city',function(collection)
+	{
+		city_coll = collection;
+		console.log("city connected");
+	});
+});
+
 exports.index = function(req, res){
 	var post = req.body;
 	var cond = {fb_id:post.fb_id}
@@ -479,8 +487,8 @@ exports.sync_membersettings = function(req,res){
 	debug.log(post);
 	debug.log('###########################');
 	
-	var dt = new Object();
 	if(typeof post.photos != 'undefined'){
+		var dt = new Object();
 		dt.profile_image_url = post.photos[0];
 		dt.photos = post.photos;
 		if(typeof post.gender != 'undefined'){dt.gender = post.gender;}
@@ -488,16 +496,20 @@ exports.sync_membersettings = function(req,res){
 	}
 	
 	if(typeof post.gender != 'undefined'){
+		var dt = new Object();
 		if(typeof post.gender != 'undefined'){dt.gender = post.gender;}
 		customers_coll.update({fb_id:post.fb_id},{$set:dt},function(){});
 	}
 	
-	if(typeof post.age != 'undefined'){
-		dt.age = post.age;
+	if(typeof post.from_age != 'undefined' && typeof post.to_age != 'undefined'){
+		var dt = new Object();
+		dt.from_age = post.from_age;
+		dt.to_age = post.to_age;
 		customers_coll.update({fb_id:post.fb_id},{$set:dt},function(){});
 	}
 	
 	if(typeof post.distance != 'undefined'){
+		var dt = new Object();
 		dt.distance = post.distance;
 		customers_coll.update({fb_id:post.fb_id},{$set:dt},function(){});
 	}
@@ -541,6 +553,7 @@ exports.sync_membersettings = function(req,res){
 	}
 	
 	if(typeof post.gender_interest != 'undefined'){json_data.gender_interest = post.gender_interest;}
+	if(typeof post.area_event != 'undefined'){json_data.area_event = post.area_event;}
 	
 	if(typeof post.fb_id != 'undefined'){
 		membersettings_coll.find(cond).toArray(function(err,rows){
@@ -687,7 +700,7 @@ exports.userlogin = function(req,res){
 	var fb_token = post.fb_token;
 	
 	client.get('token_'+fb_token,function(err,val){
-		if(val == null){
+		// if(val == null){
 			var json_data = {
 				fb_token : fb_token
 			}
@@ -710,10 +723,10 @@ exports.userlogin = function(req,res){
 				
 			})
 			
-		}else{
-			debug.log('token still active')
-			res.json({"success":false,msg:"Token Not Expired"});
-		}
+		// }else{
+			// debug.log('token still active')
+			// res.json({"success":false,msg:"Token Not Expired"});
+		// }
 	})
 	
 	
@@ -730,6 +743,14 @@ exports.tagslist = function(req,res){
 				n++;
 			})
 			res.json(data);
+		}
+	})
+}
+
+exports.citylist = function(req,res){
+	city_coll.find({status:true}).toArray(function(err,r){
+		if(r.length > 0){
+			res.json(r);
 		}
 	})
 }
