@@ -5,6 +5,7 @@ var NodeCache = require("node-cache");
 var cache = new NodeCache({ stdTTL: 100, checkperiod: 120 });
 var eventEmitter = mongo.eventEmitter;
 var fs = require('fs')
+var xssFilters = require('xss-filters');
 
 eventEmitter.on('database_connected',function(){
 	mongo.getCollection('customers',function(collection)
@@ -69,6 +70,30 @@ exports.index = function(req,res){
 					json_data.matchme = r_cust.matchme;
 					json_data.payment = new Object;
 					json_data.phone = r_cust.phone;
+				
+				if(typeof r_cust.from_age != 'undefined'){
+					json_data.from_age = r_cust.from_age
+				}else{
+					json_data.from_age = 0
+				}
+				
+				if(typeof r_cust.to_age != 'undefined'){
+					json_data.to_age = r_cust.to_age
+				}else{
+					json_data.to_age = 0
+				}
+				
+				if(typeof r_cust.distance != 'undefined'){
+					json_data.distance = r_cust.distance
+				}else{
+					json_data.distance = 0
+				}
+				
+				if(typeof r_memset.area_event != 'undefined'){
+					json_data.area_event = r_memset.area_event
+				}else{
+					json_data.area_event = 0
+				}
 				
 			res.json(json_data);
 		}
@@ -373,13 +398,14 @@ exports.upload_profileimage = function(req,res){
 					photos:url_img
 				}
 			}
-			
-			customers_coll.update({fb_id:fb_id},upd_form,function(err,r){
-				if(err){
-					debug.log(err)
-				}
-				cb(null,'next')
-			})
+			if(fb_id != ''){
+				customers_coll.update({fb_id:fb_id},upd_form,function(err,r){
+					if(err){
+						debug.log(err)
+					}
+				})
+			}
+			cb(null,'next')
 		},
 		function insert_photo_temp(cb){
 			var form_insert = {
@@ -388,7 +414,8 @@ exports.upload_profileimage = function(req,res){
 				filename:filename,
 				mimetype:mimetype,
 				encoding:encoding,
-				is_upload:false
+				is_upload:false,
+				created_at:new Date()
 			}
 			if(fb_id != ''){
 				image_temp_coll.insert(form_insert,function(err,upd){
@@ -402,6 +429,55 @@ exports.upload_profileimage = function(req,res){
 	],function(err,merge){
 		res.json({success:true})
 	})
+}
+
+exports.remove_profileimage = function(req,res){
+	var post = req.body;
+	var fb_id = xssFilters.inHTMLData(req.body.fb_id);
+	var url = xssFilters.uriInHTMLData(req.body.url);
+	
+	debug.log(fb_id)
+	debug.log(url)
+	
+	var base_url = '';
+	if(String(url.indexOf('?imgid=')) == String(-1)){
+		base_url = url;
+	}else{
+		var ex_base_img = url.split('?imgid=');
+		base_url = ex_base_img[1];
+	}
+	
+	var exf = base_url.split('/');
+	var filename = exf[exf.length-1];
+	
+	async.waterfall([
+		function remove_photos(cb22){
+			var cond = {
+				fb_id:fb_id,
+				photos:base_url
+			}
+			var form_upd = {
+				$pull:{photos:base_url}
+			}
+			customers_coll.update(cond,form_upd,function(err,upd){
+				if(err){
+					debug.log(err)
+					debug.log('error line 457 membersettings')
+					cb22(null,false)
+				}else{
+					cb22(null,true)
+				}
+			})
+		}
+	],function(err,merge){
+		if(merge == true){
+			res.json({success:true})
+		}else{
+			res.json({code_error:403})
+		}
+	})
+	
+	
 }
 
 exports.save_longlat = function(req,res){

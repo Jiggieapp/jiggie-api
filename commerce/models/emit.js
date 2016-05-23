@@ -70,3 +70,38 @@ eventEmitter.on('database_connected',function(){
 		console.log("support connected");
 	});
 });
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('ref_rewardcreditsystem',function(collection){
+		rewardcredit_coll = collection;
+		console.log("ref_rewardcreditsystem connected");
+	});
+});
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('credit_points',function(collection){
+		credit_points_coll = collection;
+		console.log("credit_points connected");
+	});
+});
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('ref_promocode',function(collection){
+		ref_promocode_coll = collection;
+		console.log("ref_promocode connected");
+	});
+});
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('ref_phonebook',function(collection){
+		phonebook_coll = collection;
+		console.log("ref_phonebook connected");
+	});
+});
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('promo_rules',function(collection){
+		promo_rules_coll = collection;
+		console.log("promo_rules connected");
+	});
+});

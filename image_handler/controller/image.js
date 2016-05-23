@@ -90,28 +90,32 @@ function uploading_s3(req,next){
 			var pathfile = '/home/ubuntu/boot/public/uploads/'+v.filename
 			var pt_file = v.filename
 			var mimetype = v.mimetype
-			var encoding = v.encoding
+			var encoding = v.encoding;
+			var intervalTime = addMinutes(v.created_at,5)
+			var dtnow = new Date();
 			
-			upload_s3(app,pathfile,pt_file,mimetype,encoding,function(res_aws){
-				if(res_aws){
-					fs.unlink(pathfile,function(err_unlink){
-						var cond2 = {
-							fb_id:v.fb_id,
-							photos:url_img
-						}
-						var upd_form = {
-							$set:{
-								"photos.$":'https://s3-ap-southeast-1.amazonaws.com/jiggieprofileimage/'+pt_file
+			if(dtnow >= intervalTime){
+				upload_s3(app,pathfile,pt_file,mimetype,encoding,function(res_aws){
+					if(res_aws){
+						fs.unlink(pathfile,function(err_unlink){
+							var cond2 = {
+								fb_id:v.fb_id,
+								photos:url_img
 							}
-						}
-						customers_coll.update(cond2,upd_form,function(ers,upd){
-							if(!ers){
-								image_temp_coll.deleteOne({_id:new ObjectId(v._id)},function(erd,del){})
+							var upd_form = {
+								$set:{
+									"photos.$":'https://s3-ap-southeast-1.amazonaws.com/jiggieprofileimage/'+pt_file
+								}
 							}
+							customers_coll.update(cond2,upd_form,function(ers,upd){
+								if(!ers){
+									image_temp_coll.deleteOne({_id:new ObjectId(v._id)},function(erd,del){})
+								}
+							})
 						})
-					})
-				}
-			});
+					}
+				});
+			}
 		})
 	})
 	next({success:true})
@@ -158,6 +162,10 @@ function upload_s3(app,pathfile,filename,mimitype,encoding,callback){
 		});
 		callback('next upload s3');
 	})
+}
+
+function addMinutes(date, minutes) {
+    return new Date(date.getTime() + minutes*60000);
 }
 
 exports.migrate_new_s3 = function(req,res){

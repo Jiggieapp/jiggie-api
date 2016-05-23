@@ -64,3 +64,72 @@ exports.upd_matchme = function(req,res){
 		}
 	});
 }
+
+exports.count_data = function(req,res){
+	var options = {
+		url : url+"/app/v3/partyfeed/count/"+req.params.fb_id
+	}
+	curl.get(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				hr.data = new Object();
+				hr.data.count_data = JSON.parse(body);
+				res.send(hr);
+			}
+		}else{
+			res.send(err);
+		}
+	});
+}
+
+exports.social_friends = function(req,res){
+	var post = req.body;
+	var options = {
+		url : url+"/app/v3/credit/social_friends",
+		form : post
+	}
+	curl.post(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				hr.data = new Object();
+				hr.data.social_friends = JSON.parse(body);
+				res.send(hr);
+			}
+		}else{
+			res.send(err);
+		}
+	});
+		
+}
+
+exports.list_social_friends = function(req,res){
+	var post = req.body;
+	var options = {
+		url : url+"/app/v3/credit/list_social_friends",
+		form : post
+	}
+	curl.post(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				hr.data = new Object();
+				hr.data.list_social_friends = JSON.parse(body);
+				res.send(hr);
+			}
+		}else{
+			res.send(err);
+		}
+	});
+		
+}

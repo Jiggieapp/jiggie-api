@@ -1,4 +1,4 @@
-exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
+exports.rerute = function(app,path_controller,csrf,bodyParser,passport,FacebookStrategy){
   var csrfProtection = csrf({ cookie: true });
   var parseForm = bodyParser.urlencoded({ extended: false });
 
@@ -24,5 +24,9 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/parse_countrycode',membersettings.parseCountryCode);
   app.get('/app/v3/list_countrycode',membersettings.list_countryCode);
   app.post('/app/v3/save_longlat',membersettings.save_longlat);
+  app.post('/app/v3/remove_profileimage',membersettings.remove_profileimage);
   
+  var oauth = require(path_controller+'oauth');
+  app.post('/post_fb',oauth.post_fb);
+  app.get('/get_inviter/:code/:uniq_id',oauth.get_inviter);
 }

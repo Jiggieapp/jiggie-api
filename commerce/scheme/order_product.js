@@ -46,6 +46,10 @@ var varScheme = new Schema({
 	total_tip_amount:{type:String,required:true},
 	total_adminfee:{type:String,required:true},
 	total_price:{type:String,required:true},
+	credit:{type:Object},
+	discount:{type:Object},
+	min_deposit_percent:{type:String,default:"0"},
+	min_deposit_amount:{type:String,default:"0"},
 	created_at  :  { type: Date, default: Date.now },
 	created_at_swipetopay  :  { type: Date, default: '' },
 });

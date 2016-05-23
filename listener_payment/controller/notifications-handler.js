@@ -242,7 +242,19 @@ function cancel_transaction(req,rows_order,next){
 				if(!err && r != null){
 					var vt = r.vt_response;
 					vt.payment_type = 'expire';
-					send_mail(req,r.guest_detail.email,vt,function(dt){debug.log(dt)});
+					
+					var email_to = [];
+					email_to.push(r.guest_detail.email)
+					email_to.push("orders@jiggieapp.com");
+					email_to.push("cs@jiggieapp.com");
+					
+					async.forEachOf(email_to,function(vv,kk,ee){
+						send_mail(req,vv,vt,function(dt){debug.log(dt)});
+					})
+					
+					
+				
+					cb(null,true)
 				}else{
 					cb(null,false);
 				}
@@ -305,57 +317,62 @@ function payment_vabp(req,next){
 									
 									if(typeof results != 'undefined'){
 										if(results.transaction_status == 'settlement'){
-											send_mail(req,v.guest_detail.email,results,function(mail_stat){
-												if(mail_stat == true){
-													// /*update order*/
-													var form_upd = {
-														$set:{
-															mail_status:true,
-															order_status:'completed',
-															payment_status:'paid',
-															vt_response:results
-														}
-													}
-													order_coll.update({order_id:v.order_id},form_upd,function(err,upd){
-														if(err){
-															debug.log('error line 86 => notif');
-															debug.log(err);
-														}
-													})
-													
-													/*update tickettype*/
-													var num_buy = 0;
-													if(v.product_list[0].ticket_type == 'booking'){
-														num_buy = 1
-													}else{
-														num_buy = v.product_list[0].num_buy
-													}
-													var condt = {
-														_id:new ObjectId(v.product_list[0].ticket_id)
-													}
-													var form_updt = {
-														$push:{
-															sold:{
-																order_id:v.order_id,
-																num_buy:num_buy
-															}
-														},
-														$pull:{
-															qty_hold:{order_id:v.order_id}
-														}
-													}
-													tickettypes_coll.update(condt,form_updt,function(err3,upd){
-														if(err3){
-															debug.log('error update sold');
-														}else{
-															debug.log('updated sold');
-														}
-													})
-												}else{
-													debug.log('error line 91 => notif handle');
-													debug.log(mail_stat);
+											// /*update order*/
+											var form_upd = {
+												$set:{
+													mail_status:true,
+													order_status:'completed',
+													payment_status:'paid',
+													vt_response:results
+												}
+											}
+											order_coll.update({order_id:v.order_id},form_upd,function(err,upd){
+												if(err){
+													debug.log('error line 86 => notif');
+													debug.log(err);
 												}
 											})
+											
+											/*update tickettype*/
+											var num_buy = 0;
+											if(v.product_list[0].ticket_type == 'booking'){
+												num_buy = 1
+											}else{
+												num_buy = v.product_list[0].num_buy
+											}
+											var condt = {
+												_id:new ObjectId(v.product_list[0].ticket_id)
+											}
+											var form_updt = {
+												$push:{
+													sold:{
+														order_id:v.order_id,
+														num_buy:num_buy
+													}
+												},
+												$pull:{
+													qty_hold:{order_id:v.order_id}
+												}
+											}
+											tickettypes_coll.update(condt,form_updt,function(err3,upd){
+												if(err3){
+													debug.log('error update sold');
+												}else{
+													debug.log('updated sold');
+												}
+											})
+											
+											var email_to = [];
+											email_to.push(v.guest_detail.email)
+											email_to.push("orders@jiggieapp.com");
+											email_to.push("cs@jiggieapp.com");
+											
+											async.forEachOf(email_to,function(vv,kk,ee){
+												send_mail(req,vv,results,function(mail_stat){})
+											})
+											
+											
+											cb2(null,true)
 										}
 									}
 								}
@@ -468,6 +485,28 @@ function send_mail(req,email_to,vt,next){
 		},
 		function sync_template(stat,rows_order,rows_cust,rows_event,step_payment,cb){
 			if(stat == true){
+				var datadiscount = [];
+				var is_discount = false;
+				if(typeof rows_order.discount != "undefined"){
+					if(rows_order.discount.data.length > 0){
+						async.forEachOf(rows_order.discount.data,function(v,k,e){
+							rows_order.discount.data[k].amount_used = "Rp. "+String(numeral(v.amount_used).format("0,0"))
+						})
+						datadiscount = rows_order.discount;
+						is_discount = true
+					}
+				}
+				var datacredit = "";
+				var is_credit = false;
+				if(typeof rows_order.credit != "undefined"){
+					if(parseInt(rows_order.credit.credit_used) > 0){
+						rows_order.credit.credit_used = 'Rp. '+String(numeral(rows_order.credit.credit_used).format('0,0'))
+						datacredit = rows_order.credit
+						is_credit = true
+					}
+					
+				}
+				
 				if(vt.payment_type == 'credit_card'){
 					
 					if(vt.transaction_status == 'capture'){
@@ -488,6 +527,9 @@ function send_mail(req,email_to,vt,next){
 								instructions_event = rows_event.instruction
 							}
 							
+							var phone_cl = "+"+rows_order.guest_detail.dial_code+rows_order.guest_detail.phone
+							var email_cl = rows_order.guest_detail.email
+							
 							var parseTo = {
 								congrats_title:'Congrats',
 								first_name:capitalizeFirstLetter(rows_order.guest_detail.name),
@@ -503,7 +545,13 @@ function send_mail(req,email_to,vt,next){
 								amount_service:amount_service,
 								amount_tax:amount_tax,
 								total:total,
-								instructions:instructions_event
+								instructions:instructions_event,
+								phone_cl:phone_cl,
+								email_cl:email_cl,
+								datadiscount:datadiscount,
+								datacredit:datacredit,
+								is_credit:is_credit,
+								is_discount:is_discount
 							}
 							var template = new EmailTemplate(path.join(templateDir,'purchase','success_screen'))
 			
@@ -518,9 +566,9 @@ function send_mail(req,email_to,vt,next){
 							var product_price = 'Rp. '+String(numeral(rows_order.product_list[0].price).format('0,0'))
 							var total_guest = rows_order.product_list[0].num_buy
 							
-							var amount_estimated = 'Rp. '+String(numeral(rows_order.product_list[0].total_price_all).format('0,0'))
+							var amount_estimated = 'Rp. '+String(numeral(rows_order.total_price).format('0,0'))
 							var amount_deposit = 'Rp. '+String(numeral(rows_order.vt_response.gross_amount).format('0,0'))
-							var amount_balance = 'Rp. '+String(numeral(parseInt(rows_order.product_list[0].total_price_all)-parseInt(rows_order.vt_response.gross_amount)).format('0,0'))
+							var amount_balance = 'Rp. '+String(numeral(parseInt(rows_order.total_price)-parseInt(rows_order.vt_response.gross_amount)).format('0,0'))
 							
 							var instructions_event = '';
 							if(typeof rows_event.instruction == 'undefined' || rows_event.instruction == null){
@@ -528,6 +576,9 @@ function send_mail(req,email_to,vt,next){
 							}else{
 								instructions_event = rows_event.instruction
 							}
+							
+							var phone_cl = "+"+rows_order.guest_detail.dial_code+rows_order.guest_detail.phone
+							var email_cl = rows_order.guest_detail.email
 							
 							
 							var parseTo = {
@@ -548,7 +599,13 @@ function send_mail(req,email_to,vt,next){
 								amount_estimated:amount_estimated,
 								amount_deposit:amount_deposit,
 								amount_balance:amount_balance,
-								instructions:instructions_event
+								instructions:instructions_event,
+								phone_cl:phone_cl,
+								email_cl:email_cl,
+								datadiscount:datadiscount,
+								datacredit:datacredit,
+								is_credit:is_credit,
+								is_discount:is_discount
 							}
 							var template = new EmailTemplate(path.join(templateDir,'booking','success_screen'))
 						}
@@ -579,6 +636,9 @@ function send_mail(req,email_to,vt,next){
 								instructions_event = rows_event.instruction
 							}
 							
+							var phone_cl = "+"+rows_order.guest_detail.dial_code+rows_order.guest_detail.phone
+							var email_cl = rows_order.guest_detail.email
+							
 							var parseTo = {
 								congrats_title:'Congrats',
 								first_name:capitalizeFirstLetter(rows_order.guest_detail.name),
@@ -594,7 +654,13 @@ function send_mail(req,email_to,vt,next){
 								amount_service:amount_service,
 								amount_tax:amount_tax,
 								total:total,
-								instructions:instructions_event
+								instructions:instructions_event,
+								phone_cl:phone_cl,
+								email_cl:email_cl,
+								datadiscount:datadiscount,
+								datacredit:datacredit,
+								is_credit:is_credit,
+								is_discount:is_discount
 							}
 							var template = new EmailTemplate(path.join(templateDir,'purchase','success_screen'))
 						}else if(rows_order.product_list[0].ticket_type == 'booking'){
@@ -612,9 +678,9 @@ function send_mail(req,email_to,vt,next){
 							var product_price = 'Rp. '+String(numeral(rows_order.product_list[0].price).format('0,0'))
 							var total_guest = rows_order.product_list[0].num_buy
 							
-							var amount_estimated = 'Rp. '+String(numeral(rows_order.product_list[0].total_price_all).format('0,0'))
+							var amount_estimated = 'Rp. '+String(numeral(rows_order.total_price).format('0,0'))
 							var amount_deposit = 'Rp. '+String(numeral(rows_order.vt_response.gross_amount).format('0,0'))
-							var amount_balance = 'Rp. '+String(numeral(parseInt(rows_order.product_list[0].total_price_all)-parseInt(rows_order.vt_response.gross_amount)).format('0,0'))
+							var amount_balance = 'Rp. '+String(numeral(parseInt(rows_order.total_price)-parseInt(rows_order.vt_response.gross_amount)).format('0,0'))
 							
 							var instructions_event = '';
 							if(typeof rows_event.instruction == 'undefined' || rows_event.instruction == null){
@@ -622,6 +688,9 @@ function send_mail(req,email_to,vt,next){
 							}else{
 								instructions_event = rows_event.instruction
 							}
+							
+							var phone_cl = "+"+rows_order.guest_detail.dial_code+rows_order.guest_detail.phone
+							var email_cl = rows_order.guest_detail.email
 							
 							var parseTo = {
 								congrats_title:'Congrats',
@@ -641,7 +710,13 @@ function send_mail(req,email_to,vt,next){
 								amount_estimated:amount_estimated,
 								amount_deposit:amount_deposit,
 								amount_balance:amount_balance,
-								instructions:instructions_event
+								instructions:instructions_event,
+								phone_cl:phone_cl,
+								email_cl:email_cl,
+								datadiscount:datadiscount,
+								datacredit:datacredit,
+								is_credit:is_credit,
+								is_discount:is_discount
 							}
 							var template = new EmailTemplate(path.join(templateDir,'booking','success_screen'))
 						}
@@ -686,6 +761,9 @@ function send_mail(req,email_to,vt,next){
 							var time_limit = parseTimelimit(rows_order.product_list[0].payment_timelimit)
 							var amount = 'Rp. '+String(numeral(vt.gross_amount).format('0,0'))
 							
+							var phone_cl = "+"+rows_order.guest_detail.dial_code+rows_order.guest_detail.phone
+							var email_cl = rows_order.guest_detail.email
+							
 							var parseTo = {
 								congrats_title:'Congrats',
 								first_name:capitalizeFirstLetter(rows_order.guest_detail.name),
@@ -697,7 +775,13 @@ function send_mail(req,email_to,vt,next){
 								time_limit:time_limit,
 								amount:amount,
 								account_number:account_number,
-								step_payment:arr_steppayment
+								step_payment:arr_steppayment,
+								phone_cl:phone_cl,
+								email_cl:email_cl,
+								datadiscount:datadiscount,
+								datacredit:datacredit,
+								is_credit:is_credit,
+								is_discount:is_discount
 							}
 							var template = new EmailTemplate(path.join(templateDir,'purchase','pending'))
 						}else if(rows_order.product_list[0].ticket_type == 'booking'){
@@ -740,6 +824,9 @@ function send_mail(req,email_to,vt,next){
 							var time_limit = parseTimelimit(rows_order.product_list[0].payment_timelimit)
 							var amount = 'Rp. '+String(numeral(vt.gross_amount).format('0,0'))
 							
+							var phone_cl = "+"+rows_order.guest_detail.dial_code+rows_order.guest_detail.phone
+							var email_cl = rows_order.guest_detail.email
+							
 							var parseTo = {
 								congrats_title:'Congrats',
 								first_name:capitalizeFirstLetter(rows_order.guest_detail.name),
@@ -751,7 +838,13 @@ function send_mail(req,email_to,vt,next){
 								time_limit:time_limit,
 								amount:amount,
 								account_number:account_number,
-								step_payment:arr_steppayment
+								step_payment:arr_steppayment,
+								phone_cl:phone_cl,
+								email_cl:email_cl,
+								datadiscount:datadiscount,
+								datacredit:datacredit,
+								is_credit:is_credit,
+								is_discount:is_discount
 							}
 							var template = new EmailTemplate(path.join(templateDir,'booking','pending'))
 						}
@@ -777,6 +870,9 @@ function send_mail(req,email_to,vt,next){
 								instructions_event = rows_event.instruction
 							}
 							
+							var phone_cl = "+"+rows_order.guest_detail.dial_code+rows_order.guest_detail.phone
+							var email_cl = rows_order.guest_detail.email
+							
 							var parseTo = {
 								congrats_title:'Congrats',
 								first_name:capitalizeFirstLetter(rows_order.guest_detail.name),
@@ -792,7 +888,13 @@ function send_mail(req,email_to,vt,next){
 								amount_service:amount_service,
 								amount_tax:amount_tax,
 								total:total,
-								instructions:instructions_event
+								instructions:instructions_event,
+								phone_cl:phone_cl,
+								email_cl:email_cl,
+								datadiscount:datadiscount,
+								datacredit:datacredit,
+								is_credit:is_credit,
+								is_discount:is_discount
 							}
 							var template = new EmailTemplate(path.join(templateDir,'purchase','success_screen'))
 						}else if(rows_order.product_list[0].ticket_type == 'booking'){
@@ -806,9 +908,9 @@ function send_mail(req,email_to,vt,next){
 							var product_price = 'Rp. '+String(numeral(rows_order.product_list[0].price).format('0,0'))
 							var total_guest = rows_order.product_list[0].num_buy
 							
-							var amount_estimated = 'Rp. '+String(numeral(rows_order.product_list[0].total_price_all).format('0,0'))
+							var amount_estimated = 'Rp. '+String(numeral(rows_order.total_price).format('0,0'))
 							var amount_deposit = 'Rp. '+String(numeral(rows_order.vt_response.gross_amount).format('0,0'))
-							var amount_balance = 'Rp. '+String(numeral(parseInt(rows_order.product_list[0].total_price_all)-parseInt(rows_order.vt_response.gross_amount)).format('0,0'))
+							var amount_balance = 'Rp. '+String(numeral(parseInt(rows_order.total_price)-parseInt(rows_order.vt_response.gross_amount)).format('0,0'))
 							
 							var instructions_event = '';
 							if(typeof rows_event.instruction == 'undefined' || rows_event.instruction == null){
@@ -816,6 +918,9 @@ function send_mail(req,email_to,vt,next){
 							}else{
 								instructions_event = rows_event.instruction
 							}
+							
+							var phone_cl = "+"+rows_order.guest_detail.dial_code+rows_order.guest_detail.phone
+							var email_cl = rows_order.guest_detail.email
 							
 							var parseTo = {
 								congrats_title:'Congrats',
@@ -835,7 +940,15 @@ function send_mail(req,email_to,vt,next){
 								amount_estimated:amount_estimated,
 								amount_deposit:amount_deposit,
 								amount_balance:amount_balance,
-								instructions:instructions_event
+								instructions:instructions_event,
+								phone_cl:phone_cl,
+								email_cl:email_cl,
+								datadiscount:datadiscount,
+								datacredit:datacredit,
+								datadiscount:datadiscount,
+								datacredit:datacredit,
+								is_credit:is_credit,
+								is_discount:is_discount
 							}
 							var template = new EmailTemplate(path.join(templateDir,'booking','success_screen'))
 						}
@@ -876,6 +989,9 @@ function send_mail(req,email_to,vt,next){
 							var time_limit = parseTimelimit(rows_order.product_list[0].payment_timelimit)
 							var amount = 'Rp. '+String(numeral(vt.gross_amount).format('0,0'))
 							
+							var phone_cl = "+"+rows_order.guest_detail.dial_code+rows_order.guest_detail.phone
+							var email_cl = rows_order.guest_detail.email
+							
 							var parseTo = {
 								congrats_title:'Congrats',
 								first_name:capitalizeFirstLetter(rows_cust.first_name),
@@ -887,7 +1003,13 @@ function send_mail(req,email_to,vt,next){
 								time_limit:time_limit,
 								amount:amount,
 								account_number:account_number,
-								step_payment:arr_steppayment
+								step_payment:arr_steppayment,
+								phone_cl:phone_cl,
+								email_cl:email_cl,
+								datadiscount:datadiscount,
+								datacredit:datacredit,
+								is_credit:is_credit,
+								is_discount:is_discount
 							}
 							var template = new EmailTemplate(path.join(templateDir,'purchase','pending'))
 						}else if(rows_order.product_list[0].ticket_type == 'booking'){
@@ -925,6 +1047,9 @@ function send_mail(req,email_to,vt,next){
 							var time_limit = parseTimelimit(rows_order.product_list[0].payment_timelimit)
 							var amount = 'Rp. '+String(numeral(vt.gross_amount).format('0,0'))
 							
+							var phone_cl = "+"+rows_order.guest_detail.dial_code+rows_order.guest_detail.phone
+							var email_cl = rows_order.guest_detail.email
+							
 							var parseTo = {
 								congrats_title:'Congrats',
 								first_name:capitalizeFirstLetter(rows_cust.first_name),
@@ -936,7 +1061,13 @@ function send_mail(req,email_to,vt,next){
 								time_limit:time_limit,
 								amount:amount,
 								account_number:account_number,
-								step_payment:arr_steppayment
+								step_payment:arr_steppayment,
+								phone_cl:phone_cl,
+								email_cl:email_cl,
+								datadiscount:datadiscount,
+								datacredit:datacredit,
+								is_credit:is_credit,
+								is_discount:is_discount
 							}
 							var template = new EmailTemplate(path.join(templateDir,'booking','pending'))
 						}
@@ -959,6 +1090,9 @@ function send_mail(req,email_to,vt,next){
 							instructions_event = rows_event.instruction
 						}
 						
+						var phone_cl = "+"+rows_order.guest_detail.dial_code+rows_order.guest_detail.phone
+						var email_cl = rows_order.guest_detail.email
+						
 						var parseTo = {
 							congrats_title:'Congrats',
 							first_name:capitalizeFirstLetter(rows_order.guest_detail.name),
@@ -974,7 +1108,13 @@ function send_mail(req,email_to,vt,next){
 							amount_service:amount_service,
 							amount_tax:amount_tax,
 							total:total,
-							instructions:instructions_event
+							instructions:instructions_event,
+							phone_cl:phone_cl,
+							email_cl:email_cl,
+							datadiscount:datadiscount,
+							datacredit:datacredit,
+							is_credit:is_credit,
+							is_discount:is_discount
 						}
 						var template = new EmailTemplate(path.join(templateDir,'purchase','success_screen'))
 		
@@ -989,9 +1129,9 @@ function send_mail(req,email_to,vt,next){
 						var product_price = 'Rp. '+String(numeral(rows_order.product_list[0].price).format('0,0'))
 						var total_guest = rows_order.product_list[0].num_buy
 						
-						var amount_estimated = 'Rp. '+String(numeral(rows_order.product_list[0].total_price_all).format('0,0'))
+						var amount_estimated = 'Rp. '+String(numeral(rows_order.total_price).format('0,0'))
 						var amount_deposit = 'Rp. '+String(numeral(0).format('0,0'))
-						var amount_balance = 'Rp. '+String(numeral(parseInt(rows_order.product_list[0].total_price_all)-parseInt(0)).format('0,0'))
+						var amount_balance = 'Rp. '+String(numeral(parseInt(rows_order.total_price)-parseInt(0)).format('0,0'))
 						
 						var instructions_event = '';
 						if(typeof rows_event.instruction == 'undefined' || rows_event.instruction == null){
@@ -1000,6 +1140,8 @@ function send_mail(req,email_to,vt,next){
 							instructions_event = rows_event.instruction
 						}
 						
+						var phone_cl = "+"+rows_order.guest_detail.dial_code+rows_order.guest_detail.phone
+						var email_cl = rows_order.guest_detail.email
 						
 						var parseTo = {
 							congrats_title:'Congrats',
@@ -1019,7 +1161,13 @@ function send_mail(req,email_to,vt,next){
 							amount_estimated:amount_estimated,
 							amount_deposit:amount_deposit,
 							amount_balance:amount_balance,
-							instructions:instructions_event
+							instructions:instructions_event,
+							phone_cl:phone_cl,
+							email_cl:email_cl,
+							datadiscount:datadiscount,
+							datacredit:datacredit,
+							is_credit:is_credit,
+							is_discount:is_discount
 						}
 						var template = new EmailTemplate(path.join(templateDir,'booking','success_screen'))
 					}
@@ -1046,6 +1194,9 @@ function send_mail(req,email_to,vt,next){
 						var product_price = 'Rp. '+String(numeral(rows_order.product_list[0].price*rows_order.product_list[0].num_buy).format('0,0'))
 						var total = 'Rp. '+String(numeral(rows_order.total_price).format('0,0'))
 						
+						var phone_cl = "+"+rows_order.guest_detail.dial_code+rows_order.guest_detail.phone
+						var email_cl = rows_order.guest_detail.email
+						
 						var parseTo = {
 							congrats_title:'Congrats',
 							first_name:capitalizeFirstLetter(rows_cust.first_name),
@@ -1061,7 +1212,13 @@ function send_mail(req,email_to,vt,next){
 							amount_service:amount_service,
 							amount_tax:amount_tax,
 							total:total,
-							instructions:'BLA BLA BLA BLA BLA'
+							instructions:'BLA BLA BLA BLA BLA',
+							phone_cl:phone_cl,
+							email_cl:email_cl,
+							datadiscount:datadiscount,
+							datacredit:datacredit,
+							is_credit:is_credit,
+							is_discount:is_discount
 						}
 						var template = new EmailTemplate(path.join(templateDir,'purchase','expired'))
 					}else if(rows_order.product_list[0].ticket_type == 'booking'){
@@ -1074,9 +1231,12 @@ function send_mail(req,email_to,vt,next){
 						var product_price = 'Rp. '+String(numeral(rows_order.product_list[0].price).format('0,0'))
 						var total_guest = rows_order.product_list[0].num_buy
 						
-						var amount_estimated = 'Rp. '+String(numeral(rows_order.product_list[0].total_price_all).format('0,0'))
+						var amount_estimated = 'Rp. '+String(numeral(rows_order.total_price).format('0,0'))
 						var amount_deposit = 'Rp. '+String(numeral(rows_order.vt_response.gross_amount).format('0,0'))
-						var amount_balance = 'Rp. '+String(numeral(parseInt(rows_order.product_list[0].total_price_all)-parseInt(rows_order.vt_response.gross_amount)).format('0,0'))
+						var amount_balance = 'Rp. '+String(numeral(parseInt(rows_order.total_price)-parseInt(rows_order.vt_response.gross_amount)).format('0,0'))
+						
+						var phone_cl = "+"+rows_order.guest_detail.dial_code+rows_order.guest_detail.phone
+						var email_cl = rows_order.guest_detail.email
 						
 						var parseTo = {
 							congrats_title:'Congrats',
@@ -1096,7 +1256,13 @@ function send_mail(req,email_to,vt,next){
 							amount_estimated:amount_estimated,
 							amount_deposit:amount_deposit,
 							amount_balance:amount_balance,
-							instructions:'BLA BLA BLA BLA BLA'
+							instructions:'BLA BLA BLA BLA BLA',
+							phone_cl:phone_cl,
+							email_cl:email_cl,
+							datadiscount:datadiscount,
+							datacredit:datacredit,
+							is_credit:is_credit,
+							is_discount:is_discount
 						}
 						var template = new EmailTemplate(path.join(templateDir,'booking','expired'))
 					}
@@ -1386,4 +1552,8 @@ exports.forward_mail = function(req,res){
 	}else{
 		res.json({code_error:403})
 	}
+}
+
+exports.send_invite = function(req,res){
+	
 }

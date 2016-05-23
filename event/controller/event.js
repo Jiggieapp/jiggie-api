@@ -13,9 +13,6 @@ exports.index = function(req, res){
 	var from_date = new Date();
 	var to_date = req.app.get("helpers").intervalDate(days);
 	
-	debug.log(from_date);
-	debug.log(to_date);
-	
 	customers_coll.findOne({fb_id:req.params.fb_id},function(errrs,cek){
 		if(cek == undefined){
 			// 403 => Invalid ID Facebook
@@ -156,6 +153,7 @@ function get_data(req,fb_id,from_date,to_date,next){
 				json_data[k].tags = v.tags;
 				json_data[k].description = v.description;
 				json_data[k].venue_id = v.venue_id;
+				json_data[k].fullfillment_type = v.fullfillment_type;
 				
 				if(typeof v.likes == 'undefined'){
 					json_data[k].likes = 0;
@@ -168,6 +166,12 @@ function get_data(req,fb_id,from_date,to_date,next){
 				}else{
 					var d = new Date(v.start_datetime);
 					json_data[k].date_day = getDay(d.getDay());
+				}
+				
+				if(typeof v.lowest_price != 'undefined'){
+					json_data[k].lowest_price = v.lowest_price;
+				}else{
+					json_data[k].lowest_price = 0;
 				}
 				
 				var dd = new Date(v.start_datetime);

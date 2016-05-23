@@ -1,0 +1,69 @@
+body{
+	width: 100%;
+	min-height: 100%;
+	padding: 0; margin: 0;
+	background: #4f2160;
+	font-family: Lato, Helvetica, Arial;
+}
+
+#container{
+	background: url("https://s3-ap-southeast-1.amazonaws.com/jiggieimages/webapp/BG-faux-min.png") top left repeat-x;
+}
+
+#inner_container{
+	width: 375px; height: 612px;
+	margin: 0 auto;
+	background: url("https://s3-ap-southeast-1.amazonaws.com/jiggieimages/webapp/BG-min.png") top center no-repeat;
+	color: #fff;
+}
+
+h1#logo{
+	display: block;
+	margin: 0; padding: 40px 0px;
+	text-align: center;
+	font-size: 0;
+	border-bottom: 1px solid #a15bb9;
+	background: url("https://s3-ap-southeast-1.amazonaws.com/jiggieimages/webapp/Logo-min.png") center center no-repeat;
+}
+
+#profile{
+	width: 121px; height: 121px;
+	margin: 20px auto;
+}
+#profile img{
+	width: 121px;
+	border-radius: 60.5px;
+	-webkit-border-radius: 60.5px;
+	-moz-border-radius: 60.5px;
+}
+
+#message{
+	padding: 20px;
+	text-align: center;
+}
+#message p{
+	margin: 0; padding: 0;
+}
+
+#button_login{
+	display: block;
+	width: 313px; height: 48px;
+	margin: 10px auto;
+	font-size: 0px;
+	background: url("https://s3-ap-southeast-1.amazonaws.com/jiggieimages/webapp/button+-+FB-min.png") top left no-repeat;
+}
+
+.buttons{
+	display: block;
+	font-size: 0px;
+	margin: 0 auto;
+}
+
+#app_store{
+	background: url("https://s3-ap-southeast-1.amazonaws.com/jiggieimages/webapp/download+-+appstore-min.png") top left no-repeat;
+	width: 202px; height: 59px;
+}
+#play_store{
+	background: url("https://s3-ap-southeast-1.amazonaws.com/jiggieimages/webapp/button+-+google+play-min.png") top left no-repeat;
+	width: 163px; height: 48px;
+}

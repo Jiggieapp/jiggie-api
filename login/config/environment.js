@@ -5,7 +5,7 @@ exports.environ = function(app,express,helmet,path,compression,bodyParser){
 	app.set('views', path.join(__dirname, '../views'));
 	app.set('view engine', 'ejs');
 	app.set('base_url','http://127.0.0.1:4300');
-	app.set('domain','http://api.ciayo.dcc');
+	app.set('domain','http://jannessantoso.com');
 	app.set('public',path.join(__dirname, '../public'));
 	app.set('path_public','/../');
 	app.set('helpers',require('./helpers'));

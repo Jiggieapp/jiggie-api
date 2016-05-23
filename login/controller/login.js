@@ -78,6 +78,8 @@ exports.index = function(req, res){
 					set_customers.updated_at = new Date();
 					set_customers.payment = {};
 					
+					set_customers.age = post.age;
+					
 					var device_type = '';
 					(typeof post.device_type != 'undefined') ? device_type = post.device_type : device_type = 1;
 					if(device_type == 1 || device_type == '1'){
@@ -193,6 +195,8 @@ exports.index = function(req, res){
 						set_customers.gcm_token = post.apn_token;
 						delete set_customers.apn_token;
 					}
+					
+					set_customers.age = post.age
 					
 					subscribe_mailchimp(set_customers,function(){});
 			
@@ -326,6 +330,30 @@ exports.index = function(req, res){
 					
 					json_data.show_walkthrough = false;
 					
+					if(typeof data[0][0].from_age != 'undefined'){
+						json_data.from_age = data[0][0].from_age
+					}else{
+						json_data.from_age = '0'
+					}
+					
+					if(typeof data[0][0].to_age != 'undefined'){
+						json_data.to_age = data[0][0].to_age
+					}else{
+						json_data.to_age = '0'
+					}
+					
+					if(typeof data[0][0].distance != 'undefined'){
+						json_data.distance = data[0][0].distance
+					}else{
+						json_data.distance = '0'
+					}
+					
+					if(typeof data[1][0].area_event != 'undefined'){
+						json_data.area_event = data[1][0].area_event
+					}else{
+						json_data.area_event = ''
+					}
+					
 					// if(post_device == 1){
 						// if(ios_typecek == 1){
 							// json_data.show_walkthrough = false;
@@ -377,6 +405,11 @@ exports.index = function(req, res){
 						json_data.show_walkthrough_new.event = true;
 						json_data.show_walkthrough_new.social = true;
 						json_data.show_walkthrough_new.chat = true;
+						
+						json_data.from_age = '0';
+						json_data.to_age = '0';
+						json_data.distance = '0';
+						json_data.area_event = '';
 						
 						callback(null,json_data);
 					// })
@@ -487,14 +520,6 @@ exports.sync_membersettings = function(req,res){
 	debug.log(post);
 	debug.log('###########################');
 	
-	if(typeof post.photos != 'undefined'){
-		var dt = new Object();
-		dt.profile_image_url = post.photos[0];
-		dt.photos = post.photos;
-		if(typeof post.gender != 'undefined'){dt.gender = post.gender;}
-		customers_coll.update({fb_id:post.fb_id},{$set:dt},function(){});
-	}
-	
 	if(typeof post.gender != 'undefined'){
 		var dt = new Object();
 		if(typeof post.gender != 'undefined'){dt.gender = post.gender;}
@@ -569,6 +594,13 @@ exports.sync_membersettings = function(req,res){
 					}
 				});
 			}else{
+				if(typeof post.photos != 'undefined'){
+					var dt = new Object();
+					dt.profile_image_url = post.photos[0];
+					dt.photos = post.photos;
+					if(typeof post.gender != 'undefined'){dt.gender = post.gender;}
+					customers_coll.update({fb_id:post.fb_id},{$set:dt},function(){});
+				}
 				// if not exist insert
 				membersettings_coll.insert(json_data,function(err,ins){
 					if(ins){

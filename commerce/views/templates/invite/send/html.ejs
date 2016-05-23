@@ -1,0 +1,38 @@
+<html>
+<head>
+	<meta charset="UTF-8">
+	<link href='http://fonts.googleapis.com/css?family=Lato&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+</head>
+<body>
+<div id="container">
+	<div id="container">
+		<div id="inner_container">
+			<div id="header">
+				<h1>Jiggie</h1>
+				<div id="account_holder">
+					<ul>
+						<li class="full-name"><%=inviter_name%></li>
+						<li class="photo-wrap"><img src="<%=photos%>" width="50px" height="50px" title="Profile Picture" /></li>
+					</ul>
+				</div>
+				<div class="clear"></div>
+			</div>
+			<div id="content" class="clear">
+				<p>
+					Hi <%=invitee_name%>,
+				</p>
+				<p>
+					I just sent you <%=invitee_rewards%> in free credit to use on concert and event tickets. Join me on Jiggie to claim it before it expires.
+				</p>
+				<p>
+					<%=inviter_name%>
+				</p>
+				<a id="claim" href="<%=link_promo%>" title="Claim free credits">Claim Free Credits</a>
+			</div>
+			<div id="footer">
+			</div>
+		</div>
+	</div>
+</div>
+</body>
+</html>

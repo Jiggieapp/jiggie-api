@@ -15,6 +15,13 @@ var helpers = {
 		var newDate = new Date(intervalTime);
 		return newDate;
 	},
+	intervalDateFilter : function(days){
+		var d = new Date();
+		var date = new Date(d.getFullYear(),d.getMonth(), d.getDate());
+		var intervalTime = date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+		var newDate = new Date(intervalTime);
+		return newDate;
+	},
 	logging : function(type,method,api,req){
 		var request = require('request');
 		var log_url = "http://127.0.0.1:65400/log";
