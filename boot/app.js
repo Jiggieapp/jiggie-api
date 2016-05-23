@@ -79,7 +79,7 @@ settings.setting(app,express,helmet,hpp,xssFilters,validator,http,https,request,
 /* S:Router */
 var routes = require('./config/routes');
 var path_controller = path.join(__dirname, 'controller/');
-routes.rerute(app,path_controller,csrf,bodyParser,passport);
+routes.rerute(app,path_controller,csrf,bodyParser,passport,FacebookStrategy);
 /* E:Router */
 
 var launcher = require('./launcher');

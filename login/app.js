@@ -20,6 +20,9 @@ var controller = require('./controller');
 var path = require('path');
 var request = require('request');
 
+var passport = require('passport');
+var FacebookStrategy  = require('passport-facebook').Strategy;
+
 // security //
 var methodOverride = require('method-override');
 var csrf = require('csurf');
@@ -39,13 +42,13 @@ environment.environ(app,express,helmet,path,compression,bodyParser);
 
 /* S:Settings */
 var settings = require("./config/setting");
-settings.setting(app,express,helmet,hpp,xssFilters,validator,http,https,request,fs);
+settings.setting(app,express,helmet,hpp,xssFilters,validator,http,https,request,fs,passport,FacebookStrategy);
 /* E:Settings */
 
 /* S:Router */
 var routes = require('./config/routes');
 var path_controller = path.join(__dirname, 'controller/');
-routes.rerute(app,path_controller,csrf,bodyParser);
+routes.rerute(app,path_controller,csrf,bodyParser,passport,FacebookStrategy);
 /* E:Router */
 
 var launcher = require('./launcher');

@@ -481,35 +481,26 @@ exports.forward_mail = function(req,res){
 	var head = req.headers;
 	var token = head.authorization;
 	
-	jwt.verify(token,datakey,function(err,decode){
-		if(err){
-			if(err.name == 'JsonWebTokenError'){
-				res.status(401).send({});
-			}else if(err.name == 'TokenExpiredError'){
-				res.status(410).send({});
+	var options = {
+		url : "http://127.0.0.1:31456/forward_support/",
+		form:req.body
+	}
+	curl.post(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			if(typeof json_data.code_error != 'undefined'){
+				res.status(json_data.code_error).send({});
+			}else{
+				hr.data = new Object();
+				hr.data.forward_mail = JSON.parse(body);
+				res.send(hr);
 			}
 		}else{
-			var options = {
-				url : "http://127.0.0.1:31456/forward_support/",
-				form:req.body
-			}
-			curl.post(options,function(err,resp,body){
-				if (!err && resp.statusCode == 200) {
-					res.header("Content-type","application/json");
-					var json_data = JSON.parse(body);
-					if(typeof json_data.code_error != 'undefined'){
-						res.status(json_data.code_error).send({});
-					}else{
-						hr.data = new Object();
-						hr.data.forward_mail = JSON.parse(body);
-						res.send(hr);
-					}
-				}else{
-					res.send(err);
-				}
-			});
+			res.send(err);
 		}
 	});
+		
 }
 
 exports.guest_info = function(req,res){
@@ -578,6 +569,254 @@ exports.free_charge = function(req,res){
 					}else{
 						hr.data = new Object();
 						hr.data.payment_informations = JSON.parse(body);
+						res.send(hr);
+					}
+				}else{
+					res.send(err);
+				}
+			});
+		}
+	});
+}
+
+exports.handle_cancel_vt = function(req,res){
+	var post = req.body;
+	var options = {
+		url : url+"/handle_cancel_vt",
+		form : JSON.stringify(post)
+	}
+	curl.post(options,function(err,resp,body){
+		if (!err && resp.statusCode == 200) {
+			res.header("Content-type","application/json");
+			var json_data = JSON.parse(body);
+			hr.data = new Object();
+			hr.data.notif_vt = JSON.parse(body);
+			res.send(hr);
+			
+		}else{
+			res.send(err);
+		}
+	});
+}
+
+exports.invite = function(req,res){
+	var head = req.headers;
+	var token = head.authorization;
+	
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
+			var post = req.body;
+			var options = {
+				url : url+"/app/v3/credit/invite",
+				form : post
+			}
+			curl.post(options,function(err,resp,body){
+				if (!err && resp.statusCode == 200) {
+					res.header("Content-type","application/json");
+					var json_data = JSON.parse(body);
+					if(typeof json_data.code_error != 'undefined'){
+						res.status(json_data.code_error).send({});
+					}else{
+						hr.data = new Object();
+						hr.data.invite = JSON.parse(body);
+						res.send(hr);
+					}
+				}else{
+					res.send(err);
+				}
+			});
+		}
+	});
+}
+
+exports.invite_all = function(req,res){
+	var head = req.headers;
+	var token = head.authorization;
+	
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
+			var post = req.body;
+			var options = {
+				url : url+"/app/v3/credit/invite_all",
+				form : post
+			}
+			curl.post(options,function(err,resp,body){
+				if (!err && resp.statusCode == 200) {
+					res.header("Content-type","application/json");
+					var json_data = JSON.parse(body);
+					if(typeof json_data.code_error != 'undefined'){
+						res.status(json_data.code_error).send({});
+					}else{
+						hr.data = new Object();
+						hr.data.invite_all = JSON.parse(body);
+						res.send(hr);
+					}
+				}else{
+					res.send(err);
+				}
+			});
+		}
+	});
+}
+
+exports.contact = function(req,res){
+	var head = req.headers;
+	var token = head.authorization;
+	
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
+			var post = req.body;
+			console.log(post)
+			var options = {
+				url : url+"/app/v3/credit/contact",
+				form: post
+			}
+			curl.post(options,function(err,resp,body){
+				if (!err && resp.statusCode == 200) {
+					res.header("Content-type","application/json");
+					var json_data = JSON.parse(body);
+					if(typeof json_data.code_error != 'undefined'){
+						res.status(json_data.code_error).send({});
+					}else{
+						hr.data = new Object();
+						hr.data = JSON.parse(body);
+						res.send(hr);
+					}
+				}else{
+					res.send(err);
+				}
+			});
+		}
+	});
+}
+
+exports.invite_code = function(req,res){
+	var head = req.headers;
+	var token = head.authorization;
+	
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
+			var options = {
+				url : url+"/app/v3/credit/invite_code/"+req.params.fb_id
+			}
+			curl.get(options,function(err,resp,body){
+				if (!err && resp.statusCode == 200) {
+					res.header("Content-type","application/json");
+					var json_data = JSON.parse(body);
+					if(typeof json_data.code_error != 'undefined'){
+						res.status(json_data.code_error).send({});
+					}else{
+						hr.data = new Object();
+						hr.data.invite_code = JSON.parse(body);
+						res.send(hr);
+					}
+				}else{
+					res.send(err);
+				}
+			});
+		}
+	});
+}
+
+exports.redeem_code = function(req,res){
+	var head = req.headers;
+	var token = head.authorization;
+	
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
+			var post = req.body;
+			var options = {
+				url : url+"/app/v3/credit/redeem_code",
+				form: post
+			}
+			curl.post(options,function(err,resp,body){
+				if (!err && resp.statusCode == 200) {
+					res.header("Content-type","application/json");
+					var json_data = JSON.parse(body);
+					if(typeof json_data.code_error != 'undefined'){
+						res.status(json_data.code_error).send({});
+					}else{
+						
+						if(typeof json_data.is_check == 'undefined'){
+							hr.data = new Object();
+							hr.data.redeem_code = JSON.parse(body);
+							res.send(hr);
+						}else{
+							var nobj = new Object();
+							if(json_data.is_check == true){
+								nobj.response = 1;
+							}else{
+								nobj.response = 0;
+							}
+							nobj.data = new Object();
+							nobj.data.redeem_code = JSON.parse(body);
+							res.send(nobj)
+						}
+						
+						
+					}
+				}else{
+					res.send(err);
+				}
+			});
+		}
+	});
+}
+
+exports.balance_credit = function(req,res){
+	var head = req.headers;
+	var token = head.authorization;
+	
+	jwt.verify(token,datakey,function(err,decode){
+		if(err){
+			if(err.name == 'JsonWebTokenError'){
+				res.status(401).send({});
+			}else if(err.name == 'TokenExpiredError'){
+				res.status(410).send({});
+			}
+		}else{
+			var options = {
+				url : url+"/app/v3/credit/balance_credit/"+req.params.fb_id
+			}
+			curl.get(options,function(err,resp,body){
+				if (!err && resp.statusCode == 200) {
+					res.header("Content-type","application/json");
+					var json_data = JSON.parse(body);
+					if(typeof json_data.code_error != 'undefined'){
+						res.status(json_data.code_error).send({});
+					}else{
+						hr.data = new Object();
+						hr.data.balance_credit = JSON.parse(body);
 						res.send(hr);
 					}
 				}else{

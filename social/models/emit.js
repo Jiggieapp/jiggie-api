@@ -42,3 +42,10 @@ eventEmitter.on('database_connected',function(){
 		console.log("partyfeed connected");
 	});
 });
+
+eventEmitter.on('database_connected',function(){
+	mongo.getCollection('ref_rewardcreditsystem',function(collection){
+		rewardcredit_coll = collection;
+		console.log("ref_rewardcreditsystem connected");
+	});
+});

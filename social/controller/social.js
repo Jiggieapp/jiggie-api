@@ -195,10 +195,23 @@ function get_data(req,fb_id,gender_interest,next){
 				
 				if(cek > 0){
 					
+					
 					var json_data = [];
 					var n = 0;
 					async.forEachOf(socfed_users,function(v,k,e){
-						if(v.matchme == true){
+						var check_active = true
+						if(typeof v.active != 'undefined'){
+							if(v.active == false){
+								check_active = false
+							}else{
+								check_active = true
+							}
+							
+						}else{
+							check_active = true
+						}
+						
+						if(v.matchme == true && check_active == true && v.event_id != "57305dc4963c2207a02f3bf7"){
 							if(v.fb_id != fb_id){
 								if(v.from_state != 'denied' && v.to_state != 'denied'){
 									if(v.from_state == "viewed"){
@@ -414,11 +427,11 @@ var sortDate = function (a, b){
 	if(a.type_rank < b.type_rank) return 1;
 	if(a.type_rank > b.type_rank) return -1;
 	
-	if(a.points < b.points) return 1;
-	if(a.points > b.points) return -1;
-	
 	if(a.likes < b.likes) return 1;
 	if(a.likes > b.likes) return -1;
+	
+	if(a.points < b.points) return 1;
+	if(a.points > b.points) return -1;
 	
 	
 	if(a.last_updated == undefined)
@@ -487,6 +500,7 @@ function do_connect_n_updchat(req,fb_id,member_fb_id,match,next){
 							}
 						}
 					});
+						
 					cb(null,cek,event_id);
 				});
 			}else{
@@ -1049,4 +1063,36 @@ exports.parseDataChatEventId = function(req,res){
 	})
 	
 	res.json({success:true})
+}
+
+exports.count_data = function(req,res){
+	var fb_id = req.params.fb_id;
+	debug.log(fb_id)
+	socialfeed_coll.findOne({fb_id:fb_id},function(err,r){
+		if(err){
+			debug.log(err)
+			res.json({code_error:403})
+		}else{
+			if(r == null){
+				res.json({code_error:204})
+			}else{
+				var inbound = 0;
+				var outbound = 0;
+				async.forEachOf(r.users,function(ve,ke,ee){
+					if(ve.from_state == 'viewed' && ve.to_state == 'approved'){
+						inbound++;
+					}
+					if(ve.from_state == 'viewed' && ve.to_state == 'viewed'){
+						outbound++;
+					}
+				})
+				res.json({
+					fb_id:fb_id,
+					outbound:outbound,
+					inbound:inbound
+				})
+			}
+			
+		}
+	})
 }

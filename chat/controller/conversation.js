@@ -70,6 +70,10 @@ function get_conv(req,fb_id,member_fb_id,next){
 		function get_eventdetail(conv,cb){
 			if(typeof conv.event_id == 'undefined'){
 				cb(null,false,[],[])
+			}else if(conv.event_id == ""){
+				var rows_event = new Object();
+				rows_event.title = "Generic";
+				cb(null,true,conv,rows_event)
 			}else{
 				events_detail_coll.findOne({_id:new ObjectId(conv.event_id)},function(err,r){
 					if(err){
@@ -293,6 +297,7 @@ function post_message(req,next){
 						"conversations.$.last_message":message,
 						"conversations.$.last_updated":new Date(),
 						"conversations.$.hasreplied":false,
+						"conversations.$.delete":false,
 						last_updated:new Date()
 					}
 				}

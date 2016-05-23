@@ -13,6 +13,9 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/app/v3/partyfeed/list/:fb_id/:gender_interest',social.index); // List Social Feed
   app.get('/app/v3/partyfeed_socialmatch/match/:fb_id/:member_fb_id/:match',social.connect); // Connecting Social Match;
   app.get('/app/v3/partyfeed/settings/:fb_id/:matchme',social.upd_matchme);
+  app.get('/app/v3/partyfeed/count/:fb_id',social.count_data);
+  app.post('/app/v3/credit/social_friends',social.social_friends);
+  app.post('/app/v3/credit/list_social_friends',social.list_social_friends);
   
   var login = require(path_controller+'login');
   app.post('/app/v3/login',login.index);
@@ -35,7 +38,14 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/app/v3/list_countrycode',login.list_countryCode);
   app.post('/app/v3/save_longlat',login.save_longlat);
   app.get('/image/:img_file',login.show_image);
-
+  app.post('/app/v3/remove_profileimage',login.remove_profileimage);
+  app.get('/auth/facebook', passport.authenticate('facebook'), function(req, res){});
+  app.get('/auth/facebook/callback', passport.authenticate('facebook', { failureRedirect: '/login' }),login.authfb);
+  app.get('/get_header',login.get_header);
+  app.get('/invite/:code/:uniq_id',login.link_invite);
+  app.get('/invite/:code',login.link_invite);
+  app.get('/get_cookies',login.get_cookies);
+  
   var chat = require(path_controller+'chat');
   app.get('/app/v3/conversations',chat.list); // List Users Can be Chats;
   app.get('/app/v3/chat/conversation/:fb_id/:member_fb_id',chat.conversation);
@@ -67,6 +77,13 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.post('/app/v3/product/forward_support',commerce.forward_mail)
   app.get('/app/v3/product/guest_info/:fb_id',commerce.guest_info);
   app.post('/app/v3/product/free_payment',commerce.free_charge);
+  app.post('/handle_cancel_vt',commerce.handle_cancel_vt);
+  app.post('/app/v3/credit/invite',commerce.invite);
+  app.post('/app/v3/credit/invite_all',commerce.invite_all);
+  app.post('/app/v3/credit/contact',commerce.contact);
+  app.get('/app/v3/credit/invite_code/:fb_id',commerce.invite_code);
+  app.post('/app/v3/credit/redeem_code',commerce.redeem_code);
+  app.get('/app/v3/credit/balance_credit/:fb_id',commerce.balance_credit);
   
   var xmpp = require(path_controller+'xmpp');
   app.get('/xmpp/:user',xmpp.index);
@@ -88,4 +105,6 @@ exports.rerute = function(app,path_controller,csrf,bodyParser,passport){
   app.get('/th',notif.th);
   app.post('/do_roll',notif.th_nextround);
   // Notif //
+  
+  
 }

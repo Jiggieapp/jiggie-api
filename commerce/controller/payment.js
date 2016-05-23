@@ -12,6 +12,9 @@ var ppt = path.join(__dirname,"../../global/commerce.json");
 var pkg = fs.readJSON(ppt);
 var comurl = pkg.uri
 
+var Redis  = require("redis");
+var redis  = Redis.createClient(6379,"jiggieappsredis.futsnq.0001.apse1.cache.amazonaws.com");
+
 exports.index = function(req, res){
 	var type = req.body.type;
 	var post = req.body;
@@ -58,16 +61,20 @@ exports.index = function(req, res){
 							if(r.status == 'sold out' || r.quantity == 0){
 								cb(null,false,{msg:'Sorry, this ticket is unavailable',type:'ticket_list'})
 							}else{
-								if(r.quantity >= rows_order.product_list[0].num_buy){
-									debug.log('cek quantity true')
-									cb(null,true,[])
-								}else{
-									debug.log('cek quantity false')
-									if(r.quantity == 1){
-										cb(null,false,{msg:'Sorry, we only have '+r.quantity+' ticket left',type:'ticket_details'})
-									}else if(r.quantity > 1){
-										cb(null,false,{msg:'Sorry, we only have '+r.quantity+' tickets left',type:'ticket_details'})
+								if(r.ticket_type != 'booking'){
+									if(r.quantity >= rows_order.product_list[0].num_buy){
+										debug.log('cek quantity true')
+										cb(null,true,[])
+									}else{
+										debug.log('cek quantity false')
+										if(r.quantity == 1){
+											cb(null,false,{msg:'Sorry, we only have '+r.quantity+' ticket left',type:'ticket_details'})
+										}else if(r.quantity > 1){
+											cb(null,false,{msg:'Sorry, we only have '+r.quantity+' tickets left',type:'ticket_details'})
+										}
 									}
+								}else{
+									cb(null,true,[])
 								}
 							}
 						}
@@ -217,11 +224,20 @@ function post_transaction_va(req,next){
 		function cek_valid_min_deposit_booking(stat,dt,dt2,cb){
 			if(stat == true){
 				if(dt.product_list[0].ticket_type == 'booking'){
-					if(parseFloat(pay_deposit) >= parseFloat(dt.product_list[0].min_deposit_amount)){
-						cb(null,true,dt,dt2);
+					if(typeof dt.min_deposit_amount == "undefined"){
+						if(parseFloat(pay_deposit) >= parseFloat(dt.product_list[0].min_deposit_amount)){
+							cb(null,true,dt,dt2);
+						}else{
+							debug.log('error min deposit required for booking');
+							cb(null,false,[],[]);
+						}
 					}else{
-						debug.log('errorr min deposit required for booking');
-						cb(null,false,[],[]);
+						if(parseFloat(pay_deposit) >= parseFloat(dt.min_deposit_amount)){
+							cb(null,true,dt,dt2);
+						}else{
+							debug.log('error min deposit required for booking 2');
+							cb(null,false,[],[]);
+						}
 					}
 				}else{
 					cb(null,true,dt,dt2);
@@ -247,7 +263,44 @@ function post_transaction_va(req,next){
 				cb(null,false,[],[],[]);
 			}
 		},
-		function sync_data(stat,dt,dt2,rows_event,cb){
+		function get_promo(stat,dt,dt2,rows_event,cb){
+			if(stat == true){
+				redis.get("order_"+order_id+"_"+dt.fb_id+"_credit",function(err,credit){
+					if(credit == null){
+						debug.log3("data redis credit null");
+						cb(null,false,[],[],[],[],[]);
+					}else{
+						redis.get("order_"+order_id+"_"+dt.fb_id+"_datacredit",function(err2,datacredit){
+							if(datacredit == null){
+								debug.log3("data redis datacredit null");
+								cb(null,false,[],[],[],[],[]);
+							}else{
+								redis.get("order_"+order_id+"_"+dt.fb_id+"_discount",function(err2,discount){
+									if(discount == null){
+										debug.log3("data redis _discount null");
+										cb(null,false,[],[],[],[],[],[],[]);
+									}else{
+										redis.get("order_"+order_id+"_"+dt.fb_id+"_datadiscount",function(err2,datadiscount){
+											if(datadiscount == null){
+												debug.log3("data redis _datadiscount null");
+												cb(null,false,[],[],[],[],[],[],[]);
+											}else{
+												cb(null,true,dt,dt2,rows_event,JSON.parse(credit),JSON.parse(datacredit),JSON.parse(discount),JSON.parse(datadiscount))
+											}
+										})
+									}
+								})
+								
+							}
+						})
+						
+					}
+				})
+			}else{
+				cb(null,false,[],[],[],[],[],[],[]);
+			}
+		},
+		function sync_data(stat,dt,dt2,rows_event,credit,datacredit,discount,datadiscount,cb){
 			if(stat == true){
 				var json_data = new Object();
 				
@@ -270,7 +323,7 @@ function post_transaction_va(req,next){
 					items[n].id = v.ticket_id;
 					items[n].name = v.name+'('+v.num_buy+'X)';
 					if(v.ticket_type == 'purchase'){
-						items[n].price = parseFloat(v.total_price_all);
+						items[n].price = parseFloat(dt.total_price);
 						items[n].quantity = parseFloat(1);
 					}else if(v.ticket_type == 'booking'){
 						items[n].price = parseInt(pay_deposit);
@@ -340,7 +393,7 @@ function post_transaction_va(req,next){
 				// get timelimit
 				tickettypes_coll.findOne({_id:new ObjectId(dt.product_list[0].ticket_id)},function(err,rr){
 					if(err){
-						cb(null,false,[],[])
+						cb(null,false,[],[],[],[],[],[],[],[])
 					}else{
 						var timelimit;
 						if(typeof rr.payment_timelimit == 'undefined'){
@@ -357,10 +410,10 @@ function post_transaction_va(req,next){
 						curl.post(options,function(err,resp,body){
 							if (!err && resp.statusCode == 200) {
 								debug.log('VT RESPONSE SUCCESS')
-								cb(null,true,dt,body)
+								cb(null,true,dt,body,dt2,rows_event,credit,datacredit,discount,datadiscount)
 							}else{
 								debug.log('VT RESPONSE FAILED')
-								cb(null,false,[],[]);
+								cb(null,false,[],[],[],[],[],[],[],[]);
 							}
 						});
 					}
@@ -369,88 +422,205 @@ function post_transaction_va(req,next){
 				
 				
 			}else{
-				cb(null,false,[],[]);
+				cb(null,false,[],[],[],[],[],[],[],[]);
 			}
 		},
-		function cek_transaction_vt(stat,dtorder,body,cb){
+		function cek_transaction_vt(stat,dtorder,body,rows_cust,rows_event,credit,datacredit,discount,datadiscount,cb){
 			if(stat == true){
 				debug.log('cek VT');
 				debug.log(body);
 				var vt = JSON.parse(body);
 				if(typeof vt.code_error == 'undefined'){
-					cb(null,true,dtorder,body)	
+					cb(null,true,dtorder,body,rows_cust,rows_event,credit,datacredit,discount,datadiscount)	
 				}else{
 					debug.log("Error Code in VT Commerce VA");
-					cb(null,false,[],[]);
+					cb(null,false,[],[],[],[],[],[],[],[]);
 				}
 			}else{
-				cb(null,false,[],[]);
+				cb(null,false,[],[],[],[],[],[],[],[]);
 			}
 		},
-		function merge_data(stat,dtorder,body,cb){
+		function merge_data(stat,dtorder,body,rows_cust,rows_event,credit,datacredit,discount,datadiscount,cb){
 			debug.log('merging data payment')
 			if(stat == true){
 				merge_data_va(req,body,function(dt){
 					if(dt == true){
-						cb(null,true,dtorder,body);
+						cb(null,true,dtorder,body,rows_cust,rows_event,credit,datacredit,discount,datadiscount);
 					}else{
 						debug.log('error line 160 => paymentjs');
-						cb(null,false,[],[])
+						cb(null,false,[],[],[],[],[],[],[],[])
 					}
 				})
 			}else{
 				debug.log('error line 165 => paymentjs');
-				cb(null,false,[],[]);
+				cb(null,false,[],[],[],[],[],[],[],[]);
 			}
 		},
-		function upd_vt(stat,dtorder,body,cb2){
+		function upd_vt(stat,dtorder,body,rows_cust,rows_event,credit,datacredit,discount,datadiscount,cb2){
 			debug.log('updating vt');
 			if(stat == true){
 				var vt = JSON.parse(body);
-				order_coll.update({order_id:order_id},{$set:{vt_response:vt,created_at_swipetopay:new Date()}},function(err,upd){
+				var form_upd = {
+					$set:{
+						vt_response:vt,
+						created_at_swipetopay:new Date(),
+						credit:credit,
+						datacredit:datacredit
+					}
+				}
+				order_coll.update({order_id:order_id},form_upd,function(err,upd){
 					if(err){
 						debug.log('error line 180-> paymentjs');
-						cb2(null,false,[],[]);
+						cb2(null,false,[],[],[],[],[],[],[],[]);
 					}else{
-						cb2(null,true,dtorder,vt);
+						cb2(null,true,dtorder,vt,rows_cust,rows_event,credit,datacredit,discount,datadiscount);
 					}
 				})
 			}else{
 				debug.log('error line 187 => paymentjs');
-				cb2(null,false,[],[]);
+				cb2(null,false,[],[],[],[],[],[],[],[]);
 			}
 		},
-		function update_customers(stat,dtorder,vt,cb2){
+		function update_customers(stat,dtorder,vt,rows_cust,rows_event,credit,datacredit,discount,datadiscount,cb2){
 			debug.log('updating customers')
 			if(stat == true){
-				customers_coll.update({fb_id:dtorder.fb_id},{
+				var cond = {
+					fb_id:dtorder.fb_id
+				}
+				var form_upd = {
 					$set:{last_cc:{payment_type:type}}
-				},function(err,upd){
+				}
+				
+				customers_coll.update(cond,form_upd,function(err,upd){
 					if(upd){
-						cb2(null,true,dtorder,vt);
+						cb2(null,true,dtorder,vt,rows_cust,rows_event,credit,datacredit,discount,datadiscount);
 					}
 				})
 			}else{
-				cb2(null,false,[],[]);
+				cb2(null,false,[],[],[],[],[],[],[],[]);
 			}
 		},
-		function send_notif(stat,dtorder,vt,cb2){
-			debug.log('send notif')
+		function update_credit(stat,dtorder,vt,rows_cust,rows_event,credit,datacredit,discount,datadiscount,cb2){
 			if(stat == true){
-				var form_post = new Object();
-				form_post.vt = vt;
-				form_post.email_to = dtorder.guest_detail.email;
-				var options = {
-					url:'http://127.0.0.1:31456/sendnotif',
-					form:form_post
-				}
-				curl.post(options,function(err,resp,body){
-					if(!err){
-						cb2(null,true,vt);
-					}else{
-						cb2(null,false,[]);
+				var credit_used = parseInt(credit.credit_used)
+				async.forEachOf(datacredit,function(v,k,e){
+					if(parseInt(credit_used) > 0){
+						/*start:updating inviter credit if is_chain = true*/
+						inviter_get_credit(v,dtorder,rows_cust)
+						/*end:updating inviter credit if is_chain = true*/
+						
+						var value_left = parseFloat(v.rows_data.credit.amount_invitee) - parseFloat(credit_used);
+						if(value_left > 0){
+							value_left = value_left
+							credit_used = 0;
+						}else{
+							value_left = 0
+							credit_used = Math.abs(parseFloat(v.rows_data.credit.amount_invitee) - parseFloat(credit_used))
+						}
+						
+						var cond = {
+							fb_id:dtorder.fb_id,
+							"promo_code.rules_id":{$in:[new ObjectId(v.rules_id),String(v.rules_id)]}
+						}
+						var form_upd = {
+							$set:{
+								"promo_code.$.used":true,
+								"promo_code.$.used_by":{
+									order_id:dtorder.order_id,
+									value_left:value_left
+								}
+							}
+						}
+						customers_coll.update(cond,form_upd,function(err){if(err){debug.log3(err)}})
+						
 					}
 				})
+				
+				var cond_credit = {fb_id:dtorder.fb_id}
+				var form_credit = {
+					$set:{
+						totcredit_appinvite:credit.credit_left
+					},
+					$push:{
+						activity:{
+							rewards:-credit.credit_used,
+							type:"promo",
+							plot:"credit",
+							flow:"out_from_promo",
+							logs:{},
+							from_fb_id:dtorder.fb_id,
+							updated_at:new Date(),
+							rules_id:""
+						}
+					}
+				}
+				credit_points_coll.update(cond_credit,form_credit,function(err,upd){if(err){debug.log3(err)}})
+				
+				cb2(null,true,dtorder,vt,rows_cust,rows_event,discount,datadiscount)
+			}else{
+				cb2(null,false,[],[],[],[],[],[])
+			}
+		},
+		function update_discount(stat,dtorder,vt,rows_cust,rows_event,discount,datadiscount,cb2){
+			if(stat == true){
+				async.forEachOf(datadiscount,function(v,k,e){
+					var cond = {
+						_id:new ObjectId(v._id)
+					}
+					var form_upd = {
+						$push:{
+							"discount.used_at":{
+								fb_id:dtorder.fb_id,
+								order_id:dtorder.order_id
+							}
+						}
+					}
+					promo_rules_coll.update(cond,form_upd,function(err,upd){
+						if(err){
+							debug.logdis(err)
+						}
+					})
+				})
+				
+				
+				cb2(null,true,dtorder,vt,rows_cust,rows_event)
+			}else{
+				cb2(null,false,[],[],[],[])
+			}
+		},
+		function send_notif(stat,dtorder,vt,rows_cust,rows_event,cb2){
+			debug.log('send notif')
+			if(stat == true){
+				var email_to = [];
+				var n = 0;
+				email_to.push(dtorder.guest_detail.email)
+				email_to.push("orders@jiggieapp.com");
+				email_to.push("cs@jiggieapp.com");
+				if(typeof rows_event.organizer != 'undefined' && rows_event.organizer.length > 0){
+					async.forEachOf(rows_event.organizer,function(v3,k3,e3){
+						email_to.push(v3.email);
+					})
+				}
+				debug.log('USING EMAIL : ')
+				debug.log(email_to)
+				
+				async.forEachOf(email_to,function(vm,km,em){
+					var form_post = new Object();
+					form_post.vt = vt;
+					// form_post.email_to = dtorder.guest_detail.email;
+					form_post.email_to = vm;
+					var options = {
+						url:'http://127.0.0.1:31456/sendnotif',
+						form:form_post
+					}
+					curl.post(options,function(err,resp,body){
+						if(err){
+							debug.log(err)
+						}
+					})
+				})
+				cb2(null,true,vt);
+				
 			}else{
 				cb2(null,false,[]);
 			}
@@ -652,11 +822,20 @@ function post_transaction_cc(req,next){
 		function cek_valid_min_deposit_booking(stat,dt,dt2,cb){
 			if(stat == true){
 				if(dt.product_list[0].ticket_type == 'booking'){
-					if(parseFloat(pay_deposit) >= parseFloat(dt.product_list[0].min_deposit_amount)){
-						cb(null,true,dt,dt2);
+					if(typeof dt.min_deposit_amount == "undefined"){
+						if(parseFloat(pay_deposit) >= parseFloat(dt.product_list[0].min_deposit_amount)){
+							cb(null,true,dt,dt2);
+						}else{
+							debug.log('error min deposit required for booking');
+							cb(null,false,[],[]);
+						}
 					}else{
-						debug.log('error min deposit required for booking');
-						cb(null,false,[],[]);
+						if(parseFloat(pay_deposit) >= parseFloat(dt.min_deposit_amount)){
+							cb(null,true,dt,dt2);
+						}else{
+							debug.log('error min deposit required for booking 2');
+							cb(null,false,[],[]);
+						}
 					}
 				}else{
 					cb(null,true,dt,dt2);
@@ -665,7 +844,61 @@ function post_transaction_cc(req,next){
 				cb(null,false,[],[]);
 			}
 		},
-		function sync_data(stat,dt,dt2,cb){
+		function get_event(stat,dt,dt2,cb){
+			if(stat == true){
+				events_detail_coll.findOne({_id:new ObjectId(dt.event_id)},function(err,r){
+					if(err){
+						cb(null,false,[],[],[]);
+					}else{
+						if(r == null){
+							cb(null,false,[],[],[]);
+						}else{
+							cb(null,true,dt,dt2,r);
+						}
+					}
+				})
+			}else{
+				cb(null,false,[],[],[]);
+			}
+		},
+		function get_promo(stat,dt,dt2,rows_event,cb){
+			if(stat == true){
+				redis.get("order_"+order_id+"_"+dt.fb_id+"_credit",function(err,credit){
+					if(credit == null){
+						debug.log3("data redis credit null");
+						cb(null,false,[],[],[],[],[],[],[]);
+					}else{
+						redis.get("order_"+order_id+"_"+dt.fb_id+"_datacredit",function(err2,datacredit){
+							if(datacredit == null){
+								debug.log3("data redis datacredit null");
+								cb(null,false,[],[],[],[],[],[],[]);
+							}else{
+								redis.get("order_"+order_id+"_"+dt.fb_id+"_discount",function(err2,discount){
+									if(discount == null){
+										debug.log3("data redis discount null");
+										cb(null,false,[],[],[],[],[],[],[]);
+									}else{
+										redis.get("order_"+order_id+"_"+dt.fb_id+"_datadiscount",function(err2,datadiscount){
+											if(datadiscount == null){
+												debug.log3("data redis datadiscount null");
+												cb(null,false,[],[],[],[],[],[],[]);
+											}else{
+												cb(null,true,dt,dt2,rows_event,JSON.parse(credit),JSON.parse(datacredit),JSON.parse(discount),JSON.parse(datadiscount))
+											}
+										})
+									}
+								})
+								
+							}
+						})
+						
+					}
+				})
+			}else{
+				cb(null,false,[],[],[],[],[],[],[]);
+			}
+		},
+		function sync_data(stat,dt,dt2,rows_event,credit,datacredit,discount,datadiscount,cb){
 			if(stat == true){
 				var json_data = new Object();
 				var customer_details = new Object();
@@ -689,7 +922,8 @@ function post_transaction_cc(req,next){
 					items[n].id = v.ticket_id;
 					items[n].name = v.name+'('+v.num_buy+'X)';
 					if(v.ticket_type == 'purchase'){
-						items[n].price = parseFloat(v.total_price_all);
+						// items[n].price = parseFloat(v.total_price_all);
+						items[n].price = parseFloat(dt.total_price);
 						items[n].quantity = parseFloat(1);
 					}else if(v.ticket_type == 'booking'){
 						items[n].price = parseInt(pay_deposit);
@@ -699,6 +933,10 @@ function post_transaction_cc(req,next){
 				})
 				json_data.items = items;
 				// e:items //
+				
+				json_data.ticket_name = dt.product_list[0].name;
+				json_data.event_name = rows_event.title;
+				json_data.guest_name = dt.guest_detail.name;
 				
 				// s:billing address //
 				if(String(is_new_card) == '1'){
@@ -757,32 +995,32 @@ function post_transaction_cc(req,next){
 				curl.post(options,function(err,resp,body){
 					if (!err && resp.statusCode == 200) {
 						debug.log('transaction execute CC Successs');
-						cb(null,true,dt,dt2,body)
+						cb(null,true,dt,dt2,body,rows_event,credit,datacredit,discount,datadiscount)
 					}else{
 						debug.log('transaction execute CC Failed');
-						cb(null,false,[],[],[]);
+						cb(null,false,[],[],[],[],[],[],[],[]);
 					}
 				});
 			}else{
 				debug.log('line 195 err');
-				cb(null,false,[],[],[]);
+				cb(null,false,[],[],[],[],[],[],[],[]);
 			}
 		},
-		function cek_transaction_vt(stat,dt,dt2,body,cb){
+		function cek_transaction_vt(stat,dt,dt2,body,rows_event,credit,datacredit,discount,datadiscount,cb){
 			if(stat == true){
 				var vt = JSON.parse(body);
 				debug.log(vt);
 				if(typeof vt.code_error == 'undefined'){
-					cb(null,true,dt,dt2,body)	
+					cb(null,true,dt,dt2,body,rows_event,credit,datacredit,discount,datadiscount)	
 				}else{
 					debug.log("Error Code in VT Commerce CC");
-					cb(null,false,dt,dt2,body);
+					cb(null,false,dt,dt2,body,rows_event,credit,datacredit,[],[]);
 				}
 			}else{
-				cb(null,false,dt,dt2,body);
+				cb(null,false,dt,dt2,body,rows_event,credit,datacredit,[],[]);
 			}
 		},
-		function merge_data(stat,dt,dt2,body,cb){
+		function merge_data(stat,dt,dt2,body,rows_event,credit,datacredit,discount,datadiscount,cb){
 			if(stat == true){
 				var vt = JSON.parse(body);
 				debug.log('Response VT');
@@ -1025,23 +1263,125 @@ function post_transaction_cc(req,next){
 											cb2(null,false);
 										}
 									},
+									function update_credit(stat,cb2){
+										if(stat == true){
+											var credit_used = parseInt(credit.credit_used)
+											async.forEachOf(datacredit,function(v,k,e){
+												if(parseInt(credit_used) > 0){
+													/*start:updating inviter credit if is_chain = true*/
+													inviter_get_credit(v,dt,dt2)
+													/*end:updating inviter credit if is_chain = true*/
+													
+													var value_left = parseFloat(v.rows_data.credit.amount_invitee) - parseFloat(credit_used);
+													if(value_left > 0){
+														value_left = value_left
+														credit_used = 0;
+													}else{
+														value_left = 0
+														credit_used = Math.abs(parseFloat(v.rows_data.credit.amount_invitee) - parseFloat(credit_used))
+													}
+													
+													var cond = {
+														fb_id:dt.fb_id,
+														"promo_code.rules_id":{$in:[new ObjectId(v.rules_id),String(v.rules_id)]}
+													}
+													var form_upd = {
+														$set:{
+															"promo_code.$.used":true,
+															"promo_code.$.used_by":{
+																order_id:dt.order_id,
+																value_left:value_left
+															}
+														}
+													}
+													customers_coll.update(cond,form_upd,function(err){if(err){debug.log3(err)}})
+													
+												}
+											})
+											
+											var cond_credit = {fb_id:dt.fb_id}
+											var form_credit = {
+												$set:{
+													totcredit_appinvite:credit.credit_left
+												},
+												$push:{
+													activity:{
+														rewards:-credit.credit_used,
+														type:"promo",
+														plot:"credit",
+														flow:"out_from_promo",
+														logs:{},
+														from_fb_id:dt.fb_id,
+														updated_at:new Date(),
+														rules_id:""
+													}
+												}
+											}
+											credit_points_coll.update(cond_credit,form_credit,function(err,upd){if(err){debug.log3(err)}})
+											
+											cb2(null,true)
+										}else{
+											cb2(null,false)
+										}
+									},
+									function update_discount(stat,cb2){
+										if(stat == true){
+											async.forEachOf(datadiscount,function(v,k,e){
+												var cond = {
+													_id:new ObjectId(v._id)
+												}
+												var form_upd = {
+													$push:{
+														"discount.used_at":{
+															fb_id:dt.fb_id,
+															order_id:dt.order_id
+														}
+													}
+												}
+												promo_rules_coll.update(cond,form_upd,function(err,upd){
+													if(err){
+														debug.logdis(err)
+													}
+												})
+											})
+											cb2(null,true)
+										}else{
+											cb2(null,false)
+										}
+									},
 									function send_notif(stat,cb2){
 										if(stat == true){
 											order_coll.findOne({order_id:order_id},function(err,r){
-												var form_post = new Object();
-												form_post.vt = vt;
-												form_post.email_to = r.guest_detail.email;
-												var options = {
-													url:'http://127.0.0.1:31456/sendnotif',
-													form:form_post
+												var email_to = [];
+												var n = 0;
+												email_to.push(r.guest_detail.email)
+												email_to.push("orders@jiggieapp.com");
+												email_to.push("cs@jiggieapp.com");
+												if(typeof rows_event.organizer != 'undefined' && rows_event.organizer.length > 0){
+													async.forEachOf(rows_event.organizer,function(v3,k3,e3){
+														email_to.push(v3.email);
+													})
 												}
-												curl.post(options,function(err,resp,body){
-													if(!err){
-														cb2(null,true)
-													}else{
-														cb2(null,false);
+												debug.log('USING EMAIL : ')
+												debug.log(email_to)
+												
+												async.forEachOf(email_to,function(vm,km,em){
+													debug.log('send email cc')
+													var form_post = new Object();
+													form_post.vt = vt;
+													// form_post.email_to = r.guest_detail.email;
+													form_post.email_to = vm;
+													var options = {
+														url:'http://127.0.0.1:31456/sendnotif',
+														form:form_post
 													}
+													curl.post(options,function(err,resp,body){
+														if(err){
+															debug.log(err)
+														}
+													})
 												})
+												cb2(null,true)
 											})
 										}else{
 											debug.log('error line 1004 commerce send notif')
@@ -1059,7 +1399,7 @@ function post_transaction_cc(req,next){
 								
 							}else if(vt.transaction_status == 'deny'){
 								debug.log("Transaction Deny From VT in CC");
-								cb(null,{code_error:403,msg:vt});
+								cb(null,{code_error:403,msg:vt.status_message});
 							}
 						}else if(String(is_new_card) == '0' || String(is_new_card) == ''){
 							/*Using One Click Method*/
@@ -1206,23 +1546,124 @@ function post_transaction_cc(req,next){
 										cb2(null,false);
 									}
 								},
+								function update_credit(stat,cb2){
+									if(stat == true){
+										var credit_used = parseInt(credit.credit_used)
+										async.forEachOf(datacredit,function(v,k,e){
+											if(parseInt(credit_used) > 0){
+												/*start:updating inviter credit if is_chain = true*/
+												inviter_get_credit(v,dt,dt2)
+												/*end:updating inviter credit if is_chain = true*/
+												
+												var value_left = parseFloat(v.rows_data.credit.amount_invitee) - parseFloat(credit_used);
+												if(value_left > 0){
+													value_left = value_left
+													credit_used = 0;
+												}else{
+													value_left = 0
+													credit_used = Math.abs(parseFloat(v.rows_data.credit.amount_invitee) - parseFloat(credit_used))
+												}
+												
+												var cond = {
+													fb_id:dt.fb_id,
+													"promo_code.rules_id":{$in:[new ObjectId(v.rules_id),String(v.rules_id)]}
+												}
+												var form_upd = {
+													$set:{
+														"promo_code.$.used":true,
+														"promo_code.$.used_by":{
+															order_id:dt.order_id,
+															value_left:value_left
+														}
+													}
+												}
+												customers_coll.update(cond,form_upd,function(err){if(err){debug.log3(err)}})
+												
+											}
+										})
+										
+										var cond_credit = {fb_id:dt.fb_id}
+										var form_credit = {
+											$set:{
+												totcredit_appinvite:credit.credit_left
+											},
+											$push:{
+												activity:{
+													rewards:-credit.credit_used,
+													type:"promo",
+													plot:"credit",
+													flow:"out_from_promo",
+													logs:{},
+													from_fb_id:dt.fb_id,
+													updated_at:new Date(),
+													rules_id:""
+												}
+											}
+										}
+										credit_points_coll.update(cond_credit,form_credit,function(err,upd){if(err){debug.log3(err)}})
+										
+										cb2(null,true)
+									}else{
+										cb2(null,false)
+									}
+								},
+								function update_discount(stat,cb2){
+									if(stat == true){
+										async.forEachOf(datadiscount,function(v,k,e){
+											var cond = {
+												_id:new ObjectId(v._id)
+											}
+											var form_upd = {
+												$push:{
+													"discount.used_at":{
+														fb_id:dt.fb_id,
+														order_id:dt.order_id
+													}
+												}
+											}
+											promo_rules_coll.update(cond,form_upd,function(err,upd){
+												if(err){
+													debug.logdis(err)
+												}
+											})
+										})
+										cb2(null,true)
+									}else{
+										cb2(null,false)
+									}
+								},
 								function send_notif(stat,cb2){
 									if(stat == true){
 										order_coll.findOne({order_id:order_id},function(err,r){
-											var form_post = new Object();
-											form_post.vt = vt;
-											form_post.email_to = r.guest_detail.email;
-											var options = {
-												url:'http://127.0.0.1:31456/sendnotif',
-												form:form_post
+											var email_to = [];
+											var n = 0;
+											email_to.push(r.guest_detail.email)
+											email_to.push("orders@jiggieapp.com");
+											email_to.push("cs@jiggieapp.com");
+											if(typeof rows_event.organizer != 'undefined' && rows_event.organizer.length > 0){
+												async.forEachOf(rows_event.organizer,function(v3,k3,e3){
+													email_to.push(v3.email);
+												})
 											}
-											curl.post(options,function(err,resp,body){
-												if(!err){
-													cb2(null,true)
-												}else{
-													cb2(null,false);
+											debug.log('USING EMAIL : ')
+											debug.log(email_to)
+											
+											async.forEachOf(email_to,function(vm,km,em){
+												var form_post = new Object();
+												form_post.vt = vt;
+												form_post.email_to = vm;
+												// form_post.email_to = r.guest_detail.email;
+												var options = {
+													url:'http://127.0.0.1:31456/sendnotif',
+													form:form_post
 												}
+												curl.post(options,function(err,resp,body){
+													if(err){
+														debug.log(err)
+													}
+												})
 											})
+											cb2(null,true)
 										})
 									}else{
 										debug.log('error line 1168 commerce send notif')
@@ -1374,7 +1815,13 @@ function paid_free(req,next){
 						debug.log("order product data null va")
 						cb(null,false,{code_error:403})
 					}else{
-						cb(null,true,r);
+						if(r.total_price > 0){
+							debug.log("total price not 0 free payment")
+							cb(null,false,{code_error:403})
+						}else{
+							cb(null,true,r);
+						}
+						
 					}
 				}
 			})
@@ -1401,7 +1848,8 @@ function paid_free(req,next){
 										cb(null,true,dt);
 									}else{
 										debug.log('payment free ticket purchase total must 0')
-										cb(null,false,[])
+										// cb(null,false,[])
+										cb(null,true,dt);
 									}
 								}else{
 									cb(null,true,dt);
@@ -1450,27 +1898,176 @@ function paid_free(req,next){
 				cb(null,false,[]);
 			}
 		},
+		function get_promo(stat,dtorder,cb){
+			if(stat == true){
+				redis.get("order_"+order_id+"_"+dtorder.fb_id+"_credit",function(err,credit){
+					if(credit == null){
+						debug.log3("data redis credit free null");
+						cb(null,false,[],[],[])
+					}else{
+						redis.get("order_"+order_id+"_"+dtorder.fb_id+"_datacredit",function(err2,datacredit){
+							if(datacredit == null){
+								debug.log3("data redis datacredit free null");
+								cb(null,false,[],[],[])
+							}else{
+								redis.get("order_"+order_id+"_"+dtorder.fb_id+"_discount",function(err2,discount){
+									if(discount == null){
+										debug.log3("data redis discount free null");
+										cb(null,false,[],[],[])
+									}else{
+										redis.get("order_"+order_id+"_"+dtorder.fb_id+"_datadiscount",function(err2,datadiscount){
+											if(datadiscount == null){
+												debug.log3("data redis datadiscount free null");
+												cb(null,false,[],[],[])
+											}else{
+												cb(null,true,dtorder,JSON.parse(credit),JSON.parse(datacredit),JSON.parse(discount),JSON.parse(datadiscount))
+											}
+										})
+									}
+								})
+								
+							}
+						})
+						
+					}
+				})
+			}else{
+				cb(null,false,[],[],[]);
+			}
+		},
+		function update_credit(stat,dtorder,credit,datacredit,discount,datadiscount,cb2){
+			if(stat == true){
+				var credit_used = parseInt(credit.credit_used)
+				async.forEachOf(datacredit,function(v,k,e){
+					if(parseInt(credit_used) > 0){
+						/*start:updating inviter credit if is_chain = true*/
+						inviter_get_credit(v,dtorder,"")
+						/*end:updating inviter credit if is_chain = true*/
+						
+						var value_left = parseFloat(v.rows_data.credit.amount_invitee) - parseFloat(credit_used);
+						if(value_left > 0){
+							value_left = value_left
+							credit_used = 0;
+						}else{
+							value_left = 0
+							credit_used = Math.abs(parseFloat(v.rows_data.credit.amount_invitee) - parseFloat(credit_used))
+						}
+						
+						var cond = {
+							fb_id:dtorder.fb_id,
+							"promo_code.rules_id":{$in:[new ObjectId(v.rules_id),String(v.rules_id)]}
+						}
+						var form_upd = {
+							$set:{
+								"promo_code.$.used":true,
+								"promo_code.$.used_by":{
+									order_id:dtorder.order_id,
+									value_left:value_left
+								}
+							}
+						}
+						customers_coll.update(cond,form_upd,function(err){if(err){debug.log3(err)}})
+						debug.log3("LOOPING DATA CUST")
+						debug.log3(value_left)
+						debug.log3(credit_used)
+					}
+				})
+				
+				var cond_credit = {fb_id:dtorder.fb_id}
+				var form_credit = {
+					$set:{
+						totcredit_appinvite:credit.credit_left
+					},
+					$push:{
+						activity:{
+							rewards:-credit.credit_used,
+							type:"promo",
+							plot:"credit",
+							flow:"out_from_promo",
+							logs:{},
+							from_fb_id:dtorder.fb_id,
+							updated_at:new Date(),
+							rules_id:""
+						}
+					}
+				}
+				credit_points_coll.update(cond_credit,form_credit,function(err,upd){if(err){debug.log3(err)}})
+				cb2(null,true,dtorder,discount,datadiscount)
+			}else{
+				cb2(null,false,[],[],[])
+			}
+		},
+		function update_discount(stat,dtorder,discount,datadiscount,cb2){
+			if(stat == true){
+				async.forEachOf(datadiscount,function(v,k,e){
+					var cond = {
+						_id:new ObjectId(v._id)
+					}
+					var form_upd = {
+						$push:{
+							"discount.used_at":{
+								fb_id:dtorder.fb_id,
+								order_id:dtorder.order_id
+							}
+						}
+					}
+					promo_rules_coll.update(cond,form_upd,function(err,upd){
+						if(err){
+							debug.logdis(err)
+						}
+					})
+				})
+				cb2(null,true,dtorder)
+			}else{
+				cb2(null,false,dtorder)
+			}
+		},
 		function send_notif(stat,dtorder,cb2){
 			debug.log('send notif')
 			if(stat == true){
-				var vt = new Object();
-				vt.payment_type = 'free'
-				vt.order_id = order_id
-				var form_post = new Object();
-				
-				form_post.vt = vt;
-				form_post.email_to = dtorder.guest_detail.email;
-				var options = {
-					url:'http://127.0.0.1:31456/sendnotif',
-					form:form_post
-				}
-				curl.post(options,function(err,resp,body){
-					if(!err){
-						cb2(null,true,vt);
+				events_detail_coll.findOne({_id:new ObjectId(dtorder.event_id)},function(err,rows_event){
+					if(err){
+						debug.log(err)
 					}else{
-						cb2(null,false,[]);
+						if(rows_event == null){
+							
+						}else{
+							var email_to = [];
+							var n = 0;
+							email_to.push(dtorder.guest_detail.email)
+							email_to.push("orders@jiggieapp.com");
+							if(typeof rows_event.organizer != 'undefined' && rows_event.organizer.length > 0){
+								async.forEachOf(rows_event.organizer,function(v3,k3,e3){
+									email_to.push(v3.email);
+								})
+							}
+							debug.log('USING EMAIL : ')
+							debug.log(email_to)
+							
+							async.forEachOf(email_to,function(v3,k3,e3){
+								var vt = new Object();
+								vt.payment_type = 'free'
+								vt.order_id = order_id
+								var form_post = new Object();
+								
+								form_post.vt = vt;
+								// form_post.email_to = dtorder.guest_detail.email;
+								form_post.email_to = v3;
+								var options = {
+									url:'http://127.0.0.1:31456/sendnotif',
+									form:form_post
+								}
+								curl.post(options,function(err,resp,body){
+									if(err){
+										debug.log(err)
+									}
+								})
+							})
+							cb2(null,true);
+						}
 					}
 				})
+				
 			}else{
 				cb2(null,false,[]);
 			}
@@ -1557,3 +2154,117 @@ function merge_data_free(req,next){
 	
 }
 /*End:Free Payment*/
+
+
+function inviter_get_credit(v,dtorder,rows_cust){
+	promo_rules_coll.findOne({_id:new ObjectId(v.rules_id)},function(err,rul){
+		if(rul.credit.is_chain == true && rul.has_code == true){
+			var cek_triger = false
+			if(typeof rul.credit.inviter_trigger != "undefined" && rul.credit.inviter_trigger.length > 0){
+				async.forEachOf(rul.credit.inviter_trigger,function(vtri,ktri,etri){
+					if(vtri == "booking"){cek_triger = true}
+				})
+			}else{
+				cek_triger = false
+			}
+			
+			if(cek_triger == true){
+				var inviter_fbid = "";
+				async.forEachOf(rul.code,function(vv,kk,ee){
+					if(typeof vv.used_at != "undefined" && vv.used_at.length > 0){
+						async.forEachOf(vv.used_at,function(vvv,kkk,eee){
+							if(vvv.fb_id == dtorder.fb_id){
+								inviter_fbid = vv.used_by
+							}
+						})
+					}
+				})
+				
+				var from_val_left = parseInt(rul.credit.amount_inviter)
+				customers_coll.findOne({fb_id:inviter_fbid},function(err,rrcust){
+					if(rrcust != null){
+						if(typeof rrcust.promo_code != "undefined" && rrcust.promo_code.length > 0){
+							var ck_inviter_already_get = false;
+							async.forEachOf(rrcust.promo_code,function(v3,k3,e3){
+								if(v3.rules_id == String(v.rules_id) || v3.rules_id == new ObjectId(v.rules_id)){
+									if(typeof v3.get_from_invite != "undefined"){
+										async.forEachOf(v3.get_from_invite,function(v4,k4,e4){
+											if(v4.from_fb_id == dtorder.fb_id){
+												ck_inviter_already_get = true
+											}
+										})
+									}
+									if(typeof v3.used_by != "undefined"){
+										from_val_left = from_val_left + parseInt(v3.used_by.value_left)
+									}
+								}
+							})
+							
+							if(ck_inviter_already_get == false){
+								var cond12 = {
+									fb_id:inviter_fbid,
+									"promo_code.rules_id":{$in:[new ObjectId(v.rules_id),String(v.rules_id)]}
+								}
+								var form_upd12 = {
+									$set:{
+										"promo_code.$.invitee_code":"get_from_invitee",
+										"promo_code.$.used":true,
+										"promo_code.$.used_by.value_left":from_val_left
+									},
+									$push:{
+										"promo_code.$.get_from_invite":{
+											from_fb_id:dtorder.fb_id,
+											value:parseInt(rul.credit.amount_inviter),
+											order_id:dtorder.order_id
+										}
+									}
+								}
+								
+								customers_coll.update(cond12,form_upd12,function(err,upd){if(err){debug.logdis(err)}})
+							
+						
+								credit_points_coll.findOne({fb_id:inviter_fbid},function(err,cre){
+									if(cre != null){
+										var inviter_points_new = parseInt(rul.credit.amount_inviter);
+										if(typeof cre.inviter_points == "undefined" || cre.inviter_points == null){
+											inviter_points_new = inviter_points_new;
+										}else{
+											inviter_points_new = parseInt(cre.inviter_points)+parseInt(inviter_points_new)
+										}
+										var totcredit_appinvite = parseInt(cre.totcredit_appinvite) + parseInt(rul.credit.amount_inviter);
+										credit_points_coll.update({fb_id:inviter_fbid},{
+											$set:{
+												inviter_points:inviter_points_new,
+												totcredit_appinvite:totcredit_appinvite
+											},
+											$push:{
+												activity:{
+													rewards:parseInt(rul.credit.amount_inviter),
+													type:"promo",
+													plot:"credit",
+													flow:"get_from_invitee",
+													logs:{},
+													from_fb_id:dtorder.fb_id,
+													updated_at:new Date(),
+													rules_id:String(rul._id)
+												}
+											}
+										},function(err,upd){if(err){debug.logdis(err)}})
+									}
+								})
+							
+							}else{
+								debug.logdis("ERROS 2239 commerce payment")
+							}
+						}
+					}else{
+						debug.logdis("ERROS 2241 commerce payment")
+					}
+				})
+			}else{
+				debug.logdis("Triger Not Booking")
+			}
+		}
+	})
+	return true
+}

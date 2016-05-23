@@ -455,6 +455,22 @@ exports.walkthrough_payment = function(req,res){
 
 function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat){
 	var json_data = new Object();
+	if(typeof rorder.credit == "undefined"){
+		rorder.credit = new Object();
+		rorder.credit.tot_credit = 0
+		rorder.credit.credit_used = 0
+		rorder.credit.tot_price_before_credit = 0
+		rorder.credit.tot_price_after_credit = 0
+		rorder.credit.credit_left = 0
+	}
+	
+	if(typeof rorder.discount == "undefined"){
+		rorder.discount = new Object();
+		rorder.discount.data = [];
+		rorder.discount.tot_price_before_discount = 0
+		rorder.discount.tot_price_after_discount = 0
+	}
+	
 	if(stat == 'success'){
 		json_data.order_id = rorder.order_id;
 		json_data.order_number = rorder.code;
@@ -468,6 +484,8 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 	
 	if(type == 'bca_pending'){
 		json_data.payment_type = 'bca';
+		json_data.credit = rorder.credit;
+		json_data.discount = rorder.discount;
 		if(stat == 'success'){
 			json_data.payment_timelimit = rorder.product_list[0].payment_timelimit;
 			json_data.created_at = rorder.created_at_swipetopay;
@@ -506,6 +524,9 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 		
 	}else if(type == 'bca_success'){
 		json_data.payment_type = 'bca';
+		json_data.credit = rorder.credit;
+		json_data.discount = rorder.discount;
+		
 		json_data.event = revent;
 		
 		if(rorder.product_list[0].ticket_type == 'booking'){
@@ -532,6 +553,8 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 		json_data.fine_print[2] = "Lorem Ipsum copy in various charsets and langauges for layouts";
 	}else if(type == 'va_pending'){
 		json_data.payment_type = 'va';
+		json_data.credit = rorder.credit;
+		json_data.discount = rorder.discount;
 		if(stat == 'success'){
 			json_data.payment_timelimit = rorder.product_list[0].payment_timelimit;
 			json_data.created_at = rorder.created_at_swipetopay;
@@ -571,6 +594,8 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 		
 	}else if(type == 'va_success'){
 		json_data.payment_type = 'va';
+		json_data.credit = rorder.credit;
+		json_data.discount = rorder.discount;
 		json_data.event = revent;
 		
 		if(rorder.product_list[0].ticket_type == 'booking'){
@@ -598,6 +623,8 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 		json_data.fine_print[2] = "Lorem Ipsum copy in various charsets and langauges for layouts";
 	}else if(type == 'bp_pending'){
 		json_data.payment_type = 'bp';
+		json_data.credit = rorder.credit;
+		json_data.discount = rorder.discount;
 		if(stat == 'success'){
 			json_data.payment_timelimit = rorder.product_list[0].payment_timelimit;
 			json_data.created_at = rorder.created_at_swipetopay;
@@ -646,6 +673,9 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 		
 	}else if(type == 'bp_success'){
 		json_data.payment_type = 'bp';
+		json_data.credit = rorder.credit;
+		json_data.discount = rorder.discount;
+		
 		json_data.event = revent;
 		if(rorder.product_list[0].ticket_type == 'booking'){
 			rorder.pay_deposit = parseInt(rorder.vt_response.gross_amount);
@@ -671,6 +701,9 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 		json_data.fine_print[2] = "Lorem Ipsum copy in various charsets and langauges for layouts";
 	}else if(type == 'cc'){
 		json_data.payment_type = 'cc';
+		json_data.credit = rorder.credit;
+		json_data.discount = rorder.discount;
+		
 		json_data.event = revent;
 		if(rorder.product_list[0].ticket_type == 'booking'){
 			rorder.pay_deposit = parseInt(rorder.vt_response.gross_amount);
@@ -696,6 +729,9 @@ function template_success_screen(req,rorder,revent,rcust,type,step_payment,stat)
 		json_data.fine_print[2] = "Lorem Ipsum copy in various charsets and langauges for layouts";
 	}else if(type == 'free'){
 		json_data.payment_type = 'free';
+		json_data.credit = rorder.credit;
+		json_data.discount = rorder.discount;
+		
 		json_data.event = revent;
 		if(rorder.product_list[0].ticket_type == 'booking'){
 			rorder.pay_deposit = parseInt(0);
@@ -760,4 +796,75 @@ exports.guest_info = function(req,res){
 			}
 		}
 	})
+}
+
+exports.handle_cancel_vt = function(req,res){
+	var post = req.body;
+	var json_data;
+	
+	async.forEachOf(post,function(v,k,e){
+		jsondata = JSON.parse(k)
+	})
+	
+	// if(jsondata.transaction_status == 'cancel'){
+		// var order_id = jsondata.order_id;
+		// async.waterfall([
+			// function get_order(cb){
+				// order_coll.findOne({order_id:order_id},function(err,r){
+					// if(err){
+						// debug.log(err)
+						// cb(null,false,[])
+					// }else{
+						// cb(null,true,r)
+					// }
+				// })
+			// },
+			// function update_order(stat,rows_order,cb){
+				// if(stat == true){
+					// var cond = {
+						// order_id:order_id
+					// }
+					// var form_upd = {
+						// $set:{
+							// order_status:'cancel',
+							// vt_response:jsondata
+						// }
+					// }
+					// order_coll.update(cond,form_upd,function(err,upd){
+						// if(!err){
+							// cb(null,true,rows_order)
+						// }else{
+							// cb(null,false,[])
+						// }
+					// })
+				// }else{
+					// cb(null,false,[])
+				// }
+			// },
+			// function update_ticket(stat,rows_order,cb){
+				// if(stat == true){
+					// var ticket_id = rows_order.product_list[0].ticket_id;
+					// tickettypes_coll.findOne({_id:new ObjectId(ticket_id)},function(err,r){
+						// if(err){
+							// cb(null,false)
+						// }else{
+							// var get_numbuy = 0;
+							// async.forEachOf(r.sold,function(v,k,e){
+								
+							// })
+							// async.forEachOf(r.sold,function(v,k,e){
+								
+							// })
+						// }
+					// })
+				// }else{
+					// cb(null,false)
+				// }
+			// }
+		// ],function(){
+			
+		// })
+	// }
+	
+	res.json({success:true})
 }

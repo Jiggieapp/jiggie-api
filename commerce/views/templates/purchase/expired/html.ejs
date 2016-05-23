@@ -32,6 +32,14 @@
 						<td><%=guest_name%></td>
 					</tr>
 					<tr>
+						<th>PHONE</th>
+						<td><%=phone_cl%></td>
+					</tr>
+					<tr>
+						<th>EMAIL</th>
+						<td><%=email_cl%></td>
+					</tr>
+					<tr>
 						<th>STATUS</th>
 						<td><%=status%></td>
 					</tr>
@@ -59,10 +67,24 @@
 						<th>ADMINISTRATIVE FEE</th>
 						<td><%=amount_service%></td>
 					</tr>
+					<% if(is_discount == true){ %>
+						<% for(var i=0; i<datadiscount.data.length; i++){ %>
+						<tr>
+							<th><%=datadiscount.data[i].name%></th>
+							<td>- <%=datadiscount.data[i].amount_used%></td>
+						</tr>
+						<% } %>
+					<% } %>
 					<tr>
 						<th>TAX</th>
 						<td class="bot-bor"><%=amount_tax%></td>
 					</tr>
+					<% if(is_credit == true){%>
+						<tr>
+							<th>Credit Used</th>
+							<td>- <%= datacredit.credit_used%></td>
+						</tr>
+						<% } %>
 					<tr class="total">
 						<th>TOTAL</th>
 						<td><%=total%></td>

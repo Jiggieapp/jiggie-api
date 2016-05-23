@@ -457,13 +457,33 @@ function getdata(req,event_details_id,fb_id,gender_interest,next){
 		
 		var photos = new Object();
 		photos = rows_event.photos;
-		async.forEachOf(rows_venue.photos,function(v,k,e){
-			photos.push(v);
-		});
+		
 		var pt = []
 		async.forEachOf(photos,function(v,k,e){
-			pt[k] = "http://img.jiggieapp.com/event?url="+v
+			var str = v.indexOf('original');
+			if(str != -1){
+				var ex = v.split('/');
+				var ex2 = ex[ex.length-1];
+				var ex3 = ex2.split('.');
+				var str1 = ex3[0].replace('original','540');
+				
+				
+				ex[ex.length-1] = str1+'.jpg';
+				pt[k] = ex.join('/');
+			}else{
+				if(v != ''){
+					pt[k] = "http://img.jiggieapp.com/event?url="+v
+				}
+				
+			}
 		})
+		
+		async.forEachOf(rows_venue.photos,function(v,k,e){
+			if(v != ''){
+				pt.push("http://img.jiggieapp.com/event?url="+v);
+			}
+		});
+		
 		dt.photos = pt;
 		
 		dt.guests_viewed = rows_event.guests_viewed;
@@ -483,6 +503,12 @@ function getdata(req,event_details_id,fb_id,gender_interest,next){
 		dt.venue.name = rows_venue.name;
 		dt.venue.photos = new Object();
 		dt.venue.photos = rows_venue.photos;
+		
+		if(typeof rows_event.lowest_price == 'undefined'){
+			dt.lowest_price = 0;
+		}else{
+			dt.lowest_price = rows_event.lowest_price
+		}
 		
 		next(dt);
 	})
@@ -565,6 +591,7 @@ function upd_socialfeed(event_details_id,fb_id,next){
 				async.forEachOf(rows.guests_viewed,function(v,k,e){
 					v.event_id = event_details_id;
 					v.event_name = rows.title;
+					v.active = rows.active
 					if(v.fb_id != fb_id){
 						data_guestviewed[n] = v;
 						n++;
@@ -598,7 +625,11 @@ function updsocialfeed_async(guests_viewed,fb_id,next){
 					// "users.fb_id":{$ne:fb_id}
 				}
 				socialfeed_coll.findOne({fb_id:fb_id},function(err,rownsoc){
-					if(typeof rownsoc.points == 'undefined' || rownsoc.points == null){
+					if(rownsoc == null){
+						var rownsoc = new Object();
+						rownsoc.points = 0;
+					}else if(typeof rownsoc.points == 'undefined' || rownsoc.points == null){
+						var rownsoc = new Object();
 						rownsoc.points = 0;
 					}
 					socialfeed_coll.find(cond).toArray(function(err,rows){
@@ -622,7 +653,8 @@ function updsocialfeed_async(guests_viewed,fb_id,next){
 											"users.$.last_viewed":new Date(),
 											"users.$.event_id":guests_viewed[0].event_id,
 											"users.$.event_name":guests_viewed[0].event_name,
-											"users.$.points":String(rownsoc.points)
+											"users.$.points":String(rownsoc.points),
+											"users.$.active":guests_viewed[0].active
 										}
 									}
 									socialfeed_coll.update(cond2,form2,function(err,upd){
@@ -644,6 +676,7 @@ function updsocialfeed_async(guests_viewed,fb_id,next){
 									json_data.event_id = guests_viewed[0].event_id;
 									json_data.event_name = guests_viewed[0].event_name;
 									json_data.points = String(rownsoc.points);
+									json_data.active = guests_viewed[0].active;
 									json_data.didMatch = false;
 									json_data.from_state = "viewed";
 									json_data.to_state = "viewed";

@@ -5,6 +5,7 @@ var async = require('async');
 var ObjectId = require('mongodb').ObjectID;
 var ObjectIdM = require('mongoose').Types.ObjectId; 
 var request = require('request');
+var _ = require('underscore')
 
 var randomString = require('random-strings');
 
@@ -76,6 +77,7 @@ function get_data(req,next){
 				}
 				tickettypes_coll.find(cond1).toArray(function(err,r){
 					if(r.length > 0){
+						
 						var json_data = new Object();
 						json_data.event_id = event_id;
 						json_data.event_name = rows_event.title;
@@ -100,64 +102,135 @@ function get_data(req,next){
 							json_data.photos = pt
 						}
 						
-						
 						json_data.purchase = []
 						json_data.reservation = []
 						var n = 0;
 						var m = 0;
 						async.forEachOf(r,function(v,k,e){
-							if(v.ticket_type == 'purchase'){
-								json_data.purchase[n] = new Object();
-								json_data.purchase[n].ticket_id = v._id;
-								json_data.purchase[n].name = v.name;
-								json_data.purchase[n].ticket_type = v.ticket_type;
-								json_data.purchase[n].quantity = v.quantity;
-								json_data.purchase[n].admin_fee = v.admin_fee;
-								json_data.purchase[n].tax_percent = v.tax;
-								json_data.purchase[n].tax_amount = v.tax_amount;
-								json_data.purchase[n].tip_percent = v.tip;
-								json_data.purchase[n].tip_amount = v.tip_amount;
-								json_data.purchase[n].price = v.price;
-								json_data.purchase[n].currency = v.currency;
-								json_data.purchase[n].total_price = v.total;
-								json_data.purchase[n].description = v.description;
-								json_data.purchase[n].max_purchase = v.guest;
-								if(typeof v.payment_timelimit == 'undefined'){
-									json_data.purchase[n].payment_timelimit = 180;
-								}else{
-									json_data.purchase[n].payment_timelimit = v.payment_timelimit;
+							if(typeof v.sales_start_date != 'undefined' && typeof v.sales_end_date != 'undefined' && v.sales_start_date != null && v.sales_end_date != null){
+								var dtnow = new Date()
+								if(v.sales_start_date <= dtnow && v.sales_end_date >= dtnow){
+									if(v.ticket_type == 'purchase'){
+										json_data.purchase[n] = new Object();
+										json_data.purchase[n].ticket_id = v._id;
+										json_data.purchase[n].name = v.name;
+										json_data.purchase[n].ticket_type = v.ticket_type;
+										json_data.purchase[n].quantity = v.quantity;
+										json_data.purchase[n].admin_fee = v.admin_fee;
+										json_data.purchase[n].tax_percent = v.tax;
+										json_data.purchase[n].tax_amount = v.tax_amount;
+										json_data.purchase[n].tip_percent = v.tip;
+										json_data.purchase[n].tip_amount = v.tip_amount;
+										json_data.purchase[n].price = v.price;
+										json_data.purchase[n].sortprice = parseInt(v.price);
+										json_data.purchase[n].currency = v.currency;
+										json_data.purchase[n].total_price = v.total;
+										json_data.purchase[n].description = v.description;
+										json_data.purchase[n].max_purchase = v.guest;
+										if(typeof v.payment_timelimit == 'undefined'){
+											json_data.purchase[n].payment_timelimit = 180;
+										}else{
+											json_data.purchase[n].payment_timelimit = v.payment_timelimit;
+										}
+										json_data.purchase[n].summary = v.summary;
+										json_data.purchase[n].status = v.status;
+										if(typeof v.sales_start_date != 'undefined' && typeof v.sales_end_date != 'undefined'){
+											json_data.purchase[n].sales_start_date = v.sales_start_date;
+											json_data.purchase[n].sales_end_date = v.sales_end_date;
+										}
+										n++;
+									}else if(v.ticket_type == 'booking'){
+										json_data.reservation[m] = new Object();
+										json_data.reservation[m].ticket_id = v._id;
+										json_data.reservation[m].name = v.name;
+										json_data.reservation[m].ticket_type = v.ticket_type;
+										json_data.reservation[m].quantity = v.quantity;
+										json_data.reservation[m].admin_fee = v.admin_fee;
+										json_data.reservation[m].tax_percent = v.tax;
+										json_data.reservation[m].tax_amount = v.tax_amount;
+										json_data.reservation[m].tip_percent = v.tip;
+										json_data.reservation[m].tip_amount = v.tip_amount;
+										json_data.reservation[m].price = v.price;
+										json_data.reservation[m].sortprice = parseInt(v.price);
+										json_data.reservation[m].currency = v.currency;
+										json_data.reservation[m].total_price = v.total;
+										json_data.reservation[m].description = v.description;
+										json_data.reservation[m].max_guests = v.guest;
+										json_data.reservation[m].min_deposit_percent = v.deposit;
+										json_data.reservation[m].min_deposit_amount = String((parseFloat(v.total_num)/100)*parseFloat(v.deposit))
+										if(typeof v.payment_timelimit == 'undefined'){
+											json_data.reservation[m].payment_timelimit = 180;
+										}else{
+											json_data.reservation[m].payment_timelimit = v.payment_timelimit;
+										}
+										json_data.reservation[m].summary = v.summary;
+										json_data.reservation[m].status = v.status;
+										if(typeof v.sales_start_date != 'undefined' && typeof v.sales_end_date != 'undefined'){
+											json_data.reservation[m].sales_start_date = v.sales_start_date;
+											json_data.reservation[m].sales_end_date = v.sales_end_date;
+										}
+										m++;
+									}
 								}
-								json_data.purchase[n].summary = v.summary;
-								json_data.purchase[n].status = v.status;
-								n++;
-							}else if(v.ticket_type == 'booking'){
-								json_data.reservation[m] = new Object();
-								json_data.reservation[m].ticket_id = v._id;
-								json_data.reservation[m].name = v.name;
-								json_data.reservation[m].ticket_type = v.ticket_type;
-								json_data.reservation[m].quantity = v.quantity;
-								json_data.reservation[m].admin_fee = v.admin_fee;
-								json_data.reservation[m].tax_percent = v.tax;
-								json_data.reservation[m].tax_amount = v.tax_amount;
-								json_data.reservation[m].tip_percent = v.tip;
-								json_data.reservation[m].tip_amount = v.tip_amount;
-								json_data.reservation[m].price = v.price;
-								json_data.reservation[m].currency = v.currency;
-								json_data.reservation[m].total_price = v.total;
-								json_data.reservation[m].description = v.description;
-								json_data.reservation[m].max_guests = v.guest;
-								json_data.reservation[m].min_deposit_percent = v.deposit;
-								json_data.reservation[m].min_deposit_amount = String((parseFloat(v.total_num)/100)*parseFloat(v.deposit))
-								if(typeof v.payment_timelimit == 'undefined'){
-									json_data.reservation[m].payment_timelimit = 180;
-								}else{
-									json_data.reservation[m].payment_timelimit = v.payment_timelimit;
+							}else{
+								if(v.ticket_type == 'purchase'){
+									json_data.purchase[n] = new Object();
+									json_data.purchase[n].ticket_id = v._id;
+									json_data.purchase[n].name = v.name;
+									json_data.purchase[n].ticket_type = v.ticket_type;
+									json_data.purchase[n].quantity = v.quantity;
+									json_data.purchase[n].admin_fee = v.admin_fee;
+									json_data.purchase[n].tax_percent = v.tax;
+									json_data.purchase[n].tax_amount = v.tax_amount;
+									json_data.purchase[n].tip_percent = v.tip;
+									json_data.purchase[n].tip_amount = v.tip_amount;
+									json_data.purchase[n].price = v.price;
+									json_data.purchase[n].sortprice = parseInt(v.price);
+									json_data.purchase[n].currency = v.currency;
+									json_data.purchase[n].total_price = v.total;
+									json_data.purchase[n].description = v.description;
+									json_data.purchase[n].max_purchase = v.guest;
+									if(typeof v.payment_timelimit == 'undefined'){
+										json_data.purchase[n].payment_timelimit = 180;
+									}else{
+										json_data.purchase[n].payment_timelimit = v.payment_timelimit;
+									}
+									json_data.purchase[n].summary = v.summary;
+									json_data.purchase[n].status = v.status;
+									n++;
+								}else if(v.ticket_type == 'booking'){
+									json_data.reservation[m] = new Object();
+									json_data.reservation[m].ticket_id = v._id;
+									json_data.reservation[m].name = v.name;
+									json_data.reservation[m].ticket_type = v.ticket_type;
+									json_data.reservation[m].quantity = v.quantity;
+									json_data.reservation[m].admin_fee = v.admin_fee;
+									json_data.reservation[m].tax_percent = v.tax;
+									json_data.reservation[m].tax_amount = v.tax_amount;
+									json_data.reservation[m].tip_percent = v.tip;
+									json_data.reservation[m].tip_amount = v.tip_amount;
+									json_data.reservation[m].price = v.price;
+									json_data.reservation[m].sortprice = parseInt(v.price);
+									json_data.reservation[m].currency = v.currency;
+									json_data.reservation[m].total_price = v.total;
+									json_data.reservation[m].description = v.description;
+									json_data.reservation[m].max_guests = v.guest;
+									json_data.reservation[m].min_deposit_percent = v.deposit;
+									json_data.reservation[m].min_deposit_amount = String((parseFloat(v.total_num)/100)*parseFloat(v.deposit))
+									if(typeof v.payment_timelimit == 'undefined'){
+										json_data.reservation[m].payment_timelimit = 180;
+									}else{
+										json_data.reservation[m].payment_timelimit = v.payment_timelimit;
+									}
+									json_data.reservation[m].summary = v.summary;
+									json_data.reservation[m].status = v.status;
+									m++;
 								}
-								json_data.reservation[m].summary = v.summary;
-								json_data.reservation[m].status = v.status;
-								m++;
 							}
+							
 						})
+						json_data.purchase = _.sortBy(json_data.purchase,"sortprice")
+						json_data.reservation = _.sortBy(json_data.reservation,"sortprice")
 						cb(null,json_data);
 					}else{
 						cb(null,0)
@@ -221,16 +294,19 @@ exports.post_summary = function(req,res){
 								
 							}else{
 								
-								
-								var msg = '';
-								if(r.quantity == 1){
-									msg = {msg:'Sorry, we only have '+r.quantity+' ticket left',type:'ticket_details'}
-								}else if(r.quantity > 1){
-									msg = {msg:'Sorry, we only have '+r.quantity+' tickets left',type:'ticket_details'}
-								}else if(r.quantity <=0){
-									msg = {msg:'Sorry, this ticket is unavailable',type:'ticket_list'}
+								if(r.ticket_type != 'booking'){
+									var msg = '';
+									if(r.quantity == 1){
+										msg = {msg:'Sorry, we only have '+r.quantity+' ticket left',type:'ticket_details'}
+									}else if(r.quantity > 1){
+										msg = {msg:'Sorry, we only have '+r.quantity+' tickets left',type:'ticket_details'}
+									}else if(r.quantity <=0){
+										msg = {msg:'Sorry, this ticket is unavailable',type:'ticket_list'}
+									}
+									cb(null,false,msg)
+								}else{
+									cb(null,true,[])
 								}
-								cb(null,false,msg)
 							}
 						}
 					}
@@ -477,7 +553,18 @@ function post_summary(req,next){
 				json_data.total_tip_amount = String(tottip);
 				json_data.total_adminfee = String(totadminfee);
 				json_data.total_price = String(totall);
-				cb(null,true,json_data,rows_ticket);
+				
+				var options_disc = {
+					url:'http://127.0.0.1:24534/app/v3/discount',
+					form:{data:JSON.stringify(json_data)}
+				};
+				request.post(options_disc,function(err,resp,body_promo){
+					if(!err && resp.statusCode == 200){
+						cb(null,true,JSON.parse(body_promo),rows_ticket);
+					}
+				})
+				
+				// cb(null,true,json_data,rows_ticket);
 			}else{
 				cb(null,false,[],[]);
 			}
@@ -510,8 +597,10 @@ function post_summary(req,next){
 					}else{
 						if(dt.length > 0){
 							async.forEachOf(dt,function(v,k,e){
-								if(v.quantity < temp_quantity[v._id]){
-									cek_quantity = false;
+								if(v.ticket_type != 'booking'){
+									if(v.quantity < temp_quantity[v._id]){
+										cek_quantity = false;
+									}
 								}
 							})
 						}else{

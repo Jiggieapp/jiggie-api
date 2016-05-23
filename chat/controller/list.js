@@ -86,9 +86,10 @@ function get_chatlist(req,fb_id,next){
 						json_data[n].fromId = v.fromId;
 						json_data[n].fromName = v.fromName;
 						if(v.profile_image == ""){
-							json_data[n].profile_image = "https://graph.facebook.com/"+v.fb_id+"/picture?width=1000&height=1000"
+							json_data[n].profile_image = "https://graph.facebook.com/"+v.fb_id+"/picture?type=large"
 						}else{
-							json_data[n].profile_image = v.profile_image;
+							json_data[n].profile_image = "https://graph.facebook.com/"+v.fb_id+"/picture?type=large"
+							// json_data[n].profile_image = v.profile_image;
 						}
 						json_data[n].last_message = v.last_message;
 						json_data[n].last_updated = v.last_updated;

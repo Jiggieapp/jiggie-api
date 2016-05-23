@@ -37,14 +37,24 @@
 						<td><%=guest_name%></td>
 					</tr>
 					<tr>
+						<th>PHONE</th>
+						<td><%=phone_cl%></td>
+					</tr>
+					<tr>
+						<th>EMAIL</th>
+						<td><%=email_cl%></td>
+					</tr>
+					<tr>
 						<th>STATUS</th>
-						<% if(payment_method == "free"){ %>
+						<% if(payment_method == "free" && is_credit == false && is_discount == false){ %>
 							<td>FREE</td>
 						<% }else{%>
 							<td><%=status%></td>
 						<% } %>
 					</tr>
-					<% if(payment_method != "free"){ %>
+					<% if(payment_method == "free" && is_credit == false && is_discount == false){ %>
+					
+					<% }else{ %>
 					<tr>
 						<th>PAYMENT METHOD</th>
 						<td><%=payment_method%></td>
@@ -64,21 +74,37 @@
 				<tbody>
 					<tr>
 						<th><%=product_name%></th>
-						<% if(payment_method == "free"){ %>
+						<% if(payment_method == "free" && is_credit == false && is_discount == false){ %>
 							<td>FREE</td>
 						<% }else{%>
 							<td><%=product_price%></td>
 						<% } %>
 					</tr>
-					<% if(payment_method != "free"){ %>
-					<tr>
-						<th>ADMINISTRATIVE FEE</th>
-						<td><%=amount_service%></td>
-					</tr>
-					<tr>
-						<th>TAX</th>
-						<td class="bot-bor"><%=amount_tax%></td>
-					</tr>
+					<% if(payment_method == "free" && is_credit == false && is_discount == false){ %>
+					
+					<% }else{ %>
+						<tr>
+							<th>ADMINISTRATIVE FEE</th>
+							<td><%=amount_service%></td>
+						</tr>
+						<% if(is_discount == true){ %>
+							<% for(var i=0; i<datadiscount.data.length; i++){ %>
+							<tr>
+								<th><%=datadiscount.data[i].name%></th>
+								<td>- <%=datadiscount.data[i].amount_used%></td>
+							</tr>
+							<% } %>
+						<% } %>
+						<tr>
+							<th>TAX</th>
+							<td class="bot-bor"><%=amount_tax%></td>
+						</tr>
+						<% if(is_credit == true){%>
+						<tr>
+							<th>Credit Used</th>
+							<td>- <%= datacredit.credit_used%></td>
+						</tr>
+						<% } %>
 					<% } %>
 					<tr class="total">
 						<th>TOTAL</th>
@@ -92,12 +118,14 @@
 			</table>
 		</div>
 
+		<% if(payment_method != "free"){ %>
 		<div id="instruction">
 			<h3>INSTRUCTIONS</h3>
 			<p>
 				<%-instructions%>
 			</p>
 		</div>
+		<% } %>
 
 	</div>
 </div>

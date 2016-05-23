@@ -1,7 +1,7 @@
 exports.setting = function(app,express,helmet,hpp,xssFilters,validator,http,https,request,fs,busboy,passport,FacebookStrategy){
 	// Middleware Using Passport //
-	var APP_ID = "820652081367246";
-	var APP_SECRET = "aa48f82de39710f6676c4c9e223d440a";
+	var APP_ID = "840535009393707";
+	var APP_SECRET = "ecc8cbdc47f17f620c885784c7e57a04";
 	passport.serializeUser(function(user, done) {
 	  done(null, user);
 	});
@@ -12,9 +12,9 @@ exports.setting = function(app,express,helmet,hpp,xssFilters,validator,http,http
 	passport.use(new FacebookStrategy({
 	    clientID: APP_ID,
 	    clientSecret: APP_SECRET,
-	    callbackURL: app.get('domain')+"/auth/facebook/callback",
-	    profileFields: ['id', 'email', 'gender', 'link', 'locale', 'name', 'timezone', 'updated_time', 'verified'],
-	    scope:['email']
+	    callbackURL: "https://promo-dev.jiggieapp.com/auth/facebook/callback",
+	    profileFields: ['id', 'email', 'gender', 'link', 'first_name','last_name','birthday','picture','age_range','bio','location'],
+	    scope:['email','user_friends']
 	    // passReqToCallback : true
 	  },
 	  function(accessToken, refreshToken, profile, done) {
